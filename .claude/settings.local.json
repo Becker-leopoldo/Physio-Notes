@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del \"G:\\\\Meu Drive\\\\Dev\\\\Poc\\\\login.html\")",
+      "Bash(grep -v \"^--$\")",
+      "Bash(start \"\" \"g:/Meu Drive/Dev/Poc/Dasa/src/home.html\")"
+    ]
+  }
+}
