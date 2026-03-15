@@ -1,0 +1,111 @@
+================================================================================
+ POC — GUIA DE ARQUIVOS DE CONFIGURAÇÃO
+================================================================================
+
+--------------------------------------------------------------------------------
+ CLAUDE.md  (raiz do projeto)
+--------------------------------------------------------------------------------
+
+O que é:
+  Arquivo de instruções lido AUTOMATICAMENTE pelo Claude Code em toda conversa.
+  Funciona como a "constituição" do projeto — define regras que todos os agentes
+  devem seguir sem que você precise repetir.
+
+O que contém:
+  - Paleta de cores (variáveis CSS)
+  - Tipografia: DM Serif Display (títulos) + DM Sans (corpo)
+  - Escala de espaçamento, bordas, sombras
+  - Componentes padrão: botões, cards, tabelas, badges, formulários, sidebar
+  - Regras invioláveis (o que sempre fazer e o que nunca fazer)
+  - Regra do footer: toda tela deve ter "powered by up it"
+  - Padrão de sidebar recolhível (toggle + CSS + JS)
+  - Padrão de menu de logout no clique do usuário
+
+Por que fica na raiz:
+  O Claude Code só carrega CLAUDE.md automaticamente se estiver na raiz do
+  projeto. Mover para outra pasta quebra o carregamento automático.
+
+Quando editar:
+  - Para adicionar novos componentes ao design system
+  - Para mudar paleta de cores ou tipografia
+  - Para adicionar novas regras globais que valem para todos os clientes
+  - Nunca edite para guardar contexto de cliente específico
+
+--------------------------------------------------------------------------------
+ .claude/commands/poc-html-agents.md
+--------------------------------------------------------------------------------
+
+O que é:
+  Um slash command multi-agente que você invoca para criar telas HTML.
+  Não é carregado automaticamente — só executa quando chamado.
+  Orquestra 4 agentes especializados para gerar, validar e revisar cada tela.
+
+Arquitetura de agentes:
+  Você (requisitos)
+      │
+      ▼
+  Orquestrador  ←── lê CLAUDE.md + contexto do cliente
+      │
+      ├──► Agente A (Estrutura)    ┐  paralelo
+      └──► Agente B (Componentes) ┘
+                │
+                ▼
+           Monta HTML final
+                │
+                ▼
+           Agente C (QA técnico)
+                │
+                ▼
+           Agente D (UX Review)
+
+Como invocar:
+  /poc-html-agents [NomeCliente] | [descrição da tela e requisitos]
+
+Exemplos:
+  /poc-html-agents Dasa | Tela de importação com filtro por competência e tabela de lotes
+  /poc-html-agents ClienteB | Tela de dashboard com KPIs de vendas
+
+O que faz ao ser invocado:
+  1. Lê CLAUDE.md e assets/styles.css
+  2. Detecta automaticamente o contexto do cliente (sidebar, brand, usuário)
+     lendo os arquivos HTML já existentes na pasta do cliente
+  3. Dispara em paralelo:
+     - Agente A (Estrutura): gera o esqueleto HTML (sidebar, header, layout)
+     - Agente B (Componentes): gera o conteúdo (cards, tabelas, formulários)
+  4. Monta o HTML final combinando os dois outputs
+  5. Salva o arquivo em [Cliente]/src/tela-[nome].html
+  6. Agente C (QA): valida conformidade técnica e funcional
+  7. Agente D (UX Review): avalia hierarquia, clareza, densidade, acessibilidade
+  8. Corrige ❌ críticos automaticamente; apresenta ⚠️ atenção para sua aprovação
+
+Para novos clientes:
+  Basta invocar com o nome do novo cliente. O comando cria a pasta
+  automaticamente e descobre o contexto conforme os arquivos crescem.
+  Registre o novo cliente na tabela ao final do poc-html-agents.md.
+
+--------------------------------------------------------------------------------
+ OUTROS COMANDOS PLANEJADOS (ainda não criados)
+--------------------------------------------------------------------------------
+
+  .claude/commands/poc-pwa-agents.md     → para POCs em React / Vue / Next.js
+  .claude/commands/poc-flutter-agents.md → para POCs em Flutter / Dart
+
+--------------------------------------------------------------------------------
+ ESTRUTURA DE PASTAS
+--------------------------------------------------------------------------------
+
+  Poc/
+  ├── CLAUDE.md                        ← design system global (lido automaticamente)
+  ├── LEIA-ME.txt                      ← este arquivo
+  ├── assets/
+  │   └── styles.css                   ← CSS compartilhado por todas as telas
+  ├── Dasa/
+  │   └── src/
+  │       ├── login.html
+  │       ├── home.html
+  │       └── tela-dashboard.html
+  └── .claude/
+      └── commands/
+          └── poc-html-agents.md       ← slash command /poc-html-agents
+
+================================================================================

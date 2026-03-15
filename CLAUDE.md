@@ -1,0 +1,472 @@
+# POC Design System — CLAUDE.md
+
+Este arquivo define o padrão visual e de desenvolvimento para todas as telas de POC neste projeto.
+**Leia e siga rigorosamente antes de criar ou editar qualquer arquivo HTML.**
+
+---
+
+## Estrutura de Pastas
+
+```
+POC/
+├── CLAUDE.md              ← este arquivo (raiz, lido automaticamente)
+├── assets/
+│   ├── styles.css         ← CSS global compartilhado (importar em todas as telas)
+│   └── fonts.css          ← imports das fontes Google
+├── Dasa/
+│   ├── tela-dashboard.html
+│   ├── tela-relatorios.html
+│   └── ...
+├── ClienteB/
+│   └── ...
+```
+
+Cada cliente tem sua própria subpasta. Todas as telas importam `../../assets/styles.css`.
+
+---
+
+## Design System
+
+### Paleta de Cores
+
+```css
+--color-bg:        #F9F8F6;   /* off-white — fundo principal */
+--color-surface:   #FFFFFF;   /* branco puro — cards, painéis */
+--color-border:    #E8E6E1;   /* borda sutil */
+--color-border-strong: #D0CEC9; /* borda com mais presença */
+
+--color-text:      #1A1A1A;   /* texto principal — quase preto */
+--color-text-secondary: #6B6860; /* texto secundário — grafite médio */
+--color-text-muted: #A09D97;  /* texto desabilitado / placeholder */
+
+--color-accent:    #1A1A1A;   /* acento primário — preto/grafite */
+--color-accent-hover: #333333;
+--color-accent-light: #F0EFED; /* fundo de hover em elementos sutis */
+
+--color-success:   #2D6A4F;
+--color-warning:   #92600A;
+--color-danger:    #9B1C1C;
+--color-info:      #1E3A5F;
+
+--color-success-bg: #EDF7F2;
+--color-warning-bg: #FEF7EC;
+--color-danger-bg:  #FEF2F2;
+--color-info-bg:    #EFF6FF;
+```
+
+### Tipografia
+
+Fontes: **DM Serif Display** (títulos) + **DM Sans** (corpo e UI)
+
+```html
+<!-- Importar no <head> de cada tela -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+```
+
+```css
+--font-display: 'DM Serif Display', Georgia, serif;
+--font-body:    'DM Sans', system-ui, sans-serif;
+
+/* Escala tipográfica */
+--text-xs:   0.75rem;    /* 12px */
+--text-sm:   0.875rem;   /* 14px */
+--text-base: 1rem;       /* 16px */
+--text-lg:   1.125rem;   /* 18px */
+--text-xl:   1.25rem;    /* 20px */
+--text-2xl:  1.5rem;     /* 24px */
+--text-3xl:  1.875rem;   /* 30px */
+--text-4xl:  2.25rem;    /* 36px */
+```
+
+**Uso:**
+- `font-family: var(--font-display)` → títulos de página (h1, h2 principais)
+- `font-family: var(--font-body)` → tudo mais (labels, botões, tabelas, parágrafos)
+
+### Espaçamento
+
+```css
+--space-1:  0.25rem;   /*  4px */
+--space-2:  0.5rem;    /*  8px */
+--space-3:  0.75rem;   /* 12px */
+--space-4:  1rem;      /* 16px */
+--space-5:  1.25rem;   /* 20px */
+--space-6:  1.5rem;    /* 24px */
+--space-8:  2rem;      /* 32px */
+--space-10: 2.5rem;    /* 40px */
+--space-12: 3rem;      /* 48px */
+--space-16: 4rem;      /* 64px */
+```
+
+### Bordas e Raios
+
+```css
+--radius-sm:  4px;
+--radius-md:  8px;
+--radius-lg:  12px;
+--radius-xl:  16px;
+--radius-full: 9999px;
+
+--border: 1px solid var(--color-border);
+--border-strong: 1px solid var(--color-border-strong);
+```
+
+### Sombras
+
+Sombras sutis. Nunca usar box-shadow pesado ou colorido.
+
+```css
+--shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+--shadow-md: 0 2px 8px rgba(0,0,0,0.07);
+--shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+```
+
+---
+
+## Componentes Padrão
+
+### Layout de Página
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nome da Tela — POC [Cliente]</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar"><!-- navegação lateral --></aside>
+    <main class="main-content">
+      <header class="page-header">
+        <h1 class="page-title">Título da Tela</h1>
+        <p class="page-subtitle">Descrição opcional</p>
+      </header>
+      <section class="page-body">
+        <!-- conteúdo principal -->
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+```
+
+### Botões
+
+```html
+<!-- Primário (fundo preto) -->
+<button class="btn btn-primary">Confirmar</button>
+
+<!-- Secundário (borda, fundo transparente) -->
+<button class="btn btn-secondary">Cancelar</button>
+
+<!-- Ghost (sem borda, só texto) -->
+<button class="btn btn-ghost">Ver detalhes</button>
+
+<!-- Destrutivo -->
+<button class="btn btn-danger">Excluir</button>
+
+<!-- Tamanhos -->
+<button class="btn btn-primary btn-sm">Pequeno</button>
+<button class="btn btn-primary btn-lg">Grande</button>
+```
+
+### Cards
+
+```html
+<!-- Card simples -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Título</h3>
+    <span class="card-subtitle">Subtítulo</span>
+  </div>
+  <div class="card-body">
+    <!-- conteúdo -->
+  </div>
+  <div class="card-footer">
+    <!-- ações -->
+  </div>
+</div>
+
+<!-- Card de métrica (KPI) -->
+<div class="card card-metric">
+  <span class="metric-label">Total de Avaliações</span>
+  <span class="metric-value">1.284</span>
+  <span class="metric-delta positive">+12% este mês</span>
+</div>
+```
+
+### Inputs e Formulários
+
+```html
+<div class="form-group">
+  <label class="form-label" for="campo">Nome do Campo</label>
+  <input class="form-input" type="text" id="campo" placeholder="Placeholder">
+  <span class="form-hint">Texto de apoio opcional</span>
+</div>
+
+<!-- Select -->
+<div class="form-group">
+  <label class="form-label">Categoria</label>
+  <select class="form-select">
+    <option>Selecione...</option>
+  </select>
+</div>
+
+<!-- Textarea -->
+<div class="form-group">
+  <label class="form-label">Observações</label>
+  <textarea class="form-textarea" rows="4" placeholder="Digite aqui..."></textarea>
+</div>
+```
+
+### Tabelas
+
+```html
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Coluna A</th>
+        <th>Coluna B</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dado</td>
+        <td>Dado</td>
+        <td class="text-right">
+          <button class="btn btn-ghost btn-sm">Editar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
+
+### Badges / Status
+
+```html
+<span class="badge badge-success">Aprovado</span>
+<span class="badge badge-warning">Pendente</span>
+<span class="badge badge-danger">Rejeitado</span>
+<span class="badge badge-info">Em análise</span>
+<span class="badge badge-neutral">Rascunho</span>
+```
+
+### Navegação Lateral (Sidebar)
+
+```html
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-name">POC [Cliente]</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active">Dashboard</a>
+    <a href="#" class="nav-item">Relatórios</a>
+    <a href="#" class="nav-item">Configurações</a>
+  </nav>
+</aside>
+```
+
+---
+
+## Regras Invioláveis
+
+### Footer obrigatório
+
+Toda tela deve ter o rodapé `powered by up it` ao final do `.main-content`:
+
+```html
+<footer class="powered-bar">powered by <strong>up it</strong></footer>
+```
+
+A classe `.powered-bar` já está definida no `styles.css`.
+
+### Sidebar recolhível obrigatória
+
+Toda tela que possua menu lateral (`.sidebar` com `.sidebar-nav`) deve incluir o botão de recolher e o CSS/JS correspondente.
+
+**Botão — dentro de `.sidebar-brand`:**
+```html
+<div class="sidebar-brand">
+  <span class="brand-name">NomeCliente</span>
+  <button class="sidebar-toggle" id="sidebarToggle" title="Recolher menu">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
+```
+
+**CSS — adicionar no `<style>` da tela:**
+```css
+.sidebar-toggle {
+  position: absolute;
+  top: var(--space-5);
+  right: calc(-1 * var(--space-4));
+  width: 24px; height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 101;
+  transition: background 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.sidebar-toggle:hover { background: var(--color-accent-light); }
+.sidebar-toggle svg { transition: transform 0.25s; }
+.sidebar-brand { position: relative; }
+.sidebar { transition: width 0.25s ease; overflow: hidden; }
+
+.sidebar.collapsed { width: 56px; }
+.sidebar.collapsed .brand-name,
+.sidebar.collapsed .nav-section-label,
+.sidebar.collapsed .user-name,
+.sidebar.collapsed .user-role { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: var(--space-2); font-size: 0; gap: 0; }
+.sidebar.collapsed .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.sidebar.collapsed .sidebar-brand { padding: 0 var(--space-3) var(--space-6); }
+.sidebar.collapsed .sidebar-footer { padding: var(--space-4) var(--space-3); }
+.sidebar.collapsed .user-info { justify-content: center; }
+.sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+.sidebar.collapsed ~ .main-content {
+  flex: 0 0 auto;
+  width: calc(100% - 56px);
+  margin-left: auto;
+  margin-right: auto;
+}
+```
+
+**JS — antes de `</body>`:**
+```html
+<script>
+  const sidebar = document.querySelector('.sidebar');
+  const toggle = document.getElementById('sidebarToggle');
+  toggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+
+  const userTrigger = document.getElementById('userMenuTrigger');
+  const userMenu = document.getElementById('userMenu');
+  userTrigger.addEventListener('click', (e) => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+</script>
+```
+
+---
+
+### Menu do Usuário (logout)
+
+Toda tela com sidebar deve ter um menu de contexto no clique do usuário logado, com opção de **Sair**.
+
+**HTML — dentro de `.sidebar-footer`:**
+```html
+<div class="sidebar-footer">
+  <div class="user-menu" id="userMenu">
+    <a href="login.html" class="user-menu-item user-menu-item-danger">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Sair
+    </a>
+  </div>
+  <div class="user-info user-menu-trigger" id="userMenuTrigger">
+    <div class="user-avatar">XX</div>
+    <div>
+      <div class="user-name">Nome do Usuário</div>
+      <div class="user-role">Perfil</div>
+    </div>
+  </div>
+</div>
+```
+
+**CSS — no `<style>` da tela:**
+```css
+.sidebar-footer { position: relative; }
+.user-menu-trigger {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  margin: calc(-1 * var(--space-2));
+  transition: background 0.15s;
+  width: calc(100% + var(--space-4));
+}
+.user-menu-trigger:hover { background: var(--color-accent-light); }
+.user-menu {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 0; right: 0;
+  background: var(--color-surface);
+  border: var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  display: none;
+  z-index: 200;
+}
+.user-menu.open { display: block; }
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background 0.15s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  font-family: var(--font-body);
+}
+.user-menu-item:hover { background: var(--color-accent-light); }
+.user-menu-item-danger { color: var(--color-danger); }
+.user-menu-item-danger:hover { background: var(--color-danger-bg); }
+.sidebar.collapsed .user-menu { left: 0; right: auto; min-width: 160px; }
+```
+
+### ✅ Sempre fazer
+- Importar `styles.css` global em toda tela
+- Usar variáveis CSS (`--color-*`, `--space-*`, etc.) — nunca valores hardcoded
+- Usar `font-family: var(--font-body)` como padrão geral
+- Reservar `var(--font-display)` apenas para o h1/título principal da página
+- Manter fundo `var(--color-bg)` no body
+- Exibir todos os textos de detalhe inline (sem accordion, sem collapse)
+- Espaçamento generoso — prefira `--space-8` ou mais entre seções
+- Incluir `<footer class="powered-bar">powered by <strong>up it</strong></footer>` ao final de cada `.main-content`
+- Incluir menu de logout no clique do usuário em toda tela com sidebar (padrão `.user-menu-trigger` + `.user-menu`)
+
+### ❌ Nunca fazer
+- Sombras coloridas ou pesadas
+- Gradientes (exceto sutilíssimos, quase imperceptíveis)
+- Bordas grossas (> 1px)
+- Cores vibrantes fora da paleta definida
+- Fontes diferentes das definidas (sem Arial, Roboto, Inter, etc.)
+- Accordions ou elementos colapsáveis para conteúdo informacional
+- Animações chamativas ou desnecessárias
+- Padding interno de card menor que `--space-6`
+
+---
+
+## Como Criar uma Nova Tela
+
+1. Copie o template de layout de página acima
+2. Ajuste o `<title>` e o `<h1>`
+3. Use os componentes deste arquivo conforme necessário
+4. Importe sempre `../../assets/styles.css` (ajuste o caminho conforme profundidade da pasta)
+5. Nunca adicione CSS inline de estilo — use apenas classes do `styles.css` global ou um `<style>` no topo que use as variáveis definidas aqui
+
+---
+
+## Contexto do Projeto
+
+- **Tipo:** POC (Proof of Concept) para demonstração a clientes
+- **Modo:** Light mode apenas
+- **Responsividade:** Desktop-first (1280px+), responsividade básica para tablets
+- **Acessibilidade:** Labels semânticos, contraste adequado, foco visível nos inputs
