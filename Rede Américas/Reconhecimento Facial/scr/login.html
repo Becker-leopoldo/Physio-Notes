@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — POC Rede Américas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../assets/styles.css">
+  <style>
+    /* ── Layout split ─────────────────────────────────────── */
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* ── Painel esquerdo ──────────────────────────────────── */
+    .login-panel-left {
+      background: var(--color-accent);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--space-12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-panel-left::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 400px;
+      height: 400px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .login-panel-left::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      left: -80px;
+      width: 280px;
+      height: 280px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .panel-brand {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-headline {
+      font-family: var(--font-display);
+      font-size: var(--text-4xl);
+      color: #fff;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-4);
+    }
+
+    .panel-headline em {
+      font-style: italic;
+      opacity: 0.75;
+    }
+
+    .panel-description {
+      font-size: var(--text-base);
+      color: rgba(255,255,255,0.55);
+      line-height: 1.7;
+      max-width: 340px;
+    }
+
+    .panel-dots {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .panel-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.25);
+    }
+
+    .panel-dot.active {
+      background: rgba(255,255,255,0.75);
+      width: 20px;
+    }
+
+    /* ── Painel direito ───────────────────────────────────── */
+    .login-panel-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: var(--space-12);
+      background: var(--color-bg);
+    }
+
+    .login-form-wrapper {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-header {
+      margin-bottom: var(--space-10);
+    }
+
+    .login-title {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: var(--space-2);
+    }
+
+    .login-subtitle {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+
+    .login-subtitle strong {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Step visibility ──────────────────────────────────── */
+    .login-step {
+      display: none;
+    }
+
+    .login-step.active {
+      display: block;
+    }
+
+    /* ── Botão full width ─────────────────────────────────── */
+    .btn-login {
+      width: 100%;
+      padding: var(--space-3) var(--space-6);
+      font-size: var(--text-base);
+      margin-top: var(--space-8);
+    }
+
+    /* ── Link ação ────────────────────────────────────────── */
+    .form-link {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: var(--font-body);
+    }
+
+    .form-link:hover {
+      color: var(--color-text);
+    }
+
+    /* ── OTP inputs ───────────────────────────────────────── */
+    .otp-group {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: center;
+      margin-bottom: var(--space-2);
+    }
+
+    .otp-input {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: var(--text-xl);
+      font-weight: 600;
+      font-family: var(--font-body);
+      border: var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    .otp-input::-webkit-outer-spin-button,
+    .otp-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .otp-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(26,26,26,0.08);
+    }
+
+    .otp-input.filled {
+      border-color: var(--color-accent);
+      background: var(--color-accent-light);
+    }
+
+    .otp-input.has-error {
+      border-color: var(--color-danger);
+    }
+
+    /* ── Resend row ───────────────────────────────────────── */
+    .resend-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    .resend-feedback {
+      font-size: var(--text-xs);
+      color: var(--color-success);
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .resend-feedback.visible {
+      opacity: 1;
+    }
+
+    /* ── Back link ────────────────────────────────────────── */
+    .back-row {
+      margin-top: var(--space-6);
+      text-align: center;
+    }
+
+    /* ── Error inline ─────────────────────────────────────── */
+    .otp-error {
+      font-size: var(--text-xs);
+      color: var(--color-danger);
+      text-align: center;
+      margin-top: var(--space-2);
+      display: none;
+    }
+
+    .otp-error.visible {
+      display: block;
+    }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    .login-footer {
+      margin-top: var(--space-10);
+      text-align: center;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    .login-footer a {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .login-footer a:hover {
+      color: var(--color-text);
+    }
+
+    /* ── Responsivo ───────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .login-page {
+        grid-template-columns: 1fr;
+      }
+
+      .login-panel-left {
+        display: none;
+      }
+
+      .login-panel-right {
+        padding: var(--space-8) var(--space-6);
+        justify-content: flex-start;
+        padding-top: var(--space-16);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+
+    <!-- Painel esquerdo — decorativo -->
+    <div class="login-panel-left">
+      <div class="panel-brand">Rede Américas</div>
+
+      <div class="panel-content">
+        <h2 class="panel-headline">
+          Acesso seguro,<br>
+          <em>onde você estiver.</em>
+        </h2>
+        <p class="panel-description">
+          Confirme sua identidade com um código enviado ao seu e-mail
+          e acesse a plataforma com mais segurança.
+        </p>
+      </div>
+
+      <div class="panel-dots">
+        <div class="panel-dot active"></div>
+        <div class="panel-dot"></div>
+        <div class="panel-dot"></div>
+      </div>
+    </div>
+
+    <!-- Painel direito — formulário -->
+    <div class="login-panel-right">
+      <div class="login-form-wrapper">
+
+        <!-- ────── STEP 1: E-mail ────── -->
+        <div class="login-step active" id="stepEmail">
+
+          <div class="login-header">
+            <h1 class="login-title">Bem-vindo</h1>
+            <p class="login-subtitle">Informe seu e-mail para continuar</p>
+          </div>
+
+          <form class="login-form" id="formEmail" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="email">E-mail</label>
+              <input
+                class="form-input"
+                type="email"
+                id="email"
+                name="email"
+                placeholder="voce@redesamericas.com.br"
+                autocomplete="email"
+              >
+              <span class="form-error" id="emailError" style="display:none;">Informe um e-mail válido.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">
+              Continuar
+            </button>
+          </form>
+
+          <div class="login-footer">
+            Ao acessar, você concorda com os<br>
+            <a href="#">Termos de Uso</a> e a <a href="#">Política de Privacidade</a>.
+          </div>
+
+        </div><!-- /stepEmail -->
+
+        <!-- ────── STEP 2: Código OTP ────── -->
+        <div class="login-step" id="stepOtp">
+
+          <div class="login-header">
+            <h1 class="login-title">Verifique seu e-mail</h1>
+            <p class="login-subtitle" id="otpSubtitle">
+              Enviamos um código de 6 dígitos para<br>
+              <strong id="maskedEmail"></strong>
+            </p>
+          </div>
+
+          <form class="login-form" id="formOtp" novalidate>
+
+            <div class="otp-group" id="otpGroup" role="group" aria-label="Código de verificação">
+              <input class="otp-input" type="number" maxlength="1" inputmode="numeric" aria-label="Dígito 1" id="otp1">
+              <input class="otp-input" type="number" maxlength="1" inputmode="numeric" aria-label="Dígito 2" id="otp2">
+              <input class="otp-input" type="number" maxlength="1" inputmode="numeric" aria-label="Dígito 3" id="otp3">
+              <input class="otp-input" type="number" maxlength="1" inputmode="numeric" aria-label="Dígito 4" id="otp4">
+              <input class="otp-input" type="number" maxlength="1" inputmode="numeric" aria-label="Dígito 5" id="otp5">
+              <input class="otp-input" type="number" maxlength="1" inputmode="numeric" aria-label="Dígito 6" id="otp6">
+            </div>
+
+            <span class="otp-error" id="otpError">Digite todos os 6 dígitos para continuar.</span>
+
+            <div class="resend-row">
+              Não recebeu?
+              <button type="button" class="form-link" id="resendBtn">Reenviar código</button>
+              <span class="resend-feedback" id="resendFeedback">Código reenviado!</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">
+              Verificar código
+            </button>
+          </form>
+
+          <div class="back-row">
+            <button type="button" class="form-link" id="backBtn">← Usar outro e-mail</button>
+          </div>
+
+        </div><!-- /stepOtp -->
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ── Elementos ────────────────────────────────────────── */
+    const stepEmail   = document.getElementById('stepEmail');
+    const stepOtp     = document.getElementById('stepOtp');
+    const formEmail   = document.getElementById('formEmail');
+    const formOtp     = document.getElementById('formOtp');
+    const emailInput  = document.getElementById('email');
+    const emailError  = document.getElementById('emailError');
+    const maskedEmail = document.getElementById('maskedEmail');
+    const otpInputs   = Array.from(document.querySelectorAll('.otp-input'));
+    const otpError    = document.getElementById('otpError');
+    const resendBtn   = document.getElementById('resendBtn');
+    const resendFeedback = document.getElementById('resendFeedback');
+    const backBtn     = document.getElementById('backBtn');
+
+    /* ── Helpers ──────────────────────────────────────────── */
+    function maskEmail(email) {
+      const [local, domain] = email.split('@');
+      const visible = local.length > 2 ? local[0] + '***' : '***';
+      return visible + '@' + domain;
+    }
+
+    function goToStep(step) {
+      stepEmail.classList.remove('active');
+      stepOtp.classList.remove('active');
+      step.classList.add('active');
+    }
+
+    function resetOtp() {
+      otpInputs.forEach(inp => {
+        inp.value = '';
+        inp.classList.remove('filled', 'has-error');
+      });
+      otpError.classList.remove('visible');
+    }
+
+    /* ── STEP 1: submit e-mail ────────────────────────────── */
+    formEmail.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = emailInput.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!val || !emailRegex.test(val)) {
+        emailInput.classList.add('has-error');
+        emailError.style.display = 'block';
+        return;
+      }
+
+      emailInput.classList.remove('has-error');
+      emailError.style.display = 'none';
+
+      maskedEmail.textContent = maskEmail(val);
+      resetOtp();
+      goToStep(stepOtp);
+      otpInputs[0].focus();
+    });
+
+    emailInput.addEventListener('input', () => {
+      emailInput.classList.remove('has-error');
+      emailError.style.display = 'none';
+    });
+
+    /* ── OTP: auto-avanço entre campos ───────────────────── */
+    otpInputs.forEach((inp, idx) => {
+      inp.addEventListener('input', (e) => {
+        // Garante apenas 1 dígito
+        const digit = inp.value.replace(/\D/g, '').slice(-1);
+        inp.value = digit;
+
+        if (digit) {
+          inp.classList.add('filled');
+          inp.classList.remove('has-error');
+          if (idx < otpInputs.length - 1) {
+            otpInputs[idx + 1].focus();
+          }
+        } else {
+          inp.classList.remove('filled');
+        }
+
+        otpError.classList.remove('visible');
+      });
+
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !inp.value && idx > 0) {
+          otpInputs[idx - 1].focus();
+          otpInputs[idx - 1].value = '';
+          otpInputs[idx - 1].classList.remove('filled');
+        }
+      });
+
+      inp.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData)
+          .getData('text').replace(/\D/g, '').slice(0, 6);
+        pasted.split('').forEach((char, i) => {
+          if (otpInputs[idx + i]) {
+            otpInputs[idx + i].value = char;
+            otpInputs[idx + i].classList.add('filled');
+          }
+        });
+        const next = idx + pasted.length;
+        if (next < otpInputs.length) otpInputs[next].focus();
+        else otpInputs[otpInputs.length - 1].focus();
+      });
+    });
+
+    /* ── STEP 2: submit OTP ───────────────────────────────── */
+    formOtp.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = otpInputs.map(i => i.value).join('');
+
+      if (code.length < 6) {
+        otpInputs.forEach(inp => {
+          if (!inp.value) inp.classList.add('has-error');
+        });
+        otpError.classList.add('visible');
+        return;
+      }
+
+      window.location.href = 'cadastro-identidade.html';
+    });
+
+    /* ── Reenviar código ──────────────────────────────────── */
+    resendBtn.addEventListener('click', () => {
+      resetOtp();
+      otpInputs[0].focus();
+      resendFeedback.classList.add('visible');
+      resendBtn.disabled = true;
+      setTimeout(() => {
+        resendFeedback.classList.remove('visible');
+        resendBtn.disabled = false;
+      }, 3000);
+    });
+
+    /* ── Voltar ao step 1 ─────────────────────────────────── */
+    backBtn.addEventListener('click', () => {
+      goToStep(stepEmail);
+      emailInput.focus();
+    });
+  </script>
+</body>
+</html>

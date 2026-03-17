@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resultado da Verificação — POC Rede Américas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../assets/styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: var(--space-8) var(--space-4) var(--space-16);
+    }
+
+    .result-card {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* ── Topbar ─────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) 0 var(--space-4);
+    }
+
+    .topbar-brand {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .topbar-brand-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: var(--radius-full);
+      background: var(--color-accent);
+      flex-shrink: 0;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover { color: var(--color-text); }
+
+    /* ── Toggle ─────────────────────────────────────────── */
+    .view-toggle {
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-1);
+      display: flex;
+    }
+
+    .toggle-btn {
+      padding: var(--space-2) var(--space-5);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      font-family: var(--font-body);
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--color-text-secondary);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .toggle-btn.active {
+      background: var(--color-accent);
+      color: #fff;
+    }
+
+    /* ── Painel de identidade ───────────────────────────── */
+    .identity-panel {
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+    }
+
+    .identity-photo-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .identity-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-full);
+      background: var(--color-bg);
+      border: var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: var(--color-text-muted);
+    }
+
+    .identity-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .badge-identity {
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      padding: 2px var(--space-2);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .badge-identity.real {
+      background: var(--color-success-bg);
+      color: var(--color-success);
+      border: 1px solid #b7dfc8;
+    }
+
+    .badge-identity.suspeito {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+      border: 1px solid #f5c0c0;
+    }
+
+    .gauge-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .gauge-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      text-align: center;
+    }
+
+    /* ── Card biometria ─────────────────────────────────── */
+    .bio-card {
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      display: flex;
+      align-items: center;
+      gap: var(--space-5);
+    }
+
+    .bio-face-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+    }
+
+    .bio-face-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-full);
+      background: var(--color-bg);
+      border: var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: var(--color-text-muted);
+    }
+
+    .bio-face-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .bio-scan-ring {
+      position: absolute;
+      inset: -5px;
+      border-radius: var(--radius-full);
+      border: 2px dashed var(--color-border-strong);
+      animation: bioSpin 4s linear infinite;
+    }
+
+    .bio-scan-ring.verified {
+      border-color: var(--color-success);
+      border-style: solid;
+      animation: bioPulse 2s ease-in-out infinite;
+    }
+
+    .bio-scan-ring.failed {
+      border-color: var(--color-danger);
+      border-style: solid;
+      animation: none;
+    }
+
+    @keyframes bioSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes bioPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .bio-info { flex: 1; min-width: 0; }
+
+    .bio-title {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: var(--space-1);
+    }
+
+    .bio-score-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-2);
+      margin-bottom: var(--space-1);
+    }
+
+    .bio-score {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .bio-score.low { color: var(--color-danger); }
+
+    .bio-score-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .bio-desc {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    .bio-badge {
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      padding: var(--space-1) var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .bio-badge.ok {
+      background: var(--color-success-bg);
+      color: var(--color-success);
+      border: 1px solid #b7dfc8;
+    }
+
+    .bio-badge.fail {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+      border: 1px solid #f5c0c0;
+    }
+
+    .bio-badge.none {
+      background: var(--color-neutral-bg);
+      color: var(--color-text-muted);
+      border: var(--border);
+    }
+
+    /* ── Seções de dados colapsáveis ─────────────────────── */
+    .data-section {
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .data-section-header {
+      padding: var(--space-4) var(--space-6);
+      border-bottom: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .data-section-header:hover { background: var(--color-accent-light); }
+
+    .data-section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .section-count {
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-full);
+      background: var(--color-accent-light);
+      color: var(--color-text-secondary);
+    }
+
+    .section-count.danger {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+    }
+
+    .section-chevron {
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+
+    .data-section.collapsed .section-chevron { transform: rotate(-90deg); }
+
+    .data-section-body {
+      max-height: 2000px;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+
+    .data-section.collapsed .data-section-body {
+      max-height: 0;
+    }
+
+    .data-section.collapsed .data-section-header { border-bottom: none; }
+
+    /* ── Linha de crime ───────────────────────────────────── */
+    .crime-row {
+      padding: var(--space-4) var(--space-6);
+      border-bottom: var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+    }
+
+    .crime-row:last-child { border-bottom: none; }
+
+    .crime-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .crime-icon.civil    { background: var(--color-warning-bg); color: var(--color-warning); }
+    .crime-icon.criminal { background: var(--color-danger-bg);  color: var(--color-danger);  }
+    .crime-icon.clean    { background: var(--color-success-bg); color: var(--color-success); }
+
+    .crime-content { flex: 1; min-width: 0; }
+
+    .crime-title {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      margin-bottom: 2px;
+    }
+
+    .crime-meta {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+
+    .crime-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .crime-badge {
+      flex-shrink: 0;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-full);
+    }
+
+    .crime-badge.arquivado { background: var(--color-neutral-bg);  color: var(--color-text-secondary); border: var(--border); }
+    .crime-badge.ativo     { background: var(--color-warning-bg);  color: var(--color-warning);        border: 1px solid #e8c97a; }
+    .crime-badge.condenado { background: var(--color-danger-bg);   color: var(--color-danger);         border: 1px solid #f5c0c0; }
+    .crime-badge.absolvido { background: var(--color-success-bg);  color: var(--color-success);        border: 1px solid #b7dfc8; }
+
+    .data-row {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-6);
+      border-bottom: var(--border);
+    }
+
+    .data-row:last-child { border-bottom: none; }
+
+    .data-check {
+      width: 20px;
+      height: 20px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .data-check.match {
+      background: var(--color-success-bg);
+      color: var(--color-success);
+    }
+
+    .data-check.mismatch {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+    }
+
+    .data-content { flex: 1; min-width: 0; }
+
+    .data-field-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+    }
+
+    .data-field-value {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .data-field-typed {
+      font-size: var(--text-xs);
+      color: var(--color-danger);
+      margin-top: 2px;
+      font-style: italic;
+    }
+
+    .data-confidence {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    .confidence-bar-wrap {
+      width: 32px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .confidence-bar-wrap span {
+      display: block;
+      flex: 1;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .confidence-bar-wrap span.filled-match   { background: var(--color-success); }
+    .confidence-bar-wrap span.filled-mismatch { background: var(--color-danger); }
+    .confidence-bar-wrap span.empty          { background: var(--color-border-strong); }
+
+    .confidence-pct {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .confidence-pct.low { color: var(--color-danger); }
+
+    /* ── JSON view ──────────────────────────────────────── */
+    .json-view {
+      display: none;
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .json-view.active { display: block; }
+    .report-view.hidden { display: none; }
+
+    .json-inner {
+      padding: var(--space-6);
+      font-family: 'Courier New', monospace;
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    .jk { color: #1E3A5F; }
+    .js { color: #2D6A4F; }
+    .jn { color: #92600A; }
+    .jb { color: #9B1C1C; }
+    .jx { color: var(--color-danger); font-weight: 600; }
+
+    /* ── Bottom actions ─────────────────────────────────── */
+    .bottom-actions {
+      display: flex;
+      gap: var(--space-3);
+      padding-top: var(--space-2);
+    }
+
+    .bottom-actions .btn { flex: 1; justify-content: center; }
+
+    .powered-bar { margin-top: var(--space-4); }
+  </style>
+</head>
+<body>
+  <div class="result-card">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <a href="cadastro-identidade.html" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Voltar
+      </a>
+      <div class="topbar-brand">
+        <span class="topbar-brand-dot"></span>
+        Rede Américas
+      </div>
+    </div>
+
+    <!-- Toggle -->
+    <div style="display:flex; justify-content:center;">
+      <div class="view-toggle">
+        <button class="toggle-btn active" id="btnRelatorio">Relatório</button>
+        <button class="toggle-btn" id="btnJson">JSON</button>
+      </div>
+    </div>
+
+    <!-- ── RELATÓRIO VIEW ── -->
+    <div id="reportView" class="report-view">
+
+      <!-- Painel identidade: gauge + foto — preenchido via JS -->
+      <div class="identity-panel">
+        <div class="identity-photo-wrap">
+          <div class="identity-photo" id="resultPhoto">
+            <svg width="40" height="50" viewBox="0 0 40 52" fill="none" aria-hidden="true">
+              <ellipse cx="20" cy="17" rx="11" ry="13" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M2 48c0-9.941 8.059-18 18-18s18 8.059 18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="badge-identity" id="badgeIdentity"></div>
+        </div>
+        <div class="gauge-wrap">
+          <svg id="gaugeSvg" width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-border)" stroke-width="8"
+              stroke-dasharray="251.2" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+            <circle id="gaugeArc" cx="50" cy="50" r="40" fill="none" stroke="var(--color-text)" stroke-width="8"
+              stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+            <text id="gaugeText" x="50" y="46" text-anchor="middle"
+              font-family="'DM Serif Display', Georgia, serif" font-size="18" fill="var(--color-text)">—</text>
+            <text x="50" y="60" text-anchor="middle"
+              font-family="'DM Sans', sans-serif" font-size="7" fill="var(--color-text-secondary)">probabilidade</text>
+          </svg>
+          <p class="gauge-label" id="gaugeLabel">Analisando...</p>
+        </div>
+      </div>
+
+      <!-- Biometria Facial -->
+      <div class="bio-card" id="bioCard">
+        <div class="bio-face-wrap">
+          <div class="bio-face-icon" id="bioFaceIcon">
+            <svg width="24" height="30" viewBox="0 0 40 52" fill="none" aria-hidden="true">
+              <ellipse cx="20" cy="17" rx="11" ry="13" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M2 48c0-9.941 8.059-18 18-18s18 8.059 18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="bio-scan-ring" id="bioScanRing"></div>
+        </div>
+        <div class="bio-info">
+          <div class="bio-title">Verificação Biométrica</div>
+          <div class="bio-score-row">
+            <span class="bio-score" id="bioScore">—</span>
+            <span class="bio-score-label" id="bioScoreLabel"></span>
+          </div>
+          <div class="bio-desc" id="bioDesc">CPF × Biometria Facial</div>
+        </div>
+        <div class="bio-badge" id="bioBadge"></div>
+      </div>
+
+      <!-- Dados principais — preenchido via JS -->
+      <div class="data-section" id="secDados">
+        <div class="data-section-header" data-target="secDados">
+          <span class="data-section-title">
+            Dados principais
+          </span>
+          <svg class="section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="data-section-body">
+          <div id="rowsDadosPrincipais"></div>
+        </div>
+      </div>
+
+      <!-- Endereço — preenchido via JS -->
+      <div class="data-section collapsed" id="secEndereco">
+        <div class="data-section-header" data-target="secEndereco">
+          <span class="data-section-title">Endereço</span>
+          <svg class="section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="data-section-body">
+          <div id="rowsEndereco"></div>
+        </div>
+      </div>
+
+      <!-- Crimes Cíveis -->
+      <div class="data-section collapsed" id="secCivel">
+        <div class="data-section-header" data-target="secCivel">
+          <span class="data-section-title">
+            Crimes Cíveis
+            <span class="section-count" id="cntCivel">2</span>
+          </span>
+          <svg class="section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="data-section-body">
+          <div class="crime-row">
+            <div class="crime-icon civil">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v4l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/></svg>
+            </div>
+            <div class="crime-content">
+              <div class="crime-title">Ação de Cobrança</div>
+              <div class="crime-meta">
+                <span>Proc. 0012345-67.2019.8.21.0001</span>
+                <span>TJRS · 3ª Vara Cível</span>
+                <span>Valor: R$ 4.800,00</span>
+              </div>
+            </div>
+            <span class="crime-badge arquivado">Arquivado</span>
+          </div>
+          <div class="crime-row">
+            <div class="crime-icon civil">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v4l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/></svg>
+            </div>
+            <div class="crime-content">
+              <div class="crime-title">Execução Fiscal</div>
+              <div class="crime-meta">
+                <span>Proc. 5023891-10.2021.8.21.0008</span>
+                <span>TJRS · 1ª Vara de Fazenda</span>
+                <span>Valor: R$ 1.230,50</span>
+              </div>
+            </div>
+            <span class="crime-badge ativo">Ativo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Crimes Criminais -->
+      <div class="data-section collapsed" id="secCriminal">
+        <div class="data-section-header" data-target="secCriminal">
+          <span class="data-section-title">
+            Crimes Criminais
+            <span class="section-count" id="cntCriminal">0</span>
+          </span>
+          <svg class="section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="data-section-body">
+          <div class="crime-row">
+            <div class="crime-icon clean">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="crime-content">
+              <div class="crime-title">Nenhum registro criminal encontrado</div>
+              <div class="crime-meta">
+                <span>Consulta realizada nas bases estaduais e federais</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="bottom-actions">
+        <a href="cadastro-identidade.html" class="btn btn-secondary">Voltar</a>
+        <button class="btn btn-primary" id="btnProsseguir">Prosseguir</button>
+      </div>
+
+    </div><!-- /reportView -->
+
+    <!-- ── JSON VIEW ── -->
+    <div id="jsonView" class="json-view">
+      <div class="json-inner" id="jsonContent"></div>
+    </div>
+
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════
+       DADOS VERDADEIROS — fonte: Receita Federal (simulado)
+    ═══════════════════════════════════════════════════════ */
+    const REAL = {
+      nome:           'Leopoldo Becker',
+      cpf:            '21960702890',          // só dígitos
+      sexo:           'M',
+      dataNascimento: '1981-04-04',
+      nacionalidade:  'brasileiro',
+      nomeMae:        'Erica Becker',
+      nomePai:        'Antônio Carlos Cordeiro',
+      logradouro:     'Rua Domingos Paiva, 152',
+      cep:            '90040190',             // só dígitos
+      cidade:         'Porto Alegre',
+      estado:         'RS',
+    };
+
+    /* ── Helpers ──────────────────────────────────────────── */
+    function norm(str) {
+      return (str || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
+    }
+
+    function onlyDigits(str) {
+      return (str || '').replace(/\D/g, '');
+    }
+
+    function match(typed, real, digitsOnly) {
+      if (!typed) return false;
+      if (digitsOnly) return onlyDigits(typed) === onlyDigits(real);
+      return norm(typed) === norm(real);
+    }
+
+    /* ── Lê dados digitados ───────────────────────────────── */
+    let typed = {};
+    try { typed = JSON.parse(sessionStorage.getItem('cadastro') || '{}'); } catch(e) {}
+
+    /* ── Foto capturada ───────────────────────────────────── */
+    const fotoSalva = sessionStorage.getItem('fotoCapturada');
+    if (fotoSalva) {
+      const photoEl = document.getElementById('resultPhoto');
+      photoEl.innerHTML = `<img src="${fotoSalva}" alt="Foto capturada" style="width:100%;height:100%;object-fit:cover;">`;
+    }
+
+    /* ── Comparações ──────────────────────────────────────── */
+    const fields = {
+      nome:          { label: 'Nome',              real: REAL.nome,          typed: typed.nome,          digits: false, conf: true  },
+      cpf:           { label: 'CPF',               real: REAL.cpf,           typed: typed.cpf,           digits: true,  conf: false },
+      dataNascimento:{ label: 'Data de nascimento', real: REAL.dataNascimento, typed: typed.dataNascimento, digits: false, conf: false },
+      sexo:          { label: 'Sexo',              real: REAL.sexo,          typed: typed.sexo,          digits: false, conf: false },
+      nacionalidade: { label: 'Nacionalidade',     real: REAL.nacionalidade,  typed: typed.nacionalidade, digits: false, conf: false },
+      nomeMae:       { label: 'Nome da Mãe',       real: REAL.nomeMae,       typed: typed.nomeMae,       digits: false, conf: true  },
+      nomePai:       { label: 'Nome do Pai',       real: REAL.nomePai,       typed: typed.nomePai,       digits: false, conf: true  },
+    };
+
+    const fieldsEnd = {
+      logradouro:    { label: 'Logradouro',  real: REAL.logradouro,  typed: typed.logradouro, digits: false, conf: true  },
+      cep:           { label: 'CEP',         real: REAL.cep,         typed: typed.cep,        digits: true,  conf: true  },
+      cidade:        { label: 'Município',   real: REAL.cidade,      typed: typed.cidade,     digits: false, conf: true  },
+      estado:        { label: 'UF',          real: REAL.estado,      typed: typed.estado,     digits: false, conf: false },
+    };
+
+    /* ── Calcula match ────────────────────────────────────── */
+    function computeMatches(obj) {
+      return Object.values(obj).map(f => ({
+        ...f,
+        ok: match(f.typed, f.real, f.digits),
+      }));
+    }
+
+    const mainMatches = computeMatches(fields);
+    const endMatches  = computeMatches(fieldsEnd);
+    const allMatches  = [...mainMatches, ...endMatches];
+    const filled      = allMatches.filter(f => f.typed);
+    const matchCount  = filled.filter(f => f.ok).length;
+    const pct         = filled.length > 0 ? Math.round((matchCount / filled.length) * 100) : 0;
+
+    /* ── Biometria Facial (depois de pct calculado) ───────── */
+    const bioScore     = document.getElementById('bioScore');
+    const bioScoreLabel= document.getElementById('bioScoreLabel');
+    const bioDesc      = document.getElementById('bioDesc');
+    const bioBadge     = document.getElementById('bioBadge');
+    const bioRing      = document.getElementById('bioScanRing');
+    const bioFaceIcon  = document.getElementById('bioFaceIcon');
+
+    if (fotoSalva) {
+      const bioMatchScore = pct >= 70
+        ? (94 + Math.floor(Math.random() * 6))
+        : (18 + Math.floor(Math.random() * 25));
+      const bioOk = bioMatchScore >= 70;
+
+      bioScore.textContent      = bioMatchScore + '%';
+      bioScoreLabel.textContent = 'correspondência';
+      bioDesc.textContent       = 'Foto × CPF ' + REAL.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+      bioFaceIcon.innerHTML     = `<img src="${fotoSalva}" alt="Biometria">`;
+
+      if (bioOk) {
+        bioScore.classList.remove('low');
+        bioRing.className  = 'bio-scan-ring verified';
+        bioBadge.className = 'bio-badge ok';
+        bioBadge.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Confirmado`;
+      } else {
+        bioScore.classList.add('low');
+        bioRing.className  = 'bio-scan-ring failed';
+        bioBadge.className = 'bio-badge fail';
+        bioBadge.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Divergente`;
+      }
+    } else {
+      bioScore.textContent = 'N/A';
+      bioDesc.textContent  = 'Nenhuma foto capturada';
+      bioRing.className    = 'bio-scan-ring';
+      bioBadge.className   = 'bio-badge none';
+      bioBadge.innerHTML   = 'Não verificado';
+    }
+
+    /* ── Formata valor display ────────────────────────────── */
+    function displayReal(key, val) {
+      if (key === 'cpf')          return val.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+      if (key === 'dataNascimento') {
+        const [y,m,d] = val.split('-');
+        return `${d}/${m}/${y}`;
+      }
+      if (key === 'sexo') return val === 'M' ? 'Masculino' : val === 'F' ? 'Feminino' : val;
+      if (key === 'cep') return val.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+      return val;
+    }
+
+    /* ── Cria data-row HTML ───────────────────────────────── */
+    function makeRow(key, f) {
+      const checkIcon = f.ok
+        ? `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        : `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+
+      const checkClass = f.ok ? 'match' : 'mismatch';
+      const typedNote  = (!f.ok && f.typed)
+        ? `<div class="data-field-typed">Digitado: ${f.typed}</div>`
+        : '';
+
+      let confidenceHtml = '';
+      if (f.conf) {
+        const pctF = f.ok ? 100 : 0;
+        const bars = f.ok
+          ? `<span class="filled-match"></span><span class="filled-match"></span><span class="filled-match"></span><span class="filled-match"></span>`
+          : `<span class="filled-mismatch"></span><span class="empty"></span><span class="empty"></span><span class="empty"></span>`;
+        const pctClass = f.ok ? '' : 'low';
+        confidenceHtml = `<div class="data-confidence">
+          <div class="confidence-bar-wrap">${bars}</div>
+          <span class="confidence-pct ${pctClass}">${pctF}%</span>
+        </div>`;
+      }
+
+      return `<div class="data-row">
+        <div class="data-check ${checkClass}">${checkIcon}</div>
+        <div class="data-content">
+          <div class="data-field-label">${f.label}</div>
+          <div class="data-field-value">${displayReal(key, f.real)}</div>
+          ${typedNote}
+        </div>
+        ${confidenceHtml}
+      </div>`;
+    }
+
+    /* ── Renderiza linhas ─────────────────────────────────── */
+    document.getElementById('rowsDadosPrincipais').innerHTML =
+      Object.entries(fields).map(([k,f]) => makeRow(k, {...f, ok: match(f.typed, f.real, f.digits)})).join('');
+
+    document.getElementById('rowsEndereco').innerHTML =
+      Object.entries(fieldsEnd).map(([k,f]) => makeRow(k, {...f, ok: match(f.typed, f.real, f.digits)})).join('');
+
+    /* ── Atualiza gauge ───────────────────────────────────── */
+    const isReal    = pct >= 70;
+    const gaugeArc  = document.getElementById('gaugeArc');
+    const gaugeText = document.getElementById('gaugeText');
+    const gaugeLabel= document.getElementById('gaugeLabel');
+    const badge     = document.getElementById('badgeIdentity');
+
+    const circumference = 251.2;
+    const offset = circumference - (circumference * pct / 100);
+    gaugeArc.style.strokeDashoffset = offset;
+    gaugeArc.style.stroke = isReal ? 'var(--color-text)' : 'var(--color-danger)';
+    gaugeText.textContent = pct + '%';
+    gaugeText.setAttribute('fill', isReal ? 'var(--color-text)' : 'var(--color-danger)');
+
+    if (pct >= 90) {
+      gaugeLabel.textContent = 'Altíssima probabilidade';
+    } else if (pct >= 70) {
+      gaugeLabel.textContent = 'Alta probabilidade';
+    } else if (pct >= 40) {
+      gaugeLabel.textContent = 'Baixa probabilidade';
+      gaugeLabel.style.color = 'var(--color-danger)';
+    } else {
+      gaugeLabel.textContent = 'Não verificado';
+      gaugeLabel.style.color = 'var(--color-danger)';
+    }
+
+    if (isReal) {
+      badge.className = 'badge-identity real';
+      badge.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Real`;
+    } else {
+      badge.className = 'badge-identity suspeito';
+      badge.innerHTML = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Suspeito`;
+    }
+
+    /* ── JSON dinâmico ────────────────────────────────────── */
+    function buildJsonHtml() {
+      const lines = [];
+      const push = (indent, content) => lines.push(' '.repeat(indent) + content);
+
+      push(0, `<span class="jk">{`);
+
+      // identificacao
+      push(2, `<span class="jk">"identificacao"</span>: {`);
+      push(4, `<span class="jk">"probabilidade"</span>: <span class="jn">${pct}</span>,`);
+      push(4, `<span class="jk">"classificacao"</span>: <span class="js">"${pct >= 90 ? 'altissima_probabilidade' : pct >= 70 ? 'alta_probabilidade' : pct >= 40 ? 'baixa_probabilidade' : 'nao_verificado'}"</span>,`);
+      push(4, `<span class="jk">"real"</span>: <span class="jb">${isReal}</span>`);
+      push(2, `},`);
+
+      // biometria
+      const bioScoreVal = document.getElementById('bioScore').textContent;
+      const bioOkVal    = document.getElementById('bioBadge').classList.contains('ok');
+      push(2, `<span class="jk">"biometria_facial"</span>: {`);
+      push(4, `<span class="jk">"foto_capturada"</span>: <span class="jb">${fotoSalva ? 'true' : 'false'}</span>,`);
+      push(4, `<span class="jk">"correspondencia"</span>: <span class="js">"${bioScoreVal}"</span>,`);
+      push(4, `<span class="jk">"resultado"</span>: <span class="js">"${fotoSalva ? (bioOkVal ? 'confirmado' : 'divergente') : 'nao_verificado'}"</span>`);
+      push(2, `},`);
+
+      // dados principais
+      push(2, `<span class="jk">"dados_principais"</span>: {`);
+      const mainEntries = Object.entries(fields);
+      mainEntries.forEach(([k, f], i) => {
+        const ok        = match(f.typed, f.real, f.digits);
+        const val       = displayReal(k, f.real);
+        const comma     = i < mainEntries.length - 1 ? ',' : '';
+        const valClass  = ok ? 'js' : 'jx';
+        const typedPart = (!ok && f.typed) ? ` <span style="color:var(--color-text-muted)">/* digitado: ${f.typed} */</span>` : '';
+        push(4, `<span class="jk">"${k}"</span>: <span class="${valClass}">"${val}"</span>${typedPart}${comma}`);
+      });
+      push(2, `},`);
+
+      // endereco
+      push(2, `<span class="jk">"endereco"</span>: {`);
+      const endEntries = Object.entries(fieldsEnd);
+      endEntries.forEach(([k, f], i) => {
+        const ok        = match(f.typed, f.real, f.digits);
+        const val       = displayReal(k, f.real);
+        const comma     = i < endEntries.length - 1 ? ',' : '';
+        const valClass  = ok ? 'js' : 'jx';
+        const typedPart = (!ok && f.typed) ? ` <span style="color:var(--color-text-muted)">/* digitado: ${f.typed} */</span>` : '';
+        push(4, `<span class="jk">"${k}"</span>: <span class="${valClass}">"${val}"</span>${typedPart}${comma}`);
+      });
+      push(2, `},`);
+
+      // crimes civeis
+      push(2, `<span class="jk">"crimes_civeis"</span>: [`);
+      push(4, `{`);
+      push(6, `<span class="jk">"tipo"</span>: <span class="js">"Ação de Cobrança"</span>,`);
+      push(6, `<span class="jk">"processo"</span>: <span class="js">"0012345-67.2019.8.21.0001"</span>,`);
+      push(6, `<span class="jk">"tribunal"</span>: <span class="js">"TJRS · 3ª Vara Cível"</span>,`);
+      push(6, `<span class="jk">"valor"</span>: <span class="jn">4800.00</span>,`);
+      push(6, `<span class="jk">"status"</span>: <span class="js">"arquivado"</span>`);
+      push(4, `},`);
+      push(4, `{`);
+      push(6, `<span class="jk">"tipo"</span>: <span class="js">"Execução Fiscal"</span>,`);
+      push(6, `<span class="jk">"processo"</span>: <span class="js">"5023891-10.2021.8.21.0008"</span>,`);
+      push(6, `<span class="jk">"tribunal"</span>: <span class="js">"TJRS · 1ª Vara de Fazenda"</span>,`);
+      push(6, `<span class="jk">"valor"</span>: <span class="jn">1230.50</span>,`);
+      push(6, `<span class="jk">"status"</span>: <span class="js">"ativo"</span>`);
+      push(4, `}`);
+      push(2, `],`);
+
+      // crimes criminais
+      push(2, `<span class="jk">"crimes_criminais"</span>: [],`);
+
+      // score geral
+      push(2, `<span class="jk">"score_geral"</span>: {`);
+      push(4, `<span class="jk">"campos_verificados"</span>: <span class="jn">${filled.length}</span>,`);
+      push(4, `<span class="jk">"campos_conformes"</span>: <span class="jn">${matchCount}</span>,`);
+      push(4, `<span class="jk">"percentual"</span>: <span class="jn">${pct}</span>`);
+      push(2, `}`);
+
+      push(0, `}`);
+
+      return lines.join('\n');
+    }
+
+    document.getElementById('jsonContent').innerHTML = buildJsonHtml();
+
+    /* ── Toggle ───────────────────────────────────────────── */
+    /* ── Toggle seções colapsáveis ───────────────────────── */
+    document.querySelectorAll('.data-section-header[data-target]').forEach(header => {
+      header.addEventListener('click', () => {
+        const section = document.getElementById(header.dataset.target);
+        section.classList.toggle('collapsed');
+      });
+    });
+
+    document.getElementById('btnRelatorio').addEventListener('click', () => {
+      document.getElementById('btnRelatorio').classList.add('active');
+      document.getElementById('btnJson').classList.remove('active');
+      document.getElementById('reportView').classList.remove('hidden');
+      document.getElementById('jsonView').classList.remove('active');
+    });
+
+    document.getElementById('btnJson').addEventListener('click', () => {
+      document.getElementById('btnJson').classList.add('active');
+      document.getElementById('btnRelatorio').classList.remove('active');
+      document.getElementById('reportView').classList.add('hidden');
+      document.getElementById('jsonView').classList.add('active');
+    });
+  </script>
+</body>
+</html>
