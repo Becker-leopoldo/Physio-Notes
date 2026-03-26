@@ -1,0 +1,9 @@
+{
+  "name": "Physio Notes",
+  "short_name": "PhysioNotes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F8F6",
+  "theme_color": "#1A1A1A",
+  "icons": []
+}
