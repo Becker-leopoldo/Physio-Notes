@@ -91,6 +91,14 @@ class PacienteUpdate(BaseModel):
     anamnese: str | None = None
 
 
+@app.delete("/pacientes/{paciente_id}", status_code=204)
+def deletar_paciente(paciente_id: int):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    db.deletar_paciente(paciente_id)
+
+
 @app.put("/pacientes/{paciente_id}")
 def atualizar_paciente(paciente_id: int, body: PacienteUpdate):
     paciente = db.get_paciente(paciente_id)
@@ -217,13 +225,14 @@ def cancelar_sessao(sessao_id: int):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
-    if sessao["status"] != "aberta":
-        raise HTTPException(status_code=400, detail="Só é possível cancelar sessões abertas")
     chunks = db.get_chunks_sessao(sessao_id)
-    if chunks:
-        raise HTTPException(status_code=400, detail="Sessão já possui áudios. Use encerrar em vez de cancelar.")
-    db.cancelar_sessao(sessao_id)
-    return {"status": "cancelada", "sessao_id": sessao_id}
+    # Sessão aberta sem áudio → cancela (hard delete)
+    if sessao["status"] == "aberta" and not chunks:
+        db.cancelar_sessao(sessao_id)
+        return {"status": "cancelada", "sessao_id": sessao_id}
+    # Qualquer outro caso → soft delete
+    db.deletar_sessao(sessao_id)
+    return {"status": "deletada", "sessao_id": sessao_id}
 
 
 @app.post("/sessoes/{sessao_id}/encerrar")

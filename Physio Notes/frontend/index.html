@@ -329,6 +329,7 @@
       text-overflow: ellipsis;
     }
     .list-item-arrow { color: var(--color-text-muted); flex-shrink: 0; }
+    .btn-delete-inline:hover { color: var(--color-danger) !important; background: var(--color-danger-bg) !important; }
 
     /* ---- Modals ---- */
     .modal-overlay {
@@ -1093,6 +1094,27 @@
     return e;
   }
 
+  // Confirmação inline de exclusão — substitui alert() por banner discreto
+  function confirmarDeletar(mensagem, onConfirm) {
+    // Remove confirmação anterior se existir
+    document.getElementById('_confirm-bar')?.remove();
+    const bar = document.createElement('div');
+    bar.id = '_confirm-bar';
+    bar.style.cssText = `position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);
+      background:var(--color-text);color:#fff;border-radius:var(--radius-lg);
+      padding:var(--space-4) var(--space-5);display:flex;align-items:center;gap:var(--space-4);
+      box-shadow:var(--shadow-lg);z-index:9999;font-size:var(--text-sm);max-width:90vw;`;
+    bar.innerHTML = `
+      <span style="flex:1;">${mensagem}</span>
+      <button id="_confirm-yes" style="background:var(--color-danger);color:#fff;border:none;border-radius:var(--radius-sm);padding:6px 14px;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-body);">Excluir</button>
+      <button id="_confirm-no" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:var(--radius-sm);padding:6px 14px;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-body);">Cancelar</button>`;
+    document.body.appendChild(bar);
+    const close = () => bar.remove();
+    document.getElementById('_confirm-yes').addEventListener('click', async () => { close(); await onConfirm(); });
+    document.getElementById('_confirm-no').addEventListener('click', close);
+    setTimeout(close, 8000); // auto-fecha após 8s
+  }
+
   function showError(containerId, msg) {
     const c = document.getElementById(containerId);
     c.innerHTML = '';
@@ -1144,8 +1166,25 @@
             <div class="list-item-title">${p.nome}</div>
             <div class="list-item-subtitle">${p.data_nascimento ? 'Nasc. ' + formatDate(p.data_nascimento) : 'Data de nascimento não informada'}</div>
           </div>
+          <button class="btn-delete-inline" data-id="${p.id}" title="Excluir paciente" style="margin-left:auto;flex-shrink:0;background:none;border:none;cursor:pointer;padding:var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
           <svg class="list-item-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-        item.addEventListener('click', () => openPaciente(p.id));
+        item.querySelector('.list-item-avatar, .list-item-content, .list-item-arrow').parentElement;
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-delete-inline')) return;
+          openPaciente(p.id);
+        });
+        item.querySelector('.btn-delete-inline').addEventListener('click', (e) => {
+          e.stopPropagation();
+          confirmarDeletar(
+            `Excluir "${p.nome}"? Todas as sessões também serão removidas da lista.`,
+            async () => {
+              await apiFetch(`/pacientes/${p.id}`, { method: 'DELETE' });
+              loadPacientes();
+            }
+          );
+        });
         container.appendChild(item);
       });
     } catch (e) {
@@ -1538,12 +1577,28 @@
       const card = el('div', { className: 'session-card', style: 'margin-bottom: var(--space-3);' });
       const queixa = s.consolidado?.queixa || 'Sem queixa registrada';
       card.innerHTML = `
-        <div class="session-card-header">
+        <div class="session-card-header" style="display:flex;align-items:center;gap:var(--space-2);">
           <span class="session-card-date">${formatDate(s.data)}</span>
           <span class="badge badge-neutral">Encerrada</span>
+          <button class="btn-delete-inline" data-sessao-id="${s.id}" title="Remover sessão" style="margin-left:auto;background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
         <div class="session-card-queixa">${queixa}</div>`;
-      card.addEventListener('click', () => openSessaoDetalhe(s.id));
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-delete-inline')) return;
+        openSessaoDetalhe(s.id);
+      });
+      card.querySelector('.btn-delete-inline').addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmarDeletar(
+          `Remover sessão de ${formatDate(s.data)}?`,
+          async () => {
+            await apiFetch(`/sessoes/${s.id}`, { method: 'DELETE' });
+            openPaciente(currentPacienteId);
+          }
+        );
+      });
       list.appendChild(card);
     });
   }

@@ -72,6 +72,13 @@ def _migrate():
                 criado_em     TEXT    NOT NULL
             )
         """)
+
+        # Soft delete
+        for tabela in ("paciente", "sessao"):
+            cols_t = [r[1] for r in conn.execute(f"PRAGMA table_info({tabela})").fetchall()]
+            if "deletado_em" not in cols_t:
+                conn.execute(f"ALTER TABLE {tabela} ADD COLUMN deletado_em TEXT")
+
         conn.commit()
 
 
@@ -107,8 +114,17 @@ def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None,
 
 def listar_pacientes() -> list[dict]:
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM paciente ORDER BY nome COLLATE NOCASE").fetchall()
+        rows = conn.execute("SELECT * FROM paciente WHERE deletado_em IS NULL ORDER BY nome COLLATE NOCASE").fetchall()
         return [_row_to_dict(r) for r in rows]
+
+
+def deletar_paciente(paciente_id: int):
+    """Soft delete: marca paciente e todas as suas sessões como deletados."""
+    now = _now()
+    with get_conn() as conn:
+        conn.execute("UPDATE paciente SET deletado_em = ? WHERE id = ?", (now, paciente_id))
+        conn.execute("UPDATE sessao SET deletado_em = ? WHERE paciente_id = ? AND deletado_em IS NULL", (now, paciente_id))
+        conn.commit()
 
 
 def get_paciente(paciente_id: int) -> dict | None:
@@ -138,10 +154,17 @@ def get_sessao(sessao_id: int) -> dict | None:
         return _row_to_dict(row)
 
 
+def deletar_sessao(sessao_id: int):
+    """Soft delete de uma sessão."""
+    with get_conn() as conn:
+        conn.execute("UPDATE sessao SET deletado_em = ? WHERE id = ?", (_now(), sessao_id))
+        conn.commit()
+
+
 def get_sessoes_paciente(paciente_id: int) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT * FROM sessao WHERE paciente_id = ? ORDER BY criado_em DESC",
+            "SELECT * FROM sessao WHERE paciente_id = ? AND deletado_em IS NULL ORDER BY criado_em DESC",
             (paciente_id,),
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
@@ -150,7 +173,7 @@ def get_sessoes_paciente(paciente_id: int) -> list[dict]:
 def sessao_aberta_do_paciente(paciente_id: int) -> dict | None:
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT * FROM sessao WHERE paciente_id = ? AND status = 'aberta' ORDER BY criado_em DESC LIMIT 1",
+            "SELECT * FROM sessao WHERE paciente_id = ? AND status = 'aberta' AND deletado_em IS NULL ORDER BY criado_em DESC LIMIT 1",
             (paciente_id,),
         ).fetchone()
         return _row_to_dict(row)
@@ -241,7 +264,7 @@ def get_historico_paciente(paciente_id: int) -> list[dict]:
                       sc.proximos_passos, sc.criado_em AS consolidado_criado_em
                FROM sessao s
                LEFT JOIN sessao_consolidada sc ON sc.sessao_id = s.id
-               WHERE s.paciente_id = ?
+               WHERE s.paciente_id = ? AND s.deletado_em IS NULL
                ORDER BY s.criado_em DESC""",
             (paciente_id,),
         ).fetchall()
