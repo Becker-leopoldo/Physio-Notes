@@ -35,28 +35,26 @@ def _registrar(tipo: str, message) -> None:
 async def consolidar_sessao(transcricoes: list[str]) -> dict:
     """
     Recebe lista de transcrições da sessão de fisioterapia.
-    Retorna dict com: queixa, evolucao, conduta, observacoes, proximos_passos.
+    Retorna dict com: nota (nota clínica profissional em texto corrido).
     """
     transcricao_completa = "\n\n".join(
         f"[Trecho {i + 1}]: {t}" for i, t in enumerate(transcricoes)
     )
 
-    prompt = f"""Você é um assistente especializado em fisioterapia. A seguir estão as transcrições de áudio de uma sessão de fisioterapia.
+    prompt = f"""Você é um assistente clínico de fisioterapia. A seguir estão transcrições brutas de áudio de uma sessão — a fala é informal, coloquial, com hesitações e repetições normais de conversa.
 
-Analise o conteúdo e extraia as informações clínicas relevantes no seguinte formato JSON:
+Sua tarefa: transformar essa fala informal em uma nota clínica profissional em texto corrido, em português.
 
-{{
-  "queixa": "Queixa principal do paciente nesta sessão (o que o paciente relatou sentir, suas dores e limitações)",
-  "evolucao": "Evolução clínica observada em relação às sessões anteriores ou ao início do tratamento",
-  "conduta": "Condutas e técnicas aplicadas durante a sessão (exercícios, manobras, terapias realizadas)",
-  "observacoes": "Observações relevantes do fisioterapeuta sobre o paciente, comportamento, aderência, postura etc.",
-  "proximos_passos": "Orientações para casa, próximos exercícios, metas para próximas sessões"
-}}
+Regras:
+- Elimine vícios de linguagem ("é", "aí", "né", "tipo", "então"), repetições e hesitações
+- Escreva em terceira pessoa (ex: "Paciente relata...", "Foi realizado...", "Observou-se...")
+- Use terminologia fisioterapêutica adequada quando possível
+- Mantenha TODOS os fatos clínicos mencionados, mesmo que ditos informalmente
+- Texto corrido, sem títulos, sem listas, sem formatação
 
-Se alguma informação não estiver presente na transcrição, use null para esse campo.
-Responda APENAS com o JSON válido, sem texto adicional.
+Responda APENAS com o texto da nota clínica.
 
-Transcrições da sessão:
+Transcrições:
 {transcricao_completa}"""
 
     message = await client.messages.create(
@@ -66,30 +64,8 @@ Transcrições da sessão:
     )
     _registrar("consolidar_sessao", message)
 
-    raw_text = message.content[0].text.strip()
-
-    # Extrai JSON mesmo que venha envolto em markdown code block
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
-    if json_match:
-        raw_text = json_match.group(0)
-
-    try:
-        result = json.loads(raw_text)
-    except json.JSONDecodeError:
-        # Fallback seguro se Claude não retornar JSON válido
-        result = {
-            "queixa": None,
-            "evolucao": None,
-            "conduta": raw_text,
-            "observacoes": None,
-            "proximos_passos": None,
-        }
-
-    # Garante que todas as chaves esperadas estejam presentes
-    for chave in ("queixa", "evolucao", "conduta", "observacoes", "proximos_passos"):
-        result.setdefault(chave, None)
-
-    return result
+    nota = message.content[0].text.strip()
+    return {"nota": nota}
 
 
 def _bloco_anamnese(paciente: dict | None) -> str:
@@ -98,45 +74,55 @@ def _bloco_anamnese(paciente: dict | None) -> str:
     return f"ANAMNESE INICIAL (registrada no cadastro do paciente):\n{paciente['anamnese']}\n\n---\n\n"
 
 
-async def resumir_historico(historico: list[dict], paciente: dict | None = None) -> str:
+async def resumir_historico(
+    historico: list[dict],
+    paciente: dict | None = None,
+    documentos: list[dict] | None = None,
+) -> str:
     """
-    Recebe lista de sessões consolidadas do paciente.
-    Retorna resumo narrativo em texto corrido, em português.
+    Recebe lista de sessões consolidadas, dados do paciente e documentos (PDFs).
+    Retorna relatório clínico formal baseado EXCLUSIVAMENTE nos dados fornecidos.
     """
     anamnese_bloco = _bloco_anamnese(paciente)
-    if not historico and not anamnese_bloco:
+    if not historico and not anamnese_bloco and not documentos:
         return "Nenhum histórico de sessões encontrado para este paciente."
 
     sessoes_texto = []
     for i, s in enumerate(historico):
         partes = [f"Sessão {i + 1} — {s.get('data', 'data não informada')}"]
-        if s.get("queixa"):
-            partes.append(f"Queixa: {s['queixa']}")
-        if s.get("evolucao"):
-            partes.append(f"Evolução: {s['evolucao']}")
-        if s.get("conduta"):
-            partes.append(f"Conduta: {s['conduta']}")
-        if s.get("observacoes") or s.get("consolidado_observacoes"):
-            partes.append(f"Observações: {s.get('observacoes') or s.get('consolidado_observacoes')}")
-        if s.get("proximos_passos"):
-            partes.append(f"Próximos passos: {s['proximos_passos']}")
+        nota = s.get("nota") or s.get("conduta") or s.get("queixa")
+        if nota:
+            partes.append(nota)
         sessoes_texto.append("\n".join(partes))
 
-    historico_formatado = "\n\n---\n\n".join(sessoes_texto)
+    historico_formatado = "\n\n---\n\n".join(sessoes_texto) if sessoes_texto else "Nenhuma sessão encerrada registrada."
 
-    prompt = f"""Você é um assistente clínico especializado em fisioterapia.
+    docs_bloco = ""
+    if documentos:
+        docs_partes = []
+        for d in documentos:
+            if d.get("resumo_ia"):
+                docs_partes.append(f"Documento: {d.get('nome_original', 'sem nome')}\n{d['resumo_ia']}")
+        if docs_partes:
+            docs_bloco = "DOCUMENTOS CLÍNICOS ANEXADOS (laudos, exames, prontuários):\n" + "\n\n---\n\n".join(docs_partes) + "\n\n"
 
-Com base nos dados abaixo, escreva um resumo narrativo completo do paciente em português.
-O resumo deve:
-- Considerar a anamnese inicial como ponto de partida do tratamento
-- Descrever a evolução geral do paciente ao longo das sessões
-- Destacar os principais problemas tratados
-- Mencionar as condutas mais utilizadas
-- Indicar tendências de melhora ou dificuldades persistentes
-- Ser escrito em linguagem clínica, mas clara e acessível
-- Ter formato de texto corrido (parágrafos), sem bullet points
+    prompt = f"""Você é um fisioterapeuta clínico elaborando um relatório formal para o CREFITO.
 
-{anamnese_bloco}Histórico de sessões:
+REGRAS INVIOLÁVEIS:
+- Baseie-se EXCLUSIVAMENTE nas informações fornecidas abaixo
+- Não invente, não infira, não suponha nada que não esteja explicitamente nos dados
+- Se uma informação não constar nos dados, não a mencione
+- Use linguagem técnica formal, em terceira pessoa
+- Texto corrido em parágrafos, sem bullet points, sem títulos internos
+
+O relatório deve cobrir (apenas com base nos dados disponíveis):
+1. Identificação e histórico inicial do paciente
+2. Evolução clínica ao longo das sessões
+3. Condutas e técnicas aplicadas
+4. Achados de exames ou laudos (se houver documentos)
+5. Situação atual e tendências observadas
+
+{anamnese_bloco}{docs_bloco}NOTAS DE SESSÕES:
 {historico_formatado}"""
 
     message = await client.messages.create(
@@ -204,16 +190,9 @@ async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dic
     sessoes_texto = []
     for i, s in enumerate(historico):
         partes = [f"Sessão {i + 1} — {s.get('data', 'data não informada')} (status: {s.get('status', '')})"]
-        if s.get("queixa"):
-            partes.append(f"Queixa: {s['queixa']}")
-        if s.get("evolucao"):
-            partes.append(f"Evolução: {s['evolucao']}")
-        if s.get("conduta"):
-            partes.append(f"Conduta: {s['conduta']}")
-        if s.get("observacoes") or s.get("consolidado_observacoes"):
-            partes.append(f"Observações: {s.get('observacoes') or s.get('consolidado_observacoes')}")
-        if s.get("proximos_passos"):
-            partes.append(f"Próximos passos: {s['proximos_passos']}")
+        nota = s.get("nota") or s.get("conduta") or s.get("queixa")
+        if nota:
+            partes.append(nota)
         sessoes_texto.append("\n".join(partes))
 
     historico_formatado = "\n\n---\n\n".join(sessoes_texto)
@@ -237,5 +216,31 @@ Responda em português."""
         messages=[{"role": "user", "content": prompt}],
     )
     _registrar("responder_pergunta", message)
+
+    return message.content[0].text.strip()
+
+
+async def resumir_documento(texto: str) -> str:
+    """Gera resumo clínico de um documento PDF enviado pelo fisioterapeuta."""
+    prompt = f"""Você é um assistente clínico especializado em fisioterapia.
+O documento abaixo é um prontuário, laudo, exame ou relatório médico de um paciente.
+
+Faça um resumo clínico objetivo em português com:
+- Diagnóstico ou queixa principal mencionada
+- Achados clínicos relevantes (exames, laudos, medidas)
+- Recomendações ou condutas indicadas no documento
+- Qualquer informação que seja relevante para o tratamento fisioterapêutico
+
+Seja direto e use linguagem clínica. Se o documento não contiver informações clínicas relevantes, informe isso.
+
+Documento:
+{texto[:12000]}"""  # limita para não exceder contexto
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("resumir_documento", message)
 
     return message.content[0].text.strip()

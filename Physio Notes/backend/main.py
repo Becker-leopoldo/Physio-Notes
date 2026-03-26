@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import database as db
@@ -299,9 +300,10 @@ async def resumo_paciente(paciente_id: int):
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
 
     historico = db.get_historico_paciente(paciente_id)
+    documentos = db.get_documentos_paciente(paciente_id)
 
     try:
-        resumo = await ai.resumir_historico(historico, paciente)
+        resumo = await ai.resumir_historico(historico, paciente, documentos)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao gerar resumo: {str(e)}")
 
@@ -325,6 +327,73 @@ async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody):
         raise HTTPException(status_code=502, detail=f"Erro ao consultar IA: {str(e)}")
 
     return {"pergunta": body.pergunta, "resposta": resposta}
+
+
+# ---------- Documentos ----------
+
+@app.post("/pacientes/{paciente_id}/documentos", status_code=201)
+async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...)):
+    import io, uuid
+    from pypdf import PdfReader
+
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    if not arquivo.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos")
+
+    conteudo = await arquivo.read()
+
+    # Extrai texto do PDF
+    try:
+        reader = PdfReader(io.BytesIO(conteudo))
+        texto = "\n\n".join(p.extract_text() or "" for p in reader.pages).strip()
+    except Exception:
+        texto = ""
+
+    # Salva arquivo em disco
+    nome_arquivo = f"{uuid.uuid4().hex}.pdf"
+    caminho = os.path.join(db.DOCS_DIR, nome_arquivo)
+    with open(caminho, "wb") as f:
+        f.write(conteudo)
+
+    # Resumo IA (opcional — não bloqueia se falhar)
+    resumo = None
+    if texto:
+        try:
+            resumo = await ai.resumir_documento(texto)
+        except Exception:
+            pass
+
+    doc = db.salvar_documento(paciente_id, arquivo.filename, nome_arquivo, resumo)
+    return doc
+
+
+@app.get("/pacientes/{paciente_id}/documentos")
+def listar_documentos(paciente_id: int):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    return db.get_documentos_paciente(paciente_id)
+
+
+@app.get("/documentos/{doc_id}/arquivo")
+def servir_documento(doc_id: int):
+    doc = db.get_documento(doc_id)
+    if not doc or doc.get("deletado_em"):
+        raise HTTPException(status_code=404, detail="Documento não encontrado")
+    caminho = os.path.join(db.DOCS_DIR, doc["caminho"])
+    if not os.path.isfile(caminho):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado no servidor")
+    return FileResponse(caminho, media_type="application/pdf", filename=doc["nome_original"])
+
+
+@app.delete("/documentos/{doc_id}", status_code=204)
+def deletar_documento(doc_id: int):
+    doc = db.get_documento(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento não encontrado")
+    db.deletar_documento(doc_id)
 
 
 # ---------- Frontend (deve ser montado por último) ----------

@@ -3,6 +3,8 @@ import os
 from datetime import datetime, timezone
 
 DB_PATH = os.getenv("DB_PATH") or os.path.join(os.path.dirname(__file__), "physio_notes.db")
+DOCS_DIR = os.path.join(os.path.dirname(DB_PATH), "documentos")
+os.makedirs(DOCS_DIR, exist_ok=True)
 
 
 def get_conn():
@@ -78,6 +80,27 @@ def _migrate():
             cols_t = [r[1] for r in conn.execute(f"PRAGMA table_info({tabela})").fetchall()]
             if "deletado_em" not in cols_t:
                 conn.execute(f"ALTER TABLE {tabela} ADD COLUMN deletado_em TEXT")
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS documento (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                paciente_id   INTEGER NOT NULL REFERENCES paciente(id),
+                nome_original TEXT    NOT NULL,
+                caminho       TEXT    NOT NULL,
+                resumo_ia     TEXT,
+                criado_em     TEXT    NOT NULL
+            )
+        """)
+
+        # Coluna nota na sessao_consolidada
+        cols_sc = [r[1] for r in conn.execute("PRAGMA table_info(sessao_consolidada)").fetchall()]
+        if "nota" not in cols_sc:
+            conn.execute("ALTER TABLE sessao_consolidada ADD COLUMN nota TEXT")
+
+        # Soft delete em documento
+        cols_doc = [r[1] for r in conn.execute("PRAGMA table_info(documento)").fetchall()]
+        if "deletado_em" not in cols_doc:
+            conn.execute("ALTER TABLE documento ADD COLUMN deletado_em TEXT")
 
         conn.commit()
 
@@ -220,11 +243,12 @@ def salvar_consolidado(sessao_id: int, dados: dict) -> dict:
     now = _now()
     import json
     with get_conn() as conn:
-        cur = conn.execute(
+        conn.execute(
             """INSERT INTO sessao_consolidada
-               (sessao_id, queixa, evolucao, conduta, observacoes, proximos_passos, raw_json, criado_em)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+               (sessao_id, nota, queixa, evolucao, conduta, observacoes, proximos_passos, raw_json, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(sessao_id) DO UPDATE SET
+               nota=excluded.nota,
                queixa=excluded.queixa,
                evolucao=excluded.evolucao,
                conduta=excluded.conduta,
@@ -234,6 +258,7 @@ def salvar_consolidado(sessao_id: int, dados: dict) -> dict:
                criado_em=excluded.criado_em""",
             (
                 sessao_id,
+                dados.get("nota"),
                 dados.get("queixa"),
                 dados.get("evolucao"),
                 dados.get("conduta"),
@@ -259,7 +284,7 @@ def get_consolidado_sessao(sessao_id: int) -> dict | None:
 def get_historico_paciente(paciente_id: int) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(
-            """SELECT s.*, sc.queixa, sc.evolucao, sc.conduta,
+            """SELECT s.*, sc.nota, sc.queixa, sc.evolucao, sc.conduta,
                       sc.observacoes AS consolidado_observacoes,
                       sc.proximos_passos, sc.criado_em AS consolidado_criado_em
                FROM sessao s
@@ -328,3 +353,36 @@ def get_billing_meses() -> list[dict]:
                GROUP BY mes ORDER BY mes DESC""",
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
+
+
+# ---------- Documentos ----------
+
+def salvar_documento(paciente_id: int, nome_original: str, caminho: str, resumo_ia: str | None) -> dict:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO documento (paciente_id, nome_original, caminho, resumo_ia, criado_em) VALUES (?, ?, ?, ?, ?)",
+            (paciente_id, nome_original, caminho, resumo_ia, _now()),
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM documento WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def get_documentos_paciente(paciente_id: int) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM documento WHERE paciente_id = ? AND deletado_em IS NULL ORDER BY criado_em DESC",
+            (paciente_id,),
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+def get_documento(doc_id: int) -> dict | None:
+    with get_conn() as conn:
+        return _row_to_dict(conn.execute("SELECT * FROM documento WHERE id = ?", (doc_id,)).fetchone())
+
+
+def deletar_documento(doc_id: int):
+    """Soft delete de documento — mantém registro no banco."""
+    with get_conn() as conn:
+        conn.execute("UPDATE documento SET deletado_em = ? WHERE id = ?", (_now(), doc_id))
+        conn.commit()
