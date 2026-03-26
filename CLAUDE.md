@@ -3,6 +3,31 @@
 Este arquivo define o padrão visual e de desenvolvimento para todas as telas de POC neste projeto.
 **Leia e siga rigorosamente antes de criar ou editar qualquer arquivo HTML.**
 
+## Regra de Manutenção do LEIA-ME.txt
+
+**Sempre que qualquer arquivo `.md` do projeto for criado ou modificado, o `LEIA-ME.txt` deve ser atualizado para refletir a mudança.**
+
+Isso inclui: `CLAUDE.md`, arquivos em `.claude/commands/`, ou qualquer outro `.md` adicionado futuramente.
+
+O `LEIA-ME.txt` é o guia humano do projeto — deve estar sempre sincronizado com a realidade dos arquivos de configuração.
+
+---
+
+## Regra de Manutenção do DOC.md
+
+**Sempre que qualquer arquivo de um subprojeto for criado, modificado ou removido, o `DOC.md` desse subprojeto deve ser atualizado para refletir a mudança.**
+
+Isso se aplica a qualquer subpasta que possua um `DOC.md` (ex: `Physio Notes/DOC.md`).
+
+O que atualizar:
+- Se um arquivo foi **criado**: adicionar linha na tabela da seção correspondente (Backend, Frontend ou Raiz) com nome e descrição
+- Se um arquivo foi **modificado**: revisar a descrição existente se o comportamento ou propósito mudou
+- Se um arquivo foi **removido**: retirar a linha da tabela
+- Se uma **variável de ambiente** foi adicionada ou removida: atualizar a tabela de variáveis no `DOC.md`
+- Se o **modelo de IA, stack ou fluxo de deploy** mudou: atualizar as seções correspondentes
+
+O `DOC.md` é a documentação viva do projeto — deve refletir sempre o estado atual do código.
+
 ---
 
 ## Estrutura de Pastas
