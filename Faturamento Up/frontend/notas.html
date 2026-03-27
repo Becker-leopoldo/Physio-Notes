@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notas Fiscais — Faturamento UP IT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <style>
+    .sidebar-toggle {
+      position: absolute; top: var(--space-5); right: calc(-1 * var(--space-4));
+      width: 24px; height: 24px; border-radius: var(--radius-full);
+      background: var(--color-surface); border: var(--border-strong);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 101; transition: background 0.15s; box-shadow: var(--shadow-sm);
+    }
+    .sidebar-toggle:hover { background: var(--color-accent-light); }
+    .sidebar-toggle svg { transition: transform 0.25s; }
+    .sidebar-brand { position: relative; }
+    .sidebar { transition: width 0.25s ease; overflow: hidden; }
+    .sidebar.collapsed { width: 56px; }
+    .sidebar.collapsed .brand-name,
+    .sidebar.collapsed .nav-section-label,
+    .sidebar.collapsed .user-name,
+    .sidebar.collapsed .user-role { display: none; }
+    .sidebar.collapsed .nav-item { justify-content: center; padding: var(--space-2); font-size: 0; gap: 0; }
+    .sidebar.collapsed .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .sidebar.collapsed .sidebar-brand { padding: 0 var(--space-3) var(--space-6); }
+    .sidebar.collapsed .sidebar-footer { padding: var(--space-4) var(--space-3); }
+    .sidebar.collapsed .user-info { justify-content: center; }
+    .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+    .sidebar.collapsed ~ .main-content { width: calc(100% - 56px); }
+    .sidebar-footer { position: relative; }
+    .user-menu-trigger {
+      cursor: pointer; border-radius: var(--radius-md); padding: var(--space-2);
+      margin: calc(-1 * var(--space-2)); transition: background 0.15s;
+      width: calc(100% + var(--space-4));
+    }
+    .user-menu-trigger:hover { background: var(--color-accent-light); }
+    .user-menu {
+      position: absolute; bottom: calc(100% + var(--space-2)); left: 0; right: 0;
+      background: var(--color-surface); border: var(--border-strong);
+      border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+      padding: var(--space-2); display: none; z-index: 200;
+    }
+    .user-menu.open { display: block; }
+    .user-menu-item {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+      font-size: var(--text-sm); color: var(--color-text); text-decoration: none;
+      transition: background 0.15s; cursor: pointer; background: none;
+      border: none; width: 100%; font-family: var(--font-body);
+    }
+    .user-menu-item:hover { background: var(--color-accent-light); }
+    .user-menu-item-danger { color: var(--color-danger); }
+    .user-menu-item-danger:hover { background: var(--color-danger-bg); }
+
+    .toolbar { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-6); flex-wrap: wrap; }
+    .toolbar .form-select, .toolbar .form-input { width: auto; min-width: 160px; }
+    .toolbar-spacer { flex: 1; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      display: none; align-items: center; justify-content: center; z-index: 500;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--color-surface); border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg); padding: var(--space-8); width: 480px; max-width: 95vw;
+    }
+    .modal-title { font-size: var(--text-xl); font-weight: 600; margin-bottom: var(--space-6); }
+    .modal-footer { display: flex; gap: var(--space-3); justify-content: flex-end; margin-top: var(--space-6); }
+
+    .nf-table { width: 100%; border-collapse: collapse; }
+    .nf-table th { font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); padding: var(--space-3) var(--space-4); border-bottom: var(--border-strong); text-align: left; }
+    .nf-table td { padding: var(--space-3) var(--space-4); border-bottom: var(--border); font-size: var(--text-sm); }
+    .nf-table tbody tr:hover { background: var(--color-accent-light); }
+    .nf-table td.money { font-variant-numeric: tabular-nums; text-align: right; }
+    .nf-table th.text-right { text-align: right; }
+
+    .import-zone {
+      border: 2px dashed var(--color-border-strong); border-radius: var(--radius-lg);
+      padding: var(--space-8); text-align: center; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s; margin-bottom: var(--space-4);
+    }
+    .import-zone:hover, .import-zone.drag { border-color: var(--color-accent); background: var(--color-accent-light); }
+    .import-zone p { margin: var(--space-2) 0; color: var(--color-text-secondary); font-size: var(--text-sm); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-name">Faturamento UP IT</span>
+      <button class="sidebar-toggle" id="sidebarToggle" title="Recolher menu">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+        Dashboard
+      </a>
+      <a href="/notas" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Notas Fiscais
+      </a>
+      <a href="/extrato" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Extrato OFX
+      </a>
+      <a href="/conciliacao" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Conciliação
+      </a>
+      <a href="/aliases" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Aliases
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-menu" id="userMenu">
+        <button class="user-menu-item user-menu-item-danger">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Sair
+        </button>
+      </div>
+      <div class="user-info user-menu-trigger" id="userMenuTrigger">
+        <div class="user-avatar">UP</div>
+        <div><div class="user-name">UP IT</div><div class="user-role">Financeiro</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <h1 class="page-title">Notas Fiscais</h1>
+      <p class="page-subtitle">Gerencie e acompanhe as NFs por mês</p>
+    </header>
+
+    <section class="page-body">
+      <div class="toolbar">
+        <select class="form-select" id="filtroMes">
+          <option value="">Todos os meses</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select class="form-select" id="filtroStatus">
+          <option value="">Todos os status</option>
+          <option value="ABERTO">Aberto</option>
+          <option value="PAGO">Pago</option>
+          <option value="SEM_MATCH">Sem Match</option>
+        </select>
+        <input class="form-input" type="text" id="filtroCliente" placeholder="Filtrar cliente...">
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-secondary btn-sm" onclick="openImportModal()">Importar CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Nova NF</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <table class="nf-table">
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th>Cliente</th>
+                <th>NF</th>
+                <th>Vencimento</th>
+                <th>Forma</th>
+                <th class="text-right">Valor</th>
+                <th>Status</th>
+                <th>Pago em</th>
+                <th>Tipo</th>
+                <th class="text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="nfTabela">
+              <tr><td colspan="10" style="text-align:center; color:var(--color-text-muted); padding: var(--space-8);">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </main>
+</div>
+
+<!-- Modal Nova NF -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nova Nota Fiscal</div>
+    <input type="hidden" id="editId">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">Cliente</label>
+        <input class="form-input" id="fCliente" placeholder="Nome do cliente">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mês de referência</label>
+        <select class="form-select" id="fMes">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número NF</label>
+        <input class="form-input" id="fNota" placeholder="Ex: 1234">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="fValor" type="number" step="0.01" placeholder="0,00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vencimento</label>
+        <input class="form-input" id="fVenc" type="text" placeholder="DD/MM/AAAA">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Forma de pagamento</label>
+        <select class="form-select" id="fForma">
+          <option value="PIX">PIX</option>
+          <option value="TED">TED</option>
+          <option value="BOLETO">BOLETO</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNF()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar CSV -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-title">Importar CSV</div>
+    <div class="import-zone" id="importZone" onclick="document.getElementById('csvFile').click()">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin: 0 auto var(--space-3); display:block;"><path d="M16 4v16M8 12l8-8 8 8M6 24h20" stroke="var(--color-text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p><strong>Clique para selecionar</strong> ou arraste o arquivo</p>
+      <p>CSV com colunas: mes_ref, cliente, numero_nf, data_vencimento, valor, forma_pagamento</p>
+    </div>
+    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSV(this)">
+    <div id="importResult" style="font-size:var(--text-sm); color:var(--color-text-secondary);"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeImportModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sidebar = document.querySelector('.sidebar');
+  const toggle  = document.getElementById('sidebarToggle');
+  toggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  const userTrigger = document.getElementById('userMenuTrigger');
+  const userMenu    = document.getElementById('userMenu');
+  userTrigger.addEventListener('click', (e) => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+  document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+  const MESES = {1:'Janeiro',2:'Fevereiro',3:'Março',4:'Abril',5:'Maio',6:'Junho',7:'Julho',8:'Agosto',9:'Setembro',10:'Outubro',11:'Novembro',12:'Dezembro'};
+  const STATUS_BADGE = { PAGO: 'badge-success', ABERTO: 'badge-warning', SEM_MATCH: 'badge-danger' };
+
+  function fmt(v) {
+    return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  async function loadNFs() {
+    const mes     = document.getElementById('filtroMes').value;
+    const status  = document.getElementById('filtroStatus').value;
+    const cliente = document.getElementById('filtroCliente').value;
+    let url = '/api/notas?';
+    if (mes)     url += `mes=${mes}&`;
+    if (status)  url += `status=${status}&`;
+    if (cliente) url += `cliente=${encodeURIComponent(cliente)}&`;
+
+    const res  = await fetch(url);
+    const data = await res.json();
+    const tbody = document.getElementById('nfTabela');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--color-text-muted); padding: var(--space-8);">Nenhuma nota encontrada</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(n => `
+      <tr>
+        <td>${n.mes_nome}</td>
+        <td><strong>${n.cliente}</strong></td>
+        <td style="color:var(--color-text-secondary)">${n.numero_nf || '—'}</td>
+        <td>${n.data_vencimento || '—'}</td>
+        <td><span class="badge badge-neutral">${n.forma_pagamento || '—'}</span></td>
+        <td class="money">${fmt(n.valor)}</td>
+        <td><span class="badge ${STATUS_BADGE[n.status] || 'badge-neutral'}">${n.status}</span></td>
+        <td>${n.pago_em || '—'}</td>
+        <td style="font-size:var(--text-xs); color:var(--color-text-muted)">${n.tipo_match || '—'}</td>
+        <td class="text-right" style="white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick='editNF(${JSON.stringify(n)})'>Editar</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--color-danger)" onclick="deleteNF(${n.id})">Excluir</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('filtroMes').addEventListener('change', loadNFs);
+  document.getElementById('filtroStatus').addEventListener('change', loadNFs);
+  let searchTimer;
+  document.getElementById('filtroCliente').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadNFs, 300);
+  });
+
+  function openAddModal() {
+    document.getElementById('modalTitle').textContent = 'Nova Nota Fiscal';
+    document.getElementById('editId').value = '';
+    document.getElementById('fCliente').value = '';
+    document.getElementById('fNota').value = '';
+    document.getElementById('fValor').value = '';
+    document.getElementById('fVenc').value = '';
+    document.getElementById('fForma').value = 'PIX';
+    document.getElementById('addModal').classList.add('open');
+  }
+  function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+
+  function editNF(n) {
+    document.getElementById('modalTitle').textContent = 'Editar Nota Fiscal';
+    document.getElementById('editId').value = n.id;
+    document.getElementById('fCliente').value = n.cliente;
+    document.getElementById('fMes').value = n.mes_ref;
+    document.getElementById('fNota').value = n.numero_nf || '';
+    document.getElementById('fValor').value = n.valor;
+    document.getElementById('fVenc').value = n.data_vencimento || '';
+    document.getElementById('fForma').value = n.forma_pagamento || 'PIX';
+    document.getElementById('addModal').classList.add('open');
+  }
+
+  async function saveNF() {
+    const id = document.getElementById('editId').value;
+    const body = {
+      mes_ref: parseInt(document.getElementById('fMes').value),
+      cliente: document.getElementById('fCliente').value,
+      numero_nf: document.getElementById('fNota').value,
+      valor: parseFloat(document.getElementById('fValor').value),
+      data_vencimento: document.getElementById('fVenc').value,
+      forma_pagamento: document.getElementById('fForma').value,
+    };
+    const url    = id ? `/api/notas/${id}` : '/api/notas';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (res.ok) { closeAddModal(); loadNFs(); }
+    else { alert('Erro ao salvar NF'); }
+  }
+
+  async function deleteNF(id) {
+    if (!confirm('Excluir esta nota fiscal?')) return;
+    await fetch(`/api/notas/${id}`, { method: 'DELETE' });
+    loadNFs();
+  }
+
+  function openImportModal() { document.getElementById('importModal').classList.add('open'); }
+  function closeImportModal() { document.getElementById('importModal').classList.remove('open'); loadNFs(); }
+
+  async function handleCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    document.getElementById('importResult').textContent = 'Importando...';
+    const res = await fetch('/api/notas/importar-csv', { method: 'POST', body: formData });
+    const data = await res.json();
+    const errMsg = data.erros.length ? `\nErros: ${data.erros.join('; ')}` : '';
+    document.getElementById('importResult').textContent = `${data.criadas} nota(s) importada(s).${errMsg}`;
+  }
+
+  // Drag & drop no import zone
+  const zone = document.getElementById('importZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('csvFile').files = dt.files;
+      handleCSV(document.getElementById('csvFile'));
+    }
+  });
+
+  loadNFs();
+</script>
+</body>
+</html>
