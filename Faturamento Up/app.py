@@ -21,7 +21,9 @@ from sqlalchemy.orm import Session
 from database import init_db, get_db, NotaFiscal, TransacaoOFX, AliasDB
 
 # ── Configuracao ──────────────────────────────────────────────
-ASSETS_DIR = Path(__file__).parent.parent / "assets"
+_local_assets  = Path(__file__).parent / "assets"
+_parent_assets = Path(__file__).parent.parent / "assets"
+ASSETS_DIR = _local_assets if _local_assets.exists() else _parent_assets
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 IUGU_MEMO_KEY = "up solu"

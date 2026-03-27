@@ -1,0 +1,10 @@
+services:
+  faturamento:
+    build:
+      context: ..                        # raiz do repositório (inclui assets/)
+      dockerfile: "Faturamento Up/Dockerfile"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./faturamento.db:/app/faturamento.db   # persiste o banco entre restarts
+    restart: unless-stopped
