@@ -5,6 +5,11 @@ services:
       dockerfile: "Faturamento Up/Dockerfile"
     ports:
       - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////app/data/faturamento.db
     volumes:
-      - ./faturamento.db:/app/faturamento.db   # persiste o banco entre restarts
+      - faturamento_data:/app/data
     restart: unless-stopped
+
+volumes:
+  faturamento_data:

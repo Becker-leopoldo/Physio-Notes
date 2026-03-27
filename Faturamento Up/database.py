@@ -1,11 +1,12 @@
 """
 Modelos SQLAlchemy para o sistema de faturamento UP IT.
 """
+import os
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///faturamento.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///faturamento.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
