@@ -102,6 +102,21 @@ def _migrate():
         if "deletado_em" not in cols_doc:
             conn.execute("ALTER TABLE documento ADD COLUMN deletado_em TEXT")
 
+        # Pacotes de sessões
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pacote (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                paciente_id     INTEGER NOT NULL REFERENCES paciente(id),
+                total_sessoes   INTEGER NOT NULL,
+                sessoes_usadas  INTEGER NOT NULL DEFAULT 0,
+                valor_pago      REAL,
+                data_pagamento  TEXT,
+                descricao       TEXT,
+                criado_em       TEXT    NOT NULL,
+                deletado_em     TEXT
+            )
+        """)
+
         conn.commit()
 
 
@@ -137,7 +152,21 @@ def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None,
 
 def listar_pacientes() -> list[dict]:
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM paciente WHERE deletado_em IS NULL ORDER BY nome COLLATE NOCASE").fetchall()
+        rows = conn.execute("""
+            SELECT p.*,
+                   (SELECT (pk.total_sessoes - pk.sessoes_usadas)
+                    FROM pacote pk
+                    WHERE pk.paciente_id = p.id AND pk.deletado_em IS NULL
+                      AND pk.sessoes_usadas < pk.total_sessoes
+                    ORDER BY pk.criado_em DESC LIMIT 1) AS sessoes_restantes,
+                   (SELECT pk2.total_sessoes
+                    FROM pacote pk2
+                    WHERE pk2.paciente_id = p.id AND pk2.deletado_em IS NULL
+                      AND pk2.sessoes_usadas < pk2.total_sessoes
+                    ORDER BY pk2.criado_em DESC LIMIT 1) AS pacote_total
+            FROM paciente p
+            WHERE p.deletado_em IS NULL ORDER BY p.nome COLLATE NOCASE
+        """).fetchall()
         return [_row_to_dict(r) for r in rows]
 
 
@@ -202,9 +231,23 @@ def sessao_aberta_do_paciente(paciente_id: int) -> dict | None:
         return _row_to_dict(row)
 
 
+def _usar_sessao_pacote(conn, paciente_id: int):
+    """Abate 1 sessão do pacote ativo do paciente, se houver."""
+    row = conn.execute(
+        """SELECT id FROM pacote WHERE paciente_id = ? AND deletado_em IS NULL
+           AND sessoes_usadas < total_sessoes ORDER BY criado_em DESC LIMIT 1""",
+        (paciente_id,)
+    ).fetchone()
+    if row:
+        conn.execute("UPDATE pacote SET sessoes_usadas = sessoes_usadas + 1 WHERE id = ?", (row["id"],))
+
+
 def encerrar_sessao(sessao_id: int):
     with get_conn() as conn:
+        sessao = conn.execute("SELECT paciente_id FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
         conn.execute("UPDATE sessao SET status = 'encerrada' WHERE id = ?", (sessao_id,))
+        if sessao:
+            _usar_sessao_pacote(conn, sessao["paciente_id"])
         conn.commit()
 
 
@@ -385,4 +428,41 @@ def deletar_documento(doc_id: int):
     """Soft delete de documento — mantém registro no banco."""
     with get_conn() as conn:
         conn.execute("UPDATE documento SET deletado_em = ? WHERE id = ?", (_now(), doc_id))
+        conn.commit()
+
+
+# ---------- Pacotes ----------
+
+def criar_pacote(paciente_id: int, total_sessoes: int, valor_pago: float | None, data_pagamento: str | None, descricao: str | None) -> dict:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO pacote (paciente_id, total_sessoes, valor_pago, data_pagamento, descricao, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+            (paciente_id, total_sessoes, valor_pago, data_pagamento, descricao, _now()),
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM pacote WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def get_pacotes_paciente(paciente_id: int) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM pacote WHERE paciente_id = ? AND deletado_em IS NULL ORDER BY criado_em DESC",
+            (paciente_id,),
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+def get_pacote_ativo(paciente_id: int) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute(
+            """SELECT * FROM pacote WHERE paciente_id = ? AND deletado_em IS NULL
+               AND sessoes_usadas < total_sessoes ORDER BY criado_em DESC LIMIT 1""",
+            (paciente_id,),
+        ).fetchone()
+        return _row_to_dict(row)
+
+
+def deletar_pacote(pacote_id: int):
+    with get_conn() as conn:
+        conn.execute("UPDATE pacote SET deletado_em = ? WHERE id = ?", (_now(), pacote_id))
         conn.commit()

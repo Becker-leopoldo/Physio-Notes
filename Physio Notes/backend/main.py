@@ -58,18 +58,18 @@ class RelatorioCREFITOBody(BaseModel):
     paciente_ids: list[int]
 
 
+class PacoteCreate(BaseModel):
+    total_sessoes: int
+    valor_pago: float | None = None
+    data_pagamento: str | None = None
+    descricao: str | None = None
+
+
 # ---------- Pacientes ----------
 
 @app.post("/pacientes", status_code=201)
 def criar_paciente(body: PacienteCreate):
-    from datetime import date
     paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese)
-
-    if body.anamnese:
-        data_atendimento = body.data_atendimento or date.today().isoformat()
-        sessao = db.criar_sessao(paciente["id"], data_atendimento)
-        db.add_audio_chunk(sessao["id"], body.anamnese)
-
     return paciente
 
 
@@ -236,6 +236,40 @@ def cancelar_sessao(sessao_id: int):
     return {"status": "deletada", "sessao_id": sessao_id}
 
 
+@app.post("/sessoes/{sessao_id}/adicionar-audio")
+async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = File(...)):
+    """Adiciona áudio a uma sessão encerrada do mesmo dia, sem abater do pacote."""
+    from datetime import date
+    sessao = db.get_sessao(sessao_id)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    if sessao["status"] == "aberta":
+        raise HTTPException(status_code=400, detail="Use o endpoint /audio para sessões abertas")
+    if sessao["data"] != date.today().isoformat():
+        raise HTTPException(status_code=400, detail="Só é possível adicionar notas em sessões do dia atual")
+
+    audio_bytes = await audio.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+
+    try:
+        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
+
+    chunk = db.add_audio_chunk(sessao_id, transcricao)
+
+    # Re-consolida com todos os chunks (sem deducao de pacote)
+    chunks = db.get_chunks_sessao(sessao_id)
+    try:
+        dados = await ai.consolidar_sessao([c["transcricao"] for c in chunks])
+        db.salvar_consolidado(sessao_id, dados)
+    except Exception:
+        pass
+
+    return {"chunk": chunk, "transcricao": transcricao}
+
+
 @app.post("/sessoes/{sessao_id}/encerrar")
 async def encerrar_sessao(sessao_id: int):
     sessao = db.get_sessao(sessao_id)
@@ -394,6 +428,29 @@ def deletar_documento(doc_id: int):
     if not doc:
         raise HTTPException(status_code=404, detail="Documento não encontrado")
     db.deletar_documento(doc_id)
+
+
+# ---------- Pacotes ----------
+
+@app.post("/pacientes/{paciente_id}/pacotes", status_code=201)
+def criar_pacote(paciente_id: int, body: PacoteCreate):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    return db.criar_pacote(paciente_id, body.total_sessoes, body.valor_pago, body.data_pagamento, body.descricao)
+
+
+@app.get("/pacientes/{paciente_id}/pacotes")
+def listar_pacotes(paciente_id: int):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    return db.get_pacotes_paciente(paciente_id)
+
+
+@app.delete("/pacotes/{pacote_id}", status_code=204)
+def deletar_pacote(pacote_id: int):
+    db.deletar_pacote(pacote_id)
 
 
 # ---------- Frontend (deve ser montado por último) ----------

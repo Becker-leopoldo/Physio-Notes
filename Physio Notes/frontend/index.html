@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Physio Notes</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Physio Notes">
@@ -365,6 +365,7 @@
       display: flex;
       gap: var(--space-3);
       margin-top: var(--space-6);
+      justify-content: center;
     }
     .modal-drag-handle {
       width: 40px;
@@ -636,6 +637,50 @@
     .divider { height: 1px; background: var(--color-border); margin: 0; }
 
     /* ---- Open Session Banner ---- */
+    .pacote-card {
+      margin: var(--space-4) var(--space-5) 0;
+      padding: var(--space-4) var(--space-5);
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .pacote-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+    .pacote-card-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+    .pacote-progress-bar {
+      height: 6px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin: var(--space-2) 0;
+    }
+    .pacote-progress-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      background: var(--color-accent);
+      transition: width 0.4s ease;
+    }
+    .pacote-progress-fill.warning { background: var(--color-warning); }
+    .pacote-progress-fill.danger { background: var(--color-danger); }
+    .pacote-alerta {
+      margin-top: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-warning-bg);
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      color: var(--color-warning);
+      font-weight: 500;
+    }
     .open-session-banner {
       margin: var(--space-5);
       padding: var(--space-4) var(--space-5);
@@ -783,14 +828,44 @@
   </style>
 </head>
 <body>
+
+<!-- ======================== UPDATE BANNER ======================== -->
+<div id="update-banner" style="display:none;position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);z-index:9998;background:var(--color-text);color:#fff;font-family:var(--font-body);font-size:var(--text-sm);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);box-shadow:var(--shadow-lg);display:none;align-items:center;gap:var(--space-4);white-space:nowrap;">
+  <span>Nova versão disponível</span>
+  <button onclick="window.location.reload()" style="background:#fff;color:var(--color-text);border:none;border-radius:var(--radius-full);padding:var(--space-1) var(--space-4);font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;cursor:pointer;">Atualizar</button>
+</div>
+
+<!-- ======================== OFFLINE OVERLAY ======================== -->
+<div id="offline-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#F9F8F6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-6);padding:var(--space-8);">
+  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity:0.25;">
+    <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div style="text-align:center;">
+    <h2 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--color-text);margin:0 0 var(--space-3);">Sem conexão com a internet</h2>
+    <p style="font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text-secondary);max-width:360px;line-height:1.6;margin:0;">O Physio Notes requer internet para funcionar — transcrição de voz e processamento por IA dependem de conexão ativa.</p>
+  </div>
+  <div style="font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text-muted);display:flex;align-items:center;gap:var(--space-2);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    Reconectando automaticamente...
+  </div>
+</div>
+
 <div id="app">
 
   <!-- ======================== SECTION: HOME (Pacientes) ======================== -->
   <section id="sec-home" class="section active">
     <div class="home-header">
-      <div>
-        <h1 class="home-title">Physio Notes</h1>
-        <p class="home-subtitle">Prontuário clínico por voz</p>
+      <div style="display:flex;align-items:center;gap:var(--space-3);">
+        <div style="width:44px;height:44px;border-radius:var(--radius-xl);background:var(--color-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-md);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" fill="white"/>
+            <path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="home-title" style="font-size:var(--text-2xl);white-space:nowrap;">Physio Notes</h1>
+          <p class="home-subtitle">Prontuário clínico por voz</p>
+        </div>
       </div>
       <div style="display:flex;gap:var(--space-2);">
         <button class="btn btn-ghost btn-sm" id="btn-billing" title="Billing">
@@ -831,6 +906,9 @@
 
     <div id="sec-paciente-body" style="flex:1; overflow-y:auto; display:flex; flex-direction:column;">
       <div id="paciente-header-area"></div>
+
+      <!-- Pacotes -->
+      <div id="pacote-area"></div>
 
       <!-- Open session banner -->
       <div id="open-session-area"></div>
@@ -1012,13 +1090,13 @@
 
       <div id="modal-paciente-error-voz" style="margin-bottom:var(--space-3);"></div>
 
-      <div class="modal-actions" style="margin-top:var(--space-3);">
-        <button type="button" class="btn btn-secondary" id="btn-cancelar-paciente-1">Cancelar</button>
-        <button type="button" class="btn btn-primary btn-full" id="btn-salvar-paciente-voz" style="display:none;">Salvar paciente</button>
-      </div>
-
       <div style="text-align:center;margin-top:var(--space-4);">
         <button type="button" class="btn btn-ghost btn-sm" id="btn-digitar-manualmente">Prefiro digitar</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-3);">
+        <button type="button" class="btn btn-primary btn-full" id="btn-salvar-paciente-voz" style="display:none;">Salvar paciente</button>
+        <button type="button" class="btn btn-secondary btn-full" id="btn-cancelar-paciente-1">Cancelar</button>
       </div>
     </div>
 
@@ -1178,6 +1256,17 @@
     setTimeout(close, 8000); // auto-fecha após 8s
   }
 
+  function friendlyError(err) {
+    const msg = (err?.message || '').toLowerCase();
+    if (msg.includes('sem conexão') || msg.includes('connection') || msg.includes('network') || msg.includes('failed to fetch')) {
+      return 'Estamos sem internet no momento 😕 Verifique sua conexão e tente novamente.';
+    }
+    if (msg.includes('transcrição') || msg.includes('transcri')) {
+      return 'Não foi possível processar o áudio agora 😕 Verifique sua conexão e tente novamente.';
+    }
+    return err?.message || 'Algo deu errado. Tente novamente.';
+  }
+
   function showError(containerId, msg) {
     const c = document.getElementById(containerId);
     c.innerHTML = '';
@@ -1191,7 +1280,14 @@
   }
 
   async function apiFetch(path, opts = {}) {
-    const res = await fetch(API_BASE + path, opts);
+    let res;
+    try {
+      res = await fetch(API_BASE + path, opts);
+    } catch (e) {
+      // Erro de rede — sem conexão com o servidor
+      document.getElementById('offline-overlay').style.display = 'flex';
+      throw new Error('Sem conexão com a internet.');
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || `Erro ${res.status}`);
     return data;
@@ -1230,7 +1326,10 @@
           <div class="list-item-avatar">${initials(p.nome)}</div>
           <div class="list-item-content">
             <div class="list-item-title">${p.nome}</div>
-            <div class="list-item-subtitle">${p.data_nascimento ? 'Nasc. ' + formatDate(p.data_nascimento) : 'Data de nascimento não informada'}</div>
+            <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
+              <div class="list-item-subtitle">${p.data_nascimento ? 'Nasc. ' + formatDate(p.data_nascimento) : 'Data de nascimento não informada'}</div>
+              ${p.sessoes_restantes != null ? `<span class="badge ${p.sessoes_restantes <= 2 ? 'badge-warning' : 'badge-info'}" style="font-size:10px;">${p.sessoes_restantes} sess${p.sessoes_restantes === 1 ? 'ão' : 'ões'} restante${p.sessoes_restantes === 1 ? '' : 's'}</span>` : ''}
+            </div>
           </div>
           <button class="btn-delete-inline" data-id="${p.id}" title="Excluir paciente" style="margin-left:auto;flex-shrink:0;background:none;border:none;cursor:pointer;padding:var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1289,6 +1388,7 @@
   }
 
   function fecharModalNovoPaciente() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     resetModalRecorder();
     document.getElementById('modal-novo-paciente').classList.remove('open');
   }
@@ -1337,6 +1437,22 @@
     }
     conversa.appendChild(bubble);
     conversa.scrollTop = conversa.scrollHeight;
+
+    // Lê a resposta em voz alta
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const texto = bubble.innerText || bubble.textContent;
+      const utter = new SpeechSynthesisUtterance(texto);
+      utter.lang = 'pt-BR';
+      utter.rate = 1.05;
+      utter.pitch = 1;
+      const vozes = window.speechSynthesis.getVoices();
+      const vozPT = vozes.find(v => v.name.includes('Maria'))
+                 || vozes.find(v => v.lang.startsWith('pt') && v.name.toLowerCase().includes('female'))
+                 || vozes.find(v => v.lang.startsWith('pt'));
+      if (vozPT) utter.voice = vozPT;
+      window.speechSynthesis.speak(utter);
+    }
 
     // Resumo dos dados capturados
     const resumoEl = document.getElementById('modal-dados-capturados');
@@ -1440,7 +1556,7 @@
           fb.innerHTML = '';
           atualizarConversaVoz();
         } catch (err) {
-          fb.innerHTML = `<div class="alert alert-error">Erro: ${err.message}</div>`;
+          fb.innerHTML = `<div class="alert alert-error">${friendlyError(err)}</div>`;
         }
       };
 
@@ -1579,6 +1695,9 @@
         headerArea.appendChild(anamneseCard);
       }
 
+      // Pacotes
+      loadPacotes(pacienteId);
+
       // Open session
       const sessaoAberta = sessoes.find(s => s.status === 'aberta');
       renderOpenSessionBanner(sessaoAberta);
@@ -1648,10 +1767,12 @@
       const c = s.consolidado;
       const preview = c?.nota || c?.conduta || c?.queixa || 'Sem nota registrada';
       const previewTrunc = preview.length > 120 ? preview.slice(0, 120) + '…' : preview;
+      const isHoje = s.data === new Date().toISOString().slice(0, 10);
       card.innerHTML = `
         <div class="session-card-header" style="display:flex;align-items:center;gap:var(--space-2);">
           <span class="session-card-date">${formatDate(s.data)}</span>
           <span class="badge badge-neutral">Encerrada</span>
+          ${isHoje ? `<button class="btn btn-ghost btn-sm btn-add-nota" data-sessao-id="${s.id}" style="font-size:11px;padding:2px 8px;">+ Nota</button>` : ''}
           <button class="btn-delete-inline" data-sessao-id="${s.id}" title="Remover sessão" style="margin-left:auto;background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -1671,7 +1792,74 @@
           }
         );
       });
+
+      card.querySelector('.btn-add-nota')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirGravacaoNotaExtra(s.id);
+      });
+
       list.appendChild(card);
+    });
+  }
+
+  function abrirGravacaoNotaExtra(sessaoId) {
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    let recorder = null, chunks = [], recording = false;
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:360px;box-shadow:var(--shadow-lg);text-align:center;">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-2);">Adicionar nota</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Grave um áudio para complementar esta sessão. Não será abatido do pacote.</p>
+        <button class="btn-record-circle" id="nota-btn-mic" style="width:72px;height:72px;border-radius:var(--radius-full);background:var(--color-accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-3);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <div id="nota-feedback" style="font-size:var(--text-sm);color:var(--color-text-muted);min-height:20px;margin-bottom:var(--space-4);">Toque para gravar</div>
+        <button class="btn btn-secondary btn-full" id="nota-cancelar">Cancelar</button>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const micBtn = modal.querySelector('#nota-btn-mic');
+    const feedback = modal.querySelector('#nota-feedback');
+
+    modal.querySelector('#nota-cancelar').addEventListener('click', () => {
+      recorder?.state === 'recording' && recorder.stop();
+      modal.remove();
+    });
+
+    micBtn.addEventListener('click', async () => {
+      if (recording) {
+        recorder.stop();
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recorder = new MediaRecorder(stream);
+        chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          recording = false;
+          micBtn.style.background = 'var(--color-accent)';
+          feedback.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;"></span> Processando...';
+          micBtn.disabled = true;
+          try {
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            const form = new FormData();
+            form.append('audio', blob, 'nota.webm');
+            await apiFetch(`/sessoes/${sessaoId}/adicionar-audio`, { method: 'POST', body: form });
+            modal.remove();
+            openPaciente(currentPacienteId);
+          } catch (e) {
+            feedback.textContent = e.message;
+            micBtn.disabled = false;
+          }
+        };
+        recorder.start();
+        recording = true;
+        micBtn.style.background = 'var(--color-danger)';
+        feedback.textContent = 'Gravando... toque para parar';
+      } catch (e) {
+        feedback.textContent = 'Não foi possível acessar o microfone.';
+      }
     });
   }
 
@@ -1705,7 +1893,7 @@
       await openPaciente(currentPacienteId);
     } catch (e) {
       const fb = document.getElementById('rec-feedback');
-      if (fb) fb.innerHTML = `<div class="alert alert-error">Erro ao cancelar: ${e.message}</div>`;
+      if (fb) fb.innerHTML = `<div class="alert alert-error">${friendlyError(e)}</div>`;
       if (btn) { btn.disabled = false; btn.textContent = 'Cancelar sessão'; }
     }
   }
@@ -1722,7 +1910,7 @@
       sucesso = true;
     } catch (e) {
       const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
-      if (fb) fb.innerHTML = `<div class="alert alert-error" style="margin-top:var(--space-3);">Erro ao encerrar: ${e.message}</div>`;
+      if (fb) fb.innerHTML = `<div class="alert alert-error" style="margin-top:var(--space-3);">${friendlyError(e)}</div>`;
     } finally {
       if (sucesso) {
         await openPaciente(currentPacienteId);
@@ -1976,7 +2164,7 @@
       startAutoCloseTimer(); // reset apenas quando áudio novo é adicionado
       await loadChunksIntoRecorder(currentSessaoId);
     } catch (e) {
-      fb.innerHTML = `<div class="alert alert-error">Erro: ${e.message}</div>`;
+      fb.innerHTML = `<div class="alert alert-error">${friendlyError(e)}</div>`;
     }
   }
 
@@ -2142,7 +2330,17 @@
       });
       result.innerHTML = '';
       const resp = el('div', { className: 'ai-response', textContent: data.resposta });
+      const clearBtn = el('button', {
+        className: 'btn btn-ghost btn-sm',
+        textContent: 'Limpar',
+        style: 'margin-top:var(--space-2);',
+      });
+      clearBtn.addEventListener('click', () => {
+        result.innerHTML = '';
+        document.getElementById('ask-input').value = '';
+      });
       result.appendChild(resp);
+      result.appendChild(clearBtn);
     } catch (e) {
       result.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
     } finally {
@@ -2173,6 +2371,158 @@
       list.insertAdjacentHTML('beforeend', `<div class="alert alert-error" style="margin-top:var(--space-2);">${err.message}</div>`);
     }
   });
+
+  /* ============================================================
+     PACOTES DE SESSÕES
+  ============================================================ */
+  async function loadPacotes(pacienteId) {
+    const area = document.getElementById('pacote-area');
+    area.innerHTML = '';
+    try {
+      const pacotes = await apiFetch(`/pacientes/${pacienteId}/pacotes`);
+      renderPacotes(pacotes, pacienteId);
+    } catch {
+      // silently fail
+    }
+  }
+
+  function renderPacotes(pacotes, pacienteId) {
+    const area = document.getElementById('pacote-area');
+    area.innerHTML = '';
+    const ativo = pacotes.find(p => p.sessoes_usadas < p.total_sessoes);
+    const card = el('div', { className: 'pacote-card' });
+
+    if (ativo) {
+      const restantes = ativo.total_sessoes - ativo.sessoes_usadas;
+      const pct = Math.round((ativo.sessoes_usadas / ativo.total_sessoes) * 100);
+      const fillClass = restantes <= 1 ? 'danger' : restantes <= 2 ? 'warning' : '';
+      const alertaHtml = restantes <= 2
+        ? `<div class="pacote-alerta">⚠️ Apenas ${restantes} sessão${restantes === 1 ? '' : 'ões'} restante${restantes === 1 ? '' : 's'} — avise o paciente para renovar o pacote.</div>`
+        : '';
+      card.innerHTML = `
+        <div class="pacote-card-header">
+          <span class="pacote-card-label">Pacote de sessões</span>
+          <div style="display:flex;gap:var(--space-2);">
+            <button class="btn btn-ghost btn-sm" id="btn-novo-pacote">+ Novo pacote</button>
+            <button class="btn btn-ghost btn-sm" id="btn-historico-pacotes" title="Ver histórico">Histórico</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:var(--space-2);">
+          <span style="font-size:var(--text-2xl);font-weight:600;color:var(--color-text);">${restantes}</span>
+          <span style="font-size:var(--text-sm);color:var(--color-text-secondary);">de ${ativo.total_sessoes} sessões restantes</span>
+        </div>
+        <div class="pacote-progress-bar">
+          <div class="pacote-progress-fill ${fillClass}" style="width:${pct}%"></div>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${ativo.sessoes_usadas} sessão${ativo.sessoes_usadas === 1 ? '' : 'ões'} utilizada${ativo.sessoes_usadas === 1 ? '' : 's'} ${ativo.valor_pago ? '· R$ ' + ativo.valor_pago.toFixed(2).replace('.', ',') : ''}</div>
+        ${alertaHtml}`;
+    } else {
+      card.innerHTML = `
+        <div class="pacote-card-header">
+          <span class="pacote-card-label">Pacote de sessões</span>
+          ${pacotes.length > 0 ? `<button class="btn btn-ghost btn-sm" id="btn-historico-pacotes">Histórico</button>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum pacote ativo</span>
+          <button class="btn btn-secondary btn-sm" id="btn-novo-pacote">+ Novo pacote</button>
+        </div>`;
+    }
+
+    area.appendChild(card);
+
+    card.querySelector('#btn-novo-pacote')?.addEventListener('click', () => abrirModalNovoPacote(pacienteId));
+    card.querySelector('#btn-historico-pacotes')?.addEventListener('click', () => mostrarHistoricoPacotes(pacotes, pacienteId));
+  }
+
+  function abrirModalNovoPacote(pacienteId) {
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:380px;box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-5);">Novo pacote</h3>
+        <div class="form-group">
+          <label class="form-label">Qtd. de sessões</label>
+          <input class="form-input" type="number" id="mp-total" min="1" placeholder="Ex: 10" style="font-size:var(--text-base);">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor pago (R$)</label>
+          <input class="form-input" type="number" id="mp-valor" step="0.01" placeholder="Ex: 800.00" style="font-size:var(--text-base);">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data do pagamento</label>
+          <input class="form-input" type="date" id="mp-data" style="font-size:var(--text-base);">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descrição (opcional)</label>
+          <input class="form-input" type="text" id="mp-desc" placeholder="Ex: Pacote mensal março" style="font-size:var(--text-base);">
+        </div>
+        <div id="mp-error" style="color:var(--color-danger);font-size:var(--text-sm);margin-bottom:var(--space-3);display:none;"></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <button class="btn btn-primary btn-full" id="mp-salvar">Salvar pacote</button>
+          <button class="btn btn-secondary btn-full" id="mp-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#mp-cancelar').addEventListener('click', () => modal.remove());
+    modal.querySelector('#mp-salvar').addEventListener('click', async () => {
+      const total = parseInt(modal.querySelector('#mp-total').value);
+      if (!total || total < 1) {
+        const err = modal.querySelector('#mp-error');
+        err.textContent = 'Informe a quantidade de sessões.';
+        err.style.display = '';
+        return;
+      }
+      const valor = parseFloat(modal.querySelector('#mp-valor').value) || null;
+      const data = modal.querySelector('#mp-data').value || null;
+      const desc = modal.querySelector('#mp-desc').value.trim() || null;
+      try {
+        await apiFetch(`/pacientes/${pacienteId}/pacotes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ total_sessoes: total, valor_pago: valor, data_pagamento: data, descricao: desc }),
+        });
+        modal.remove();
+        loadPacotes(pacienteId);
+        loadPacientes();
+      } catch (e) {
+        const err = modal.querySelector('#mp-error');
+        err.textContent = e.message;
+        err.style.display = '';
+      }
+    });
+  }
+
+  function mostrarHistoricoPacotes(pacotes, pacienteId) {
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    const rows = pacotes.map(p => {
+      const restantes = p.total_sessoes - p.sessoes_usadas;
+      const status = restantes > 0 ? `<span class="badge badge-success">${restantes} restantes</span>` : `<span class="badge badge-neutral">Esgotado</span>`;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:var(--border);">
+        <div>
+          <div style="font-size:var(--text-sm);font-weight:500;">${p.total_sessoes} sessões ${p.descricao ? '· ' + p.descricao : ''}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${p.sessoes_usadas} utilizadas ${p.valor_pago ? '· R$ ' + p.valor_pago.toFixed(2).replace('.', ',') : ''} ${p.data_pagamento ? '· ' + formatDate(p.data_pagamento) : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-2);">${status}
+          ${restantes > 0 ? `<button class="btn btn-ghost btn-sm btn-delete-pacote" data-id="${p.id}" style="color:var(--color-danger);">Remover</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:420px;box-shadow:var(--shadow-lg);max-height:80vh;overflow-y:auto;">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-4);">Histórico de pacotes</h3>
+        ${rows || '<div style="color:var(--color-text-muted);font-size:var(--text-sm);">Nenhum pacote encontrado.</div>'}
+        <button class="btn btn-secondary btn-full" id="hp-fechar" style="margin-top:var(--space-4);">Fechar</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#hp-fechar').addEventListener('click', () => modal.remove());
+    modal.querySelectorAll('.btn-delete-pacote').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await apiFetch(`/pacotes/${btn.dataset.id}`, { method: 'DELETE' });
+        modal.remove();
+        loadPacotes(pacienteId);
+        loadPacientes();
+      });
+    });
+  }
 
   async function loadDocumentos(pacienteId) {
     const list = document.getElementById('documentos-list');
@@ -2345,18 +2695,34 @@
     const body = document.getElementById('billing-body');
     const { mes_atual, historico } = data;
 
-    const mesesOptions = historico.map(h =>
-      `<option value="${h.mes}" ${h.mes === mes_atual.mes ? 'selected' : ''}>${h.mes}</option>`
-    ).join('');
-
-    const porTipoRows = (mes_atual.por_tipo || []).map(t => `
-      <tr>
-        <td>${TIPO_LABEL[t.tipo] || t.tipo}</td>
-        <td class="text-right">${t.chamadas}</td>
-        <td class="text-right">${fmtTokens(t.input_tokens)}</td>
-        <td class="text-right">${fmtTokens(t.output_tokens)}</td>
-        <td class="text-right" style="font-variant-numeric:tabular-nums;">${fmtBRL(t.custo_usd, cotacao)}</td>
-      </tr>`).join('');
+    const maxCusto = Math.max(...(mes_atual.por_tipo || []).map(t => t.custo_usd), 0.0001);
+    const TIPO_ICON = {
+      consolidar_sessao:      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+      resumir_historico:      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+      responder_pergunta:     '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 1 0 10H4l-2 2V7a5 5 0 0 1 6-5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+      extrair_dados_paciente: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+      resumir_documento:      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9H4V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M6 7h4M6 10h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    };
+    const porTipoCards = (mes_atual.por_tipo || []).map(t => {
+      const pct = Math.round((t.custo_usd / maxCusto) * 100);
+      return `
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-4) var(--space-5);border-bottom:var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-text-secondary);">
+              ${TIPO_ICON[t.tipo] || ''}
+              <span style="font-size:var(--text-sm);font-weight:500;">${TIPO_LABEL[t.tipo] || t.tipo}</span>
+            </div>
+            <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(t.custo_usd, cotacao)}</span>
+          </div>
+          <div style="background:var(--color-border);border-radius:var(--radius-full);height:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+          </div>
+          <div style="display:flex;gap:var(--space-4);">
+            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${t.chamadas} chamada${t.chamadas !== 1 ? 's' : ''}</span>
+            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↑ ${fmtTokens(t.input_tokens)} tokens</span>
+            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↓ ${fmtTokens(t.output_tokens)} tokens</span>
+          </div>
+        </div>`}).join('');
 
     // Projeção fim do mês — só para o mês atual com dados
     const hoje = new Date();
@@ -2385,13 +2751,26 @@
         </div>`;
     }
 
+    const [anoAtual, mesAtual] = mes_atual.mes.split('-').map(Number);
+    const mesesPT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const labelMes = `${mesesPT[mesAtual-1]} ${anoAtual}`;
+
     body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6);">
-        <div style="display:flex;align-items:center;gap:var(--space-3);">
-          <label class="form-label" style="margin:0;white-space:nowrap;">Mês</label>
-          <select class="form-select" id="billing-mes-select" style="width:auto;">
-            ${mesesOptions || `<option value="${mes_atual.mes}">${mes_atual.mes}</option>`}
-          </select>
+        <div style="position:relative;">
+          <button id="billing-mes-trigger" style="display:flex;align-items:center;gap:var(--space-2);background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-md);padding:var(--space-2) var(--space-4);cursor:pointer;font-family:var(--font-body);font-size:var(--text-base);font-weight:600;color:var(--color-text);transition:background 0.15s;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            ${labelMes}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="billing-mes-picker" style="display:none;position:absolute;top:calc(100% + var(--space-2));left:0;z-index:300;background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-4);min-width:240px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+              <button id="picker-ano-prev" style="background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);color:var(--color-text);font-size:var(--text-lg);">‹</button>
+              <span id="picker-ano-label" style="font-weight:700;font-size:var(--text-base);">${anoAtual}</span>
+              <button id="picker-ano-next" style="background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);color:var(--color-text);font-size:var(--text-lg);">›</button>
+            </div>
+            <div id="picker-meses-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);"></div>
+          </div>
         </div>
         <span style="font-size:var(--text-xs);color:var(--color-text-muted);">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
       </div>
@@ -2419,20 +2798,7 @@
       ${mes_atual.total_chamadas > 0 ? `
       <div class="card" style="padding:0;overflow:hidden;">
         <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);font-size:var(--text-sm);font-weight:600;">Por tipo de chamada</div>
-        <div class="table-wrapper" style="margin:0;">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th class="text-right">Chamadas</th>
-                <th class="text-right">Tokens entrada</th>
-                <th class="text-right">Tokens saída</th>
-                <th class="text-right">Custo</th>
-              </tr>
-            </thead>
-            <tbody>${porTipoRows}</tbody>
-          </table>
-        </div>
+        ${porTipoCards}
       </div>` : `
       <div style="text-align:center;padding:var(--space-12);color:var(--color-text-muted);font-size:var(--text-sm);">
         Nenhuma chamada de IA registrada neste mês.
@@ -2461,9 +2827,37 @@
       </div>` : ''}
     `;
 
-    document.getElementById('billing-mes-select').addEventListener('change', e => {
-      openBilling(e.target.value);
+    const mesesCurtos = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    let pickerAno = anoAtual;
+
+    function renderPickerGrid() {
+      document.getElementById('picker-ano-label').textContent = pickerAno;
+      const grid = document.getElementById('picker-meses-grid');
+      grid.innerHTML = mesesCurtos.map((m, i) => {
+        const val = `${pickerAno}-${String(i+1).padStart(2,'0')}`;
+        const isSelected = val === mes_atual.mes;
+        return `<button data-val="${val}" style="padding:var(--space-2);border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:var(--font-body);font-size:var(--text-sm);font-weight:${isSelected?'700':'400'};background:${isSelected?'var(--color-accent)':'transparent'};color:${isSelected?'#fff':'var(--color-text)'};transition:background 0.12s;" onmouseover="if(!this.dataset.sel)this.style.background='var(--color-accent-light)'" onmouseout="if(!this.dataset.sel)this.style.background='transparent'">${m}</button>`;
+      }).join('');
+      grid.querySelectorAll('button[data-val]').forEach(btn => {
+        if (btn.style.background.includes('accent)') && !btn.style.background.includes('light')) btn.dataset.sel = '1';
+        btn.addEventListener('click', () => {
+          document.getElementById('billing-mes-picker').style.display = 'none';
+          openBilling(btn.dataset.val);
+        });
+      });
+    }
+
+    const trigger = document.getElementById('billing-mes-trigger');
+    const picker = document.getElementById('billing-mes-picker');
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = picker.style.display === 'block';
+      picker.style.display = open ? 'none' : 'block';
+      if (!open) renderPickerGrid();
     });
+    document.getElementById('picker-ano-prev').addEventListener('click', e => { e.stopPropagation(); pickerAno--; renderPickerGrid(); });
+    document.getElementById('picker-ano-next').addEventListener('click', e => { e.stopPropagation(); pickerAno++; renderPickerGrid(); });
+    document.addEventListener('click', () => picker.style.display = 'none');
   }
 
   /* ============================================================
@@ -2627,6 +3021,29 @@
       btn.textContent = 'Salvar alterações';
     }
   });
+
+  /* ============================================================
+     UPDATE DETECTION
+  ============================================================ */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'SW_UPDATED') {
+        const banner = document.getElementById('update-banner');
+        banner.style.display = 'flex';
+      }
+    });
+  }
+
+  /* ============================================================
+     OFFLINE DETECTION
+  ============================================================ */
+  const offlineOverlay = document.getElementById('offline-overlay');
+  function updateOnlineStatus() {
+    offlineOverlay.style.display = navigator.onLine ? 'none' : 'flex';
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
 
   /* ============================================================
      INIT
