@@ -161,6 +161,7 @@
         <input class="form-input" type="text" id="filtroCliente" placeholder="Filtrar cliente...">
         <div class="toolbar-spacer"></div>
         <button class="btn btn-secondary btn-sm" onclick="openImportModal()">Importar CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="openSheetsModal()">Importar do Sheets</button>
         <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Nova NF</button>
       </div>
 
@@ -255,6 +256,33 @@
     <div id="importResult" style="font-size:var(--text-sm); color:var(--color-text-secondary);"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeImportModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar do Google Sheets -->
+<div class="modal-overlay" id="sheetsModal">
+  <div class="modal">
+    <div class="modal-title">Importar do Google Sheets</div>
+    <p style="font-size:var(--text-sm); color:var(--color-text-secondary); margin-bottom:var(--space-6);">
+      Lê os dados diretamente da planilha e salva no banco. Registros já existentes são atualizados.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Mês</label>
+      <select class="form-select" id="sheetsMes">
+        <option value="todos">Todos os meses</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+    </div>
+    <div id="sheetsResult" style="font-size:var(--text-sm); margin-top:var(--space-4); display:none;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSheetsModal()">Fechar</button>
+      <button class="btn btn-primary" id="btnSheets" onclick="runSheetsImport()">Importar</button>
     </div>
   </div>
 </div>
@@ -367,6 +395,43 @@
 
   function openImportModal() { document.getElementById('importModal').classList.add('open'); }
   function closeImportModal() { document.getElementById('importModal').classList.remove('open'); loadNFs(); }
+
+  function openSheetsModal() {
+    document.getElementById('sheetsResult').style.display = 'none';
+    document.getElementById('sheetsModal').classList.add('open');
+  }
+  function closeSheetsModal() { document.getElementById('sheetsModal').classList.remove('open'); loadNFs(); }
+
+  async function runSheetsImport() {
+    const mes = document.getElementById('sheetsMes').value;
+    const btn = document.getElementById('btnSheets');
+    const resultDiv = document.getElementById('sheetsResult');
+    btn.disabled = true;
+    btn.textContent = 'Importando...';
+    resultDiv.style.display = 'none';
+
+    const url = mes === 'todos' ? '/api/importar-sheets' : `/api/importar-sheets/${mes}`;
+    const res  = await fetch(url, { method: 'POST' });
+    const data = await res.json();
+
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+    resultDiv.style.display = 'block';
+
+    if (!res.ok) {
+      resultDiv.style.color = 'var(--color-danger)';
+      resultDiv.textContent = data.detail || 'Erro ao importar';
+      return;
+    }
+
+    resultDiv.style.color = 'var(--color-success)';
+    const lista = Array.isArray(data) ? data : [data];
+    resultDiv.innerHTML = lista.map(r =>
+      r.erro
+        ? `<div style="color:var(--color-danger)">${r.mes}: ${r.erro}</div>`
+        : `<div>${r.mes}: ${r.criadas} criada(s), ${r.atualizadas} atualizada(s), ${r.ignoradas} ignorada(s)</div>`
+    ).join('');
+  }
 
   async function handleCSV(input) {
     const file = input.files[0];

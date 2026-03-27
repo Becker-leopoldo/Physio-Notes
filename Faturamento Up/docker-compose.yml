@@ -9,6 +9,7 @@ services:
       DATABASE_URL: sqlite:////app/data/faturamento.db
     volumes:
       - faturamento_data:/app/data
+      - ./credenciais.json:/app/credenciais.json:ro   # somente leitura
     restart: unless-stopped
 
 volumes:

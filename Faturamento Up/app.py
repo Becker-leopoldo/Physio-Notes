@@ -25,6 +25,27 @@ _local_assets  = Path(__file__).parent / "assets"
 _parent_assets = Path(__file__).parent.parent / "assets"
 ASSETS_DIR = _local_assets if _local_assets.exists() else _parent_assets
 FRONTEND_DIR = Path(__file__).parent / "frontend"
+CREDS_FILE   = Path(__file__).parent / "credenciais.json"
+SHEET_URL    = "https://docs.google.com/spreadsheets/d/1M03peFMUukZuS0k7I44to3OUap-BrhaiHL-8f8PAZUo/edit?usp=sharing"
+
+MESES_SHEETS = {
+    1:  "Receitas Janeiro",  2:  "Receitas Fevereiro", 3:  "Receitas Março",
+    4:  "Receitas Abril",    5:  "Receitas Maio",       6:  "Receitas Junho",
+    7:  "Receitas Julho",    8:  "Receitas Agosto",     9:  "Receitas Setembro",
+    10: "Receitas Outubro",  11: "Receitas Novembro",   12: "Receitas Dezembro",
+}
+
+# Colunas da planilha (1-based)
+_S_CLIENTE   = 2
+_S_STATUS    = 4   # D
+_S_EXTRATO   = 5   # E
+_S_DATA_PGTO = 6   # F
+_S_VALOR_CR  = 7   # G
+_S_TIPO      = 8   # H
+_S_FORMA     = 9   # I
+_S_NOTA      = 11  # K
+_S_VENC      = 13  # M
+_S_VALOR_NF  = 17  # Q
 
 IUGU_MEMO_KEY = "up solu"
 IUGU_TAXA_MAX = 10.00
@@ -649,6 +670,124 @@ def api_delete_alias(alias_id: int, db: Session = Depends(get_db)):
     db.delete(row)
     db.commit()
     return {"ok": True}
+
+
+# ── API: Importar do Google Sheets → DB ──────────────────────
+def _parse_date(s: str) -> Optional[datetime]:
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(str(s).strip()[:10], fmt)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+def _parse_valor(s: str) -> Optional[float]:
+    try:
+        return round(float(re.sub(r"[R$\s,]", "", str(s))), 2)
+    except (ValueError, TypeError):
+        return None
+
+def _importar_aba(mes: int, db: Session) -> dict:
+    import gspread
+    gc = gspread.service_account(filename=str(CREDS_FILE))
+    sh = gc.open_by_url(SHEET_URL)
+    ws = sh.worksheet(MESES_SHEETS[mes])
+    rows = ws.get_all_values()
+
+    criadas = atualizadas = ignoradas = 0
+
+    for row in rows[1:]:
+        def c(n):
+            return row[n - 1].strip() if n - 1 < len(row) else ""
+
+        cliente = c(_S_CLIENTE)
+        if not cliente:
+            ignoradas += 1
+            continue
+        try:
+            float(cliente)
+            ignoradas += 1
+            continue
+        except (ValueError, TypeError):
+            pass
+
+        valor = _parse_valor(c(_S_VALOR_NF))
+        if not valor or valor <= 0:
+            ignoradas += 1
+            continue
+
+        nota     = c(_S_NOTA) or None
+        forma    = c(_S_FORMA).upper() or "PIX"
+        status   = "PAGO" if c(_S_STATUS).upper() == "PAGO" else "ABERTO"
+        extrato  = c(_S_EXTRATO) or None
+        tipo     = c(_S_TIPO) or None
+        pago_em  = _parse_date(c(_S_DATA_PGTO))
+        dv       = _parse_date(c(_S_VENC))
+        cr_amount = _parse_valor(c(_S_VALOR_CR))
+
+        # Busca por cliente + NF + mês (evita duplicata)
+        existing = db.query(NotaFiscal).filter(
+            NotaFiscal.mes_ref == mes,
+            NotaFiscal.cliente == cliente.upper(),
+            NotaFiscal.numero_nf == nota,
+            NotaFiscal.deleted == False,
+        ).first()
+
+        if existing:
+            existing.valor           = valor
+            existing.forma_pagamento = forma
+            existing.data_vencimento = dv
+            existing.status          = status
+            existing.pago_em         = pago_em
+            existing.fonte_memo      = extrato
+            existing.tipo_match      = tipo
+            existing.cr_amount       = cr_amount
+            atualizadas += 1
+        else:
+            db.add(NotaFiscal(
+                mes_ref=mes, cliente=cliente.upper(), numero_nf=nota,
+                data_vencimento=dv, valor=valor, forma_pagamento=forma,
+                status=status, pago_em=pago_em,
+                fonte_memo=extrato, tipo_match=tipo, cr_amount=cr_amount,
+            ))
+            criadas += 1
+
+    db.commit()
+    return {"mes": MESES_NOMES[mes], "criadas": criadas, "atualizadas": atualizadas, "ignoradas": ignoradas}
+
+
+@app.post("/api/importar-sheets/{mes}")
+def api_importar_sheets_mes(mes: int, db: Session = Depends(get_db)):
+    if not CREDS_FILE.exists():
+        raise HTTPException(400, "credenciais.json não encontrado na pasta do app")
+    if mes not in MESES_SHEETS:
+        raise HTTPException(400, "Mês inválido (1-12)")
+    try:
+        return _importar_aba(mes, db)
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/importar-sheets")
+def api_importar_sheets_todos(db: Session = Depends(get_db)):
+    """Importa todos os meses disponíveis na planilha."""
+    if not CREDS_FILE.exists():
+        raise HTTPException(400, "credenciais.json não encontrado na pasta do app")
+    import gspread
+    gc = gspread.service_account(filename=str(CREDS_FILE))
+    sh = gc.open_by_url(SHEET_URL)
+    abas_existentes = {ws.title for ws in sh.worksheets()}
+
+    resultados = []
+    for mes, nome_aba in MESES_SHEETS.items():
+        if nome_aba not in abas_existentes:
+            continue
+        try:
+            r = _importar_aba(mes, db)
+            resultados.append(r)
+        except Exception as e:
+            resultados.append({"mes": MESES_NOMES[mes], "erro": str(e)})
+    return resultados
 
 
 # ── Helpers de serialização ───────────────────────────────────
