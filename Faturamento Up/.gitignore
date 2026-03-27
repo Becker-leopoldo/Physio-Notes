@@ -6,3 +6,4 @@ aliases.json
 faturamento.db
 __pycache__/
 *.pyc
+.env

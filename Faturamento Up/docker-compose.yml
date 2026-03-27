@@ -5,11 +5,10 @@ services:
       dockerfile: "Faturamento Up/Dockerfile"
     ports:
       - "8000:8000"
-    environment:
-      DATABASE_URL: sqlite:////app/data/faturamento.db
+    env_file:
+      - .env                                    # contém DATABASE_URL e GOOGLE_CREDENTIALS_JSON
     volumes:
       - faturamento_data:/app/data
-      - ./credenciais.json:/app/credenciais.json:ro   # somente leitura
     restart: unless-stopped
 
 volumes:

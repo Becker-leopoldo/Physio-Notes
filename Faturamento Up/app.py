@@ -2,6 +2,7 @@
 Sistema de Faturamento UP IT — Backend FastAPI
 Executa: uvicorn app:app --reload
 """
+import os
 import re
 import io
 import json
@@ -687,9 +688,18 @@ def _parse_valor(s: str) -> Optional[float]:
     except (ValueError, TypeError):
         return None
 
-def _importar_aba(mes: int, db: Session) -> dict:
+def _get_gc():
+    """Retorna cliente gspread via env var GOOGLE_CREDENTIALS_JSON ou arquivo credenciais.json."""
     import gspread
-    gc = gspread.service_account(filename=str(CREDS_FILE))
+    creds_str = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if creds_str:
+        return gspread.service_account_from_dict(json.loads(creds_str))
+    if not CREDS_FILE.exists():
+        raise FileNotFoundError("credenciais.json não encontrado. Configure GOOGLE_CREDENTIALS_JSON ou coloque o arquivo na pasta do app.")
+    return gspread.service_account(filename=str(CREDS_FILE))
+
+def _importar_aba(mes: int, db: Session) -> dict:
+    gc = _get_gc()
     sh = gc.open_by_url(SHEET_URL)
     ws = sh.worksheet(MESES_SHEETS[mes])
     rows = ws.get_all_values()
@@ -758,12 +768,12 @@ def _importar_aba(mes: int, db: Session) -> dict:
 
 @app.post("/api/importar-sheets/{mes}")
 def api_importar_sheets_mes(mes: int, db: Session = Depends(get_db)):
-    if not CREDS_FILE.exists():
-        raise HTTPException(400, "credenciais.json não encontrado na pasta do app")
     if mes not in MESES_SHEETS:
         raise HTTPException(400, "Mês inválido (1-12)")
     try:
         return _importar_aba(mes, db)
+    except FileNotFoundError as e:
+        raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, str(e))
 
@@ -771,10 +781,11 @@ def api_importar_sheets_mes(mes: int, db: Session = Depends(get_db)):
 @app.post("/api/importar-sheets")
 def api_importar_sheets_todos(db: Session = Depends(get_db)):
     """Importa todos os meses disponíveis na planilha."""
-    if not CREDS_FILE.exists():
-        raise HTTPException(400, "credenciais.json não encontrado na pasta do app")
+    try:
+        gc = _get_gc()
+    except FileNotFoundError as e:
+        raise HTTPException(400, str(e))
     import gspread
-    gc = gspread.service_account(filename=str(CREDS_FILE))
     sh = gc.open_by_url(SHEET_URL)
     abas_existentes = {ws.title for ws in sh.worksheets()}
 
