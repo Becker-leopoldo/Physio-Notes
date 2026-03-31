@@ -56,13 +56,25 @@ E executar:
 
 O script vai:
   1. Instalar as dependências automaticamente (pip install)
-  2. Subir o servidor na porta 8000
+  2. Subir o servidor na porta configurada (padrão: 8000)
 
 Após iniciado, o sistema estará disponível em:
 
   http://localhost:8000
   ou
   http://IP_DO_SERVIDOR:8000
+
+
+ALTERANDO A PORTA
+------------------
+Para usar uma porta diferente, edite a primeira linha de configuração
+do arquivo start.bat:
+
+  set PORT=8000   ← altere o número aqui
+
+Exemplo para rodar na porta 8080:
+
+  set PORT=8080
 
 
 OBSERVAÇÕES
