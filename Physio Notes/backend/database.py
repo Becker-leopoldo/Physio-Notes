@@ -117,6 +117,24 @@ def _migrate():
             )
         """)
 
+        # WebAuthn
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS usuario (
+                id        TEXT PRIMARY KEY,
+                username  TEXT NOT NULL UNIQUE,
+                criado_em TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS webauthn_credential (
+                id          TEXT PRIMARY KEY,
+                usuario_id  TEXT NOT NULL REFERENCES usuario(id),
+                public_key  BLOB NOT NULL,
+                sign_count  INTEGER NOT NULL DEFAULT 0,
+                criado_em   TEXT NOT NULL
+            )
+        """)
+
         conn.commit()
 
 
@@ -467,4 +485,49 @@ def get_pacote_ativo(paciente_id: int) -> dict | None:
 def deletar_pacote(pacote_id: int):
     with get_conn() as conn:
         conn.execute("UPDATE pacote SET deletado_em = ? WHERE id = ?", (_now(), pacote_id))
+        conn.commit()
+
+
+# ---------- WebAuthn ----------
+
+def get_usuario_por_username(username: str) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM usuario WHERE username = ?", (username,)).fetchone()
+        return _row_to_dict(row)
+
+
+def criar_usuario(username: str) -> dict:
+    import uuid
+    uid = str(uuid.uuid4())
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO usuario (id, username, criado_em) VALUES (?, ?, ?)",
+            (uid, username, _now()),
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM usuario WHERE id = ?", (uid,)).fetchone())
+
+
+def salvar_credencial_webauthn(usuario_id: str, credential_id: str, public_key: bytes, sign_count: int) -> dict:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO webauthn_credential (id, usuario_id, public_key, sign_count, criado_em) VALUES (?, ?, ?, ?, ?)",
+            (credential_id, usuario_id, public_key, sign_count, _now()),
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM webauthn_credential WHERE id = ?", (credential_id,)).fetchone())
+
+
+def get_credencial_webauthn(usuario_id: str) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM webauthn_credential WHERE usuario_id = ? ORDER BY criado_em DESC LIMIT 1",
+            (usuario_id,),
+        ).fetchone()
+        return _row_to_dict(row)
+
+
+def atualizar_sign_count(credential_id: str, sign_count: int):
+    with get_conn() as conn:
+        conn.execute("UPDATE webauthn_credential SET sign_count = ? WHERE id = ?", (sign_count, credential_id))
         conn.commit()

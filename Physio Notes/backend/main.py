@@ -1,7 +1,8 @@
 import os
+import secrets
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -10,6 +11,11 @@ from pydantic import BaseModel
 import database as db
 import transcribe
 import ai
+
+# ---------- WebAuthn session store (in-memory) ----------
+_challenges: dict[str, bytes] = {}   # username -> challenge bytes
+_sessions: dict[str, str] = {}       # token -> username
+_USERNAME = "fisioterapeuta"          # usuário fixo para o MVP
 
 
 # ---------- Lifespan ----------
@@ -451,6 +457,168 @@ def listar_pacotes(paciente_id: int):
 @app.delete("/pacotes/{pacote_id}", status_code=204)
 def deletar_pacote(pacote_id: int):
     db.deletar_pacote(pacote_id)
+
+
+# ---------- Auth WebAuthn ----------
+
+@app.post("/auth/register/begin")
+async def auth_register_begin(request: Request):
+    from webauthn import generate_registration_options, options_to_json
+    from webauthn.helpers.structs import (
+        AuthenticatorSelectionCriteria,
+        AuthenticatorAttachment,
+        ResidentKeyRequirement,
+        UserVerificationRequirement,
+    )
+    import json
+
+    usuario = db.get_usuario_por_username(_USERNAME)
+    if not usuario:
+        usuario = db.criar_usuario(_USERNAME)
+
+    options = generate_registration_options(
+        rp_id="localhost",
+        rp_name="Physio Notes",
+        user_id=usuario["id"].encode(),
+        user_name=_USERNAME,
+        user_display_name="Fisioterapeuta",
+        authenticator_selection=AuthenticatorSelectionCriteria(
+            authenticator_attachment=AuthenticatorAttachment.PLATFORM,
+            resident_key=ResidentKeyRequirement.PREFERRED,
+            user_verification=UserVerificationRequirement.REQUIRED,
+        ),
+    )
+    _challenges[_USERNAME] = options.challenge
+    return json.loads(options_to_json(options))
+
+
+@app.post("/auth/register/complete")
+async def auth_register_complete(request: Request, body: dict):
+    from webauthn import verify_registration_response
+    from webauthn.helpers.structs import RegistrationCredential, AuthenticatorAttestationResponse
+    from webauthn.helpers import base64url_to_bytes
+
+    challenge = _challenges.get(_USERNAME)
+    if not challenge:
+        raise HTTPException(400, "Nenhum registro pendente. Inicie o processo novamente.")
+
+    origin = str(request.base_url).rstrip("/")
+
+    try:
+        credential = RegistrationCredential(
+            id=body["id"],
+            raw_id=base64url_to_bytes(body["rawId"]),
+            response=AuthenticatorAttestationResponse(
+                client_data_json=base64url_to_bytes(body["response"]["clientDataJSON"]),
+                attestation_object=base64url_to_bytes(body["response"]["attestationObject"]),
+            ),
+            type=body.get("type", "public-key"),
+        )
+        verified = verify_registration_response(
+            credential=credential,
+            expected_challenge=challenge,
+            expected_rp_id="localhost",
+            expected_origin=origin,
+            require_user_verification=True,
+        )
+    except Exception as e:
+        raise HTTPException(400, f"Falha na verificação: {str(e)}")
+
+    _challenges.pop(_USERNAME, None)
+
+    usuario = db.get_usuario_por_username(_USERNAME)
+    from webauthn.helpers import bytes_to_base64url
+    credential_id_str = bytes_to_base64url(verified.credential_id)
+    db.salvar_credencial_webauthn(usuario["id"], credential_id_str, verified.credential_public_key, verified.sign_count)
+
+    token = secrets.token_hex(32)
+    _sessions[token] = _USERNAME
+    return {"token": token, "message": "Dispositivo registrado com sucesso"}
+
+
+@app.post("/auth/login/begin")
+async def auth_login_begin(request: Request):
+    from webauthn import generate_authentication_options, options_to_json
+    from webauthn.helpers.structs import PublicKeyCredentialDescriptor, UserVerificationRequirement
+    from webauthn.helpers import base64url_to_bytes
+    import json
+
+    usuario = db.get_usuario_por_username(_USERNAME)
+    if not usuario:
+        raise HTTPException(404, "Nenhum dispositivo registrado. Faça o registro primeiro.")
+
+    credencial = db.get_credencial_webauthn(usuario["id"])
+    if not credencial:
+        raise HTTPException(404, "Nenhum dispositivo registrado. Faça o registro primeiro.")
+
+    options = generate_authentication_options(
+        rp_id="localhost",
+        allow_credentials=[PublicKeyCredentialDescriptor(id=base64url_to_bytes(credencial["id"]))],
+        user_verification=UserVerificationRequirement.REQUIRED,
+    )
+    _challenges[_USERNAME] = options.challenge
+    return json.loads(options_to_json(options))
+
+
+@app.post("/auth/login/complete")
+async def auth_login_complete(request: Request, body: dict):
+    from webauthn import verify_authentication_response
+    from webauthn.helpers.structs import AuthenticationCredential, AuthenticatorAssertionResponse
+    from webauthn.helpers import base64url_to_bytes
+
+    challenge = _challenges.get(_USERNAME)
+    if not challenge:
+        raise HTTPException(400, "Nenhum login pendente. Inicie o processo novamente.")
+
+    usuario = db.get_usuario_por_username(_USERNAME)
+    if not usuario:
+        raise HTTPException(404, "Usuário não encontrado.")
+
+    credencial = db.get_credencial_webauthn(usuario["id"])
+    if not credencial:
+        raise HTTPException(404, "Credencial não encontrada.")
+
+    origin = str(request.base_url).rstrip("/")
+
+    try:
+        credential = AuthenticationCredential(
+            id=body["id"],
+            raw_id=base64url_to_bytes(body["rawId"]),
+            response=AuthenticatorAssertionResponse(
+                client_data_json=base64url_to_bytes(body["response"]["clientDataJSON"]),
+                authenticator_data=base64url_to_bytes(body["response"]["authenticatorData"]),
+                signature=base64url_to_bytes(body["response"]["signature"]),
+            ),
+            type=body.get("type", "public-key"),
+        )
+        verified = verify_authentication_response(
+            credential=credential,
+            expected_challenge=challenge,
+            expected_rp_id="localhost",
+            expected_origin=origin,
+            credential_public_key=credencial["public_key"],
+            credential_current_sign_count=credencial["sign_count"],
+            require_user_verification=True,
+        )
+    except Exception as e:
+        raise HTTPException(401, f"Autenticação falhou: {str(e)}")
+
+    _challenges.pop(_USERNAME, None)
+    db.atualizar_sign_count(credencial["id"], verified.new_sign_count)
+
+    token = secrets.token_hex(32)
+    _sessions[token] = _USERNAME
+    return {"token": token}
+
+
+@app.get("/auth/status")
+def auth_status():
+    """Informa se já existe um dispositivo registrado."""
+    usuario = db.get_usuario_por_username(_USERNAME)
+    if not usuario:
+        return {"registered": False}
+    credencial = db.get_credencial_webauthn(usuario["id"])
+    return {"registered": bool(credencial)}
 
 
 # ---------- Frontend (deve ser montado por último) ----------

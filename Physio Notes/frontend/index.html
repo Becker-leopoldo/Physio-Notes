@@ -2,6 +2,12 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <script>
+    // Auth gate — redireciona para login se não autenticado
+    if (!localStorage.getItem('physio_token')) {
+      window.location.replace('/login.html');
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Physio Notes</title>
   <link rel="manifest" href="manifest.json">
@@ -707,6 +713,24 @@
       align-items: center;
       justify-content: space-between;
     }
+    #btn-logout {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      z-index: 300;
+      transition: color 0.15s;
+    }
+    #btn-logout:hover { color: var(--color-danger); }
     .home-title { font-family: var(--font-display); font-size: var(--text-3xl); }
     .home-subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); margin-top: var(--space-1); }
 
@@ -851,6 +875,11 @@
 </div>
 
 <div id="app">
+  <button id="btn-logout" title="Sair" onclick="fazerLogout()">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
   <!-- ======================== SECTION: HOME (Pacientes) ======================== -->
   <section id="sec-home" class="section active">
@@ -3060,6 +3089,27 @@
      INIT
   ============================================================ */
   loadPacientes();
+
+  /* ============================================================
+     AUTH — Logout e inatividade
+  ============================================================ */
+  function fazerLogout() {
+    localStorage.removeItem('physio_token');
+    window.location.replace('/login.html');
+  }
+
+  // Auto-logout após 30 minutos de inatividade
+  const INATIVIDADE_MS = 30 * 60 * 1000;
+  let timerInatividade = setTimeout(fazerLogout, INATIVIDADE_MS);
+
+  function resetarInatividade() {
+    clearTimeout(timerInatividade);
+    timerInatividade = setTimeout(fazerLogout, INATIVIDADE_MS);
+  }
+
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(ev => {
+    document.addEventListener(ev, resetarInatividade, { passive: true });
+  });
 </script>
 </body>
 </html>
