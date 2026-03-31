@@ -357,7 +357,8 @@ def get_billing_mes(ano_mes: str) -> dict:
             """SELECT COUNT(*) as total_chamadas,
                       SUM(input_tokens) as total_input,
                       SUM(output_tokens) as total_output,
-                      SUM(custo_usd) as total_usd
+                      SUM(custo_usd) as total_usd,
+                      COUNT(DISTINCT DATE(criado_em)) as dias_com_uso
                FROM api_uso WHERE strftime('%Y-%m', criado_em) = ?""",
             (ano_mes,),
         ).fetchone()
@@ -379,6 +380,7 @@ def get_billing_mes(ano_mes: str) -> dict:
             "total_input_tokens": totais["total_input"] or 0,
             "total_output_tokens": totais["total_output"] or 0,
             "total_usd": round(totais["total_usd"] or 0, 6),
+            "dias_com_uso": totais["dias_com_uso"] or 0,
             "por_tipo": [_row_to_dict(r) for r in por_tipo],
         }
 

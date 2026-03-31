@@ -1181,9 +1181,7 @@
   /* ============================================================
      CONFIG
   ============================================================ */
-  const API_BASE = (window.location.port === '8000' || window.location.hostname === 'localhost')
-    ? 'http://localhost:8000'
-    : '';
+  const API_BASE = window.location.origin;
 
   /* ============================================================
      STATE
@@ -2668,7 +2666,7 @@
 
   function fmtBRL(usd, cotacao) {
     const brl = (usd || 0) * cotacao;
-    return brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 4 });
+    return brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function fmtTokens(n) {
@@ -2724,30 +2722,34 @@
           </div>
         </div>`}).join('');
 
-    // Projeção fim do mês — só para o mês atual com dados
+    // Métricas de custo
     const hoje = new Date();
     const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
     const isMesAtual = mes_atual.mes === mesHoje && mes_atual.total_chamadas > 0;
-    let projecaoCard = '';
+    const diasComUso = mes_atual.dias_com_uso || 1;
+    const custoPorDia = mes_atual.total_usd / diasComUso;
+
+    let cardProjecao = '';
     if (isMesAtual) {
       const diaAtual = hoje.getDate();
       const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
-      const custoPorDia = mes_atual.total_usd / diaAtual;
       const projecao = mes_atual.total_usd + custoPorDia * (diasNoMes - diaAtual);
       const pct = Math.round((diaAtual / diasNoMes) * 100);
-      projecaoCard = `
-        <div class="card" style="padding:var(--space-5);grid-column:1/-1;border-left:3px solid var(--color-border-strong);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
-            <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);">Projeção fim do mês</div>
-            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">dia ${diaAtual} de ${diasNoMes} (${pct}% do mês)</span>
-          </div>
-          <div style="display:flex;align-items:baseline;gap:var(--space-3);">
-            <div style="font-size:var(--text-2xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(projecao, cotacao)}</div>
-            <div style="font-size:var(--text-sm);color:var(--color-text-muted);">estimativa baseada em ${fmtBRL(custoPorDia, cotacao)}/dia</div>
-          </div>
-          <div style="margin-top:var(--space-3);background:var(--color-border);border-radius:var(--radius-full);height:4px;overflow:hidden;">
+      cardProjecao = `
+        <div class="card" style="padding:var(--space-5);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Projeção</div>
+          <div style="font-size:var(--text-2xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(projecao, cotacao)}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);margin-bottom:var(--space-3);">dia ${diaAtual} de ${diasNoMes} · ${pct}% do mês</div>
+          <div style="background:var(--color-border);border-radius:var(--radius-full);height:4px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);transition:width 0.5s;"></div>
           </div>
+        </div>`;
+    } else {
+      cardProjecao = `
+        <div class="card" style="padding:var(--space-5);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Custo final</div>
+          <div style="font-size:var(--text-2xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(mes_atual.total_usd, cotacao)}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">${diasComUso} dia${diasComUso > 1 ? 's' : ''} com uso</div>
         </div>`;
     }
 
@@ -2775,24 +2777,33 @@
         <span style="font-size:var(--text-xs);color:var(--color-text-muted);">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-4);margin-bottom:var(--space-6);">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-5);">
         <div class="card" style="padding:var(--space-5);">
           <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Custo total</div>
           <div style="font-size:var(--text-2xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(mes_atual.total_usd, cotacao)}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">${mes_atual.total_chamadas} chamada${mes_atual.total_chamadas !== 1 ? 's' : ''}</div>
         </div>
         <div class="card" style="padding:var(--space-5);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Custo diário</div>
+          <div style="font-size:var(--text-2xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(custoPorDia, cotacao)}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">média · ${diasComUso} dia${diasComUso > 1 ? 's' : ''} com uso</div>
+        </div>
+        ${cardProjecao}
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-6);">
+        <div class="card" style="padding:var(--space-4);">
           <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Chamadas IA</div>
-          <div style="font-size:var(--text-2xl);font-weight:600;">${mes_atual.total_chamadas}</div>
+          <div style="font-size:var(--text-xl);font-weight:600;">${mes_atual.total_chamadas}</div>
         </div>
-        <div class="card" style="padding:var(--space-5);">
-          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Tokens de entrada</div>
-          <div style="font-size:var(--text-2xl);font-weight:600;">${fmtTokens(mes_atual.total_input_tokens)}</div>
+        <div class="card" style="padding:var(--space-4);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Tokens entrada</div>
+          <div style="font-size:var(--text-xl);font-weight:600;">${fmtTokens(mes_atual.total_input_tokens)}</div>
         </div>
-        <div class="card" style="padding:var(--space-5);">
-          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Tokens de saída</div>
-          <div style="font-size:var(--text-2xl);font-weight:600;">${fmtTokens(mes_atual.total_output_tokens)}</div>
+        <div class="card" style="padding:var(--space-4);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Tokens saída</div>
+          <div style="font-size:var(--text-xl);font-weight:600;">${fmtTokens(mes_atual.total_output_tokens)}</div>
         </div>
-        ${projecaoCard}
       </div>
 
       ${mes_atual.total_chamadas > 0 ? `
