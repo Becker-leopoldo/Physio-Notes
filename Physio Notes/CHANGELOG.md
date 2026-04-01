@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.15 — 2026-04-01
+
+### Correções
+- Faturamento (pacotes e procedimentos) agora isolado por usuário
+- Notas fiscais agora isoladas por usuário
+- Multi-tenancy completo: todos os dados separados por conta
+
+---
+
 ## Beta-0.14 — 2026-04-01
 
 ### Funcionalidades
