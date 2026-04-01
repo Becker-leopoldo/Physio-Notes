@@ -3170,7 +3170,8 @@
         textContent: data.paciente?.nome || '',
       });
       body.appendChild(title);
-      const narrative = el('div', { className: 'narrative', textContent: data.resumo });
+      const narrative = el('div', { className: 'narrative' });
+      narrative.innerHTML = anamneseToHtml(data.resumo);
       body.appendChild(narrative);
     } catch (e) {
       body.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
@@ -3206,7 +3207,8 @@
         body: JSON.stringify({ pergunta }),
       });
       result.innerHTML = '';
-      const resp = el('div', { className: 'ai-response', textContent: data.resposta });
+      const resp = el('div', { className: 'ai-response' });
+      resp.innerHTML = anamneseToHtml(data.resposta);
       const clearBtn = el('button', {
         className: 'btn btn-ghost btn-sm',
         textContent: 'Limpar',
