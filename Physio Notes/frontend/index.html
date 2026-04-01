@@ -1597,7 +1597,7 @@
     return err?.message || 'Algo deu errado. Tente novamente.';
   }
 
-  // Renderiza texto de anamnese com markdown básico (**bold** e listas)
+  // Renderiza texto de anamnese com markdown básico (# títulos, **bold**, listas)
   function anamneseToHtml(text) {
     if (!text) return '';
     const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1610,6 +1610,20 @@
       if (!line) {
         if (inList) { out.push('</ul>'); inList = false; }
         out.push('<div style="height:var(--space-2)"></div>');
+        continue;
+      }
+      // H1: # Título principal — com underline elegante
+      if (/^# /.test(line)) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        const title = bold(line.slice(2));
+        out.push(`<div style="font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--color-text);padding-bottom:var(--space-2);margin-bottom:var(--space-3);border-bottom:2px solid var(--color-accent);">${title}</div>`);
+        continue;
+      }
+      // H2: ## Seção secundária
+      if (/^## /.test(line)) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        const title = bold(line.slice(3));
+        out.push(`<div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-top:var(--space-4);margin-bottom:var(--space-1);">${title}</div>`);
         continue;
       }
       if (line.startsWith('- ')) {
@@ -1626,7 +1640,7 @@
 
   function anamnesePreviewText(text) {
     if (!text) return 'Nenhuma anamnese registrada.';
-    const stripped = text.replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
+    const stripped = text.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
     return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
   }
 
