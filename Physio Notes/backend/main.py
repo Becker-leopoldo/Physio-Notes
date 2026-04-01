@@ -17,6 +17,12 @@ _challenges: dict[str, bytes] = {}   # username -> challenge bytes
 _sessions: dict[str, str] = {}       # token -> username
 _USERNAME = "fisioterapeuta"          # usuário fixo para o MVP
 
+# WebAuthn: configurable via env vars for cloud deployments
+# WEBAUTHN_RP_ID  = "meudominio.com"   (sem protocolo, sem porta)
+# WEBAUTHN_ORIGIN = "https://meudominio.com"  (com protocolo, sem barra final)
+_RP_ID = os.environ.get("WEBAUTHN_RP_ID", "localhost")
+_ORIGIN_OVERRIDE = os.environ.get("WEBAUTHN_ORIGIN", "")  # se vazio, usa request.base_url
+
 
 # ---------- Lifespan ----------
 
@@ -477,7 +483,7 @@ async def auth_register_begin(request: Request):
         usuario = db.criar_usuario(_USERNAME)
 
     options = generate_registration_options(
-        rp_id="localhost",
+        rp_id=_RP_ID,
         rp_name="Physio Notes",
         user_id=usuario["id"].encode(),
         user_name=_USERNAME,
@@ -502,7 +508,7 @@ async def auth_register_complete(request: Request, body: dict):
     if not challenge:
         raise HTTPException(400, "Nenhum registro pendente. Inicie o processo novamente.")
 
-    origin = str(request.base_url).rstrip("/")
+    origin = _ORIGIN_OVERRIDE or str(request.base_url).rstrip("/")
 
     try:
         credential = RegistrationCredential(
@@ -517,7 +523,7 @@ async def auth_register_complete(request: Request, body: dict):
         verified = verify_registration_response(
             credential=credential,
             expected_challenge=challenge,
-            expected_rp_id="localhost",
+            expected_rp_id=_RP_ID,
             expected_origin=origin,
             require_user_verification=True,
         )
@@ -552,7 +558,7 @@ async def auth_login_begin(request: Request):
         raise HTTPException(404, "Nenhum dispositivo registrado. Faça o registro primeiro.")
 
     options = generate_authentication_options(
-        rp_id="localhost",
+        rp_id=_RP_ID,
         allow_credentials=[PublicKeyCredentialDescriptor(id=base64url_to_bytes(credencial["id"]))],
         user_verification=UserVerificationRequirement.REQUIRED,
     )
@@ -578,7 +584,7 @@ async def auth_login_complete(request: Request, body: dict):
     if not credencial:
         raise HTTPException(404, "Credencial não encontrada.")
 
-    origin = str(request.base_url).rstrip("/")
+    origin = _ORIGIN_OVERRIDE or str(request.base_url).rstrip("/")
 
     try:
         credential = AuthenticationCredential(
@@ -594,7 +600,7 @@ async def auth_login_complete(request: Request, body: dict):
         verified = verify_authentication_response(
             credential=credential,
             expected_challenge=challenge,
-            expected_rp_id="localhost",
+            expected_rp_id=_RP_ID,
             expected_origin=origin,
             credential_public_key=credencial["public_key"],
             credential_current_sign_count=credencial["sign_count"],
