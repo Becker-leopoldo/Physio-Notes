@@ -41,14 +41,14 @@ async def consolidar_sessao(transcricoes: list[str]) -> dict:
         f"[Trecho {i + 1}]: {t}" for i, t in enumerate(transcricoes)
     )
 
-    prompt = f"""Você é um assistente clínico de fisioterapia. A seguir estão transcrições brutas de áudio de uma sessão — a fala é informal, coloquial, com hesitações e repetições normais de conversa.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação musculoesquelética, neurológica e respiratória, e dos jargões técnicos da fisioterapia brasileira. A seguir estão transcrições brutas de áudio de uma sessão — a fala é informal, coloquial, com hesitações e repetições normais de conversa.
 
 Sua tarefa: transformar essa fala informal em uma nota clínica profissional em texto corrido, em português.
 
 Regras:
 - Elimine vícios de linguagem ("é", "aí", "né", "tipo", "então"), repetições e hesitações
 - Escreva em terceira pessoa (ex: "Paciente relata...", "Foi realizado...", "Observou-se...")
-- Use terminologia fisioterapêutica adequada quando possível
+- Interprete e converta corretamente jargões e abreviações clínicas da fisioterapia (ex: "DDC", "TENS", "FNP", "RPG", "PNF", "ESWT", "RICE", "ADM", "EVA", etc.)
 - Mantenha TODOS os fatos clínicos mencionados, mesmo que ditos informalmente
 - Texto corrido, sem títulos, sem listas, sem formatação
 
@@ -140,7 +140,7 @@ async def extrair_dados_paciente(transcricao: str) -> dict:
     Extrai dados estruturados do paciente a partir de uma transcrição de áudio.
     Retorna dict com: nome, data_nascimento (formato YYYY-MM-DD ou None), anamnese.
     """
-    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio introduzindo um novo paciente.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio dos jargões, abreviações e terminologia técnica da fisioterapia brasileira. A fisioterapeuta gravou um áudio introduzindo um novo paciente.
 
 Extraia as seguintes informações da transcrição e retorne APENAS um JSON válido com estas chaves:
 
@@ -235,7 +235,7 @@ async def detectar_procedimentos_extras(transcricao_completa: str, nota_clinica:
     Retorna lista de {descricao, valor} — valor pode ser None.
     """
     nota_bloco = f"\n\nNOTA CLÍNICA CONSOLIDADA:\n{nota_clinica}" if nota_clinica else ""
-    prompt = f"""Você é um assistente de faturamento de clínica de fisioterapia.
+    prompt = f"""Você é um fisioterapeuta clínico experiente que também gerencia o faturamento da clínica, conhecendo profundamente os procedimentos e técnicas da área.
 
 Analise o texto abaixo (transcrição de sessão clínica{' e nota consolidada' if nota_clinica else ''}) e identifique APENAS cobranças ou procedimentos extras que foram realizados ALÉM do pacote de sessões padrão.
 
@@ -292,7 +292,7 @@ async def extrair_procedimento(transcricao: str) -> dict:
     Extrai dados de um procedimento extra a partir de transcrição.
     Retorna dict com: descricao (str), valor (float|None).
     """
-    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio mencionando um procedimento ou serviço extra cobrado nesta sessão.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio dos procedimentos, técnicas e terminologia da fisioterapia brasileira. A fisioterapeuta gravou um áudio mencionando um procedimento ou serviço extra cobrado nesta sessão.
 
 Extraia as seguintes informações e retorne APENAS um JSON válido:
 
@@ -347,7 +347,7 @@ async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dic
 
     historico_formatado = "\n\n---\n\n".join(sessoes_texto)
 
-    prompt = f"""Você é um assistente clínico especializado em fisioterapia, ajudando uma fisioterapeuta a consultar o histórico de um paciente.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação e dos jargões técnicos da fisioterapia brasileira, ajudando uma colega a consultar o histórico de um paciente.
 
 {anamnese_bloco}Histórico de sessões do paciente:
 {historico_formatado}
@@ -372,7 +372,7 @@ Responda em português."""
 
 async def resumir_documento(texto: str) -> str:
     """Gera resumo clínico de um documento PDF enviado pelo fisioterapeuta."""
-    prompt = f"""Você é um assistente clínico especializado em fisioterapia.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio de anatomia, biomecânica, reabilitação e dos jargões técnicos da fisioterapia brasileira.
 O documento abaixo é um prontuário, laudo, exame ou relatório médico de um paciente.
 
 Faça um resumo clínico objetivo em português com:
