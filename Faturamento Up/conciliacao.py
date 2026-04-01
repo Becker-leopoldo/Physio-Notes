@@ -147,7 +147,7 @@ def save_fitids_usados(invoices: list[dict], credits: list[dict], mes_nome: str)
 
 
 # ── 1. OFX ───────────────────────────────────────────────────
-def load_credits(start: datetime, end: datetime, fitids_usados: dict) -> list[dict]:
+def load_credits(start: datetime, end: datetime, fitids_usados: dict, mes_nome: str = "") -> list[dict]:
     ofx_files = sorted(OFX_DIR.glob("*.ofx"))
     if not ofx_files:
         raise FileNotFoundError(f"Nenhum arquivo .ofx encontrado em '{OFX_DIR}/'")
@@ -179,7 +179,7 @@ def load_credits(start: datetime, end: datetime, fitids_usados: dict) -> list[di
             fitid = fld("FITID")
             if fitid and fitid in seen_fitids:
                 continue   # duplicata entre arquivos OFX
-            if fitid and fitid in fitids_usados:
+            if fitid and fitid in fitids_usados and fitids_usados[fitid] != mes_nome:
                 print(f"  [FITID {fitid}] ja utilizado em {fitids_usados[fitid]} — ignorado")
                 continue
             if fitid:
@@ -295,6 +295,36 @@ def match_boletos_iugu(boletos: list[dict], credits: list[dict]) -> tuple:
         taxa = round(bruto - iugu_cr["amount"], 2)
         print(f"    candidato: R${iugu_cr['amount']:,.2f} em {iugu_cr['date'].strftime('%d/%m/%Y')} -> taxa seria R${taxa:,.2f}")
     return None, None
+
+
+# ── 3a. Confirmações por PDF (pagamentos fora da janela OFX) ──
+# Estrutura: nota_fiscal → {data_pgto, valor_total, memo, tipo}
+PDF_CONFIRMACOES: dict[str, dict] = {
+    # Saint-Gobain Quartzolit — aviso 2001218138 (30/03/2026) — apenas NFs de janeiro
+    "3441": {"data": datetime(2026, 3, 30), "valor": 1374.35, "memo": "SAINT-GOBAIN DO BRASIL QUARTZOLIT 61.064.838/0034-00", "tipo": "Aviso Pgto PDF"},
+    "3440": {"data": datetime(2026, 3, 30), "valor": 1979.05, "memo": "SAINT-GOBAIN DO BRASIL QUARTZOLIT 61.064.838/0034-00", "tipo": "Aviso Pgto PDF"},
+    # Saint-Gobain GBS SEDE — aviso 2001218523 (30/03/2026)
+    "3444": {"data": datetime(2026, 3, 30), "valor": 2285.71, "memo": "SAINT-GOBAIN DO BRASIL GBS SEDE 61.064.838/0053-64", "tipo": "Aviso Pgto PDF"},
+    "3443": {"data": datetime(2026, 3, 30), "valor": 4977.90, "memo": "SAINT-GOBAIN DO BRASIL GBS SEDE 61.064.838/0053-64", "tipo": "Aviso Pgto PDF"},
+    "3442": {"data": datetime(2026, 3, 30), "valor": 3353.40, "memo": "SAINT-GOBAIN DO BRASIL GBS SEDE 61.064.838/0053-64", "tipo": "Aviso Pgto PDF"},
+}
+
+def match_pdf_confirmacoes(invoices: list[dict]):
+    """Marca NFs cujo número consta em PDF_CONFIRMACOES, sem depender do OFX."""
+    for inv in invoices:
+        if inv["fonte"]:
+            continue
+        conf = PDF_CONFIRMACOES.get(str(inv["nota"]).strip())
+        if not conf:
+            continue
+        if not close(inv["valor"], conf["valor"]):
+            print(f"  [PDF] NF {inv['nota']}: valor diverge (planilha R${inv['valor']:,.2f} vs PDF R${conf['valor']:,.2f}) — ignorado")
+            continue
+        inv["pago_em"]   = conf["data"]
+        inv["fonte"]     = conf["memo"]
+        inv["tipo"]      = conf["tipo"]
+        inv["cr_amount"] = conf["valor"]
+        print(f"  [PDF] NF {inv['nota']}  {inv['cliente']:<38}  R${inv['valor']:,.2f}  -> {conf['data'].strftime('%d/%m/%Y')}")
 
 
 # ── 3. Matching ───────────────────────────────────────────────
@@ -421,7 +451,7 @@ if __name__ == "__main__":
     print(f"  {len(fitids_usados)} credito(s) ja consumidos em meses anteriores")
 
     print("Carregando creditos OFX...")
-    credits = load_credits(cfg["start"], cfg["end"], fitids_usados)
+    credits = load_credits(cfg["start"], cfg["end"], fitids_usados, cfg["nome"])
     print(f"  {len(credits)} creditos disponiveis na janela")
 
     print("Conectando ao Google Sheets...")
@@ -436,6 +466,9 @@ if __name__ == "__main__":
     invoices    = [inv for inv in all_inv if not inv["is_boleto"]]
     boletos     = [inv for inv in all_inv if inv["is_boleto"]]
     print(f"  {len(invoices)} NFs (TED/PIX) | {len(boletos)} boletos iugu")
+
+    print("Rodando matching por confirmacao PDF...")
+    match_pdf_confirmacoes(invoices)
 
     print("Rodando matching NFs...")
     run_match(invoices, credits, aliases)

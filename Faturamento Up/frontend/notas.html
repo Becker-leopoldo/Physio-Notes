@@ -30,7 +30,7 @@
     .sidebar.collapsed .sidebar-footer { padding: var(--space-4) var(--space-3); }
     .sidebar.collapsed .user-info { justify-content: center; }
     .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
-    .sidebar.collapsed ~ .main-content { width: calc(100% - 56px); }
+    .sidebar.collapsed ~ .main-content { margin-left: 56px; }
     .sidebar-footer { position: relative; }
     .user-menu-trigger {
       cursor: pointer; border-radius: var(--radius-md); padding: var(--space-2);
@@ -116,6 +116,14 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Conciliação
       </a>
+      <a href="/receitas" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="2" rx="1" fill="currentColor" opacity=".3"/><rect x="1" y="7" width="14" height="2" rx="1" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="10" height="2" rx="1" fill="currentColor"/></svg>
+        Receitas
+      </a>
+      <a href="/clientes" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M14 14c0-2-1-3.5-2-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Clientes
+      </a>
       <a href="/aliases" class="nav-item">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Aliases
@@ -136,6 +144,7 @@
   </aside>
 
   <main class="main-content">
+    <div class="main-content-inner">
     <header class="page-header">
       <h1 class="page-title">Notas Fiscais</h1>
       <p class="page-subtitle">Gerencie e acompanhe as NFs por mês</p>
@@ -191,6 +200,7 @@
     </section>
 
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
+    </div>
   </main>
 </div>
 
@@ -198,6 +208,13 @@
 <div class="modal-overlay" id="addModal">
   <div class="modal">
     <div class="modal-title" id="modalTitle">Nova Nota Fiscal</div>
+    <div class="form-group" id="receitaGroup" style="margin-bottom: var(--space-5); padding-bottom: var(--space-5); border-bottom: var(--border);">
+      <label class="form-label">Carregar receita cadastrada</label>
+      <select class="form-select" id="fReceita" onchange="carregarReceita()">
+        <option value="">— selecione para pré-preencher —</option>
+      </select>
+      <span class="form-hint">Selecione uma receita para preencher os campos automaticamente</span>
+    </div>
     <input type="hidden" id="editId">
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
       <div class="form-group" style="grid-column:1/-1;">
@@ -296,6 +313,43 @@
   userTrigger.addEventListener('click', (e) => { e.stopPropagation(); userMenu.classList.toggle('open'); });
   document.addEventListener('click', () => userMenu.classList.remove('open'));
 
+  let _receitas = [];
+
+  async function loadReceitas() {
+    try {
+      const res = await fetch('/api/receitas?ativo=true');
+      _receitas = await res.json();
+      const sel = document.getElementById('fReceita');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">— selecione para pré-preencher —</option>';
+      _receitas.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = `${r.cliente}${r.descricao ? ' — ' + r.descricao : ''} (R$ ${Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})})`;
+        sel.appendChild(opt);
+      });
+    } catch(e) {}
+  }
+
+  function carregarReceita() {
+    const sel = document.getElementById('fReceita');
+    const id = parseInt(sel.value);
+    if (!id) return;
+    const r = _receitas.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('fCliente').value = r.cliente;
+    document.getElementById('fValor').value = r.valor;
+    document.getElementById('fForma').value = r.forma_pagamento || 'PIX';
+    // Calculate vencimento from dia_vencimento + current fMes
+    if (r.dia_vencimento) {
+      const mes = parseInt(document.getElementById('fMes').value);
+      const year = new Date().getFullYear();
+      const day = String(r.dia_vencimento).padStart(2, '0');
+      const m = String(mes).padStart(2, '0');
+      document.getElementById('fVenc').value = `${day}/${m}/${year}`;
+    }
+  }
+
   const MESES = {1:'Janeiro',2:'Fevereiro',3:'Março',4:'Abril',5:'Maio',6:'Junho',7:'Julho',8:'Agosto',9:'Setembro',10:'Outubro',11:'Novembro',12:'Dezembro'};
   const STATUS_BADGE = { PAGO: 'badge-success', ABERTO: 'badge-warning', SEM_MATCH: 'badge-danger' };
 
@@ -347,6 +401,7 @@
   });
 
   function openAddModal() {
+    loadReceitas();
     document.getElementById('modalTitle').textContent = 'Nova Nota Fiscal';
     document.getElementById('editId').value = '';
     document.getElementById('fCliente').value = '';
@@ -354,12 +409,18 @@
     document.getElementById('fValor').value = '';
     document.getElementById('fVenc').value = '';
     document.getElementById('fForma').value = 'PIX';
+    document.getElementById('fMes').value = new Date().getMonth() + 1;
+    document.getElementById('receitaGroup').style.display = '';
     document.getElementById('addModal').classList.add('open');
   }
-  function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+  function closeAddModal() {
+    document.getElementById('addModal').classList.remove('open');
+    document.getElementById('fReceita').value = '';
+  }
 
   function editNF(n) {
     document.getElementById('modalTitle').textContent = 'Editar Nota Fiscal';
+    document.getElementById('receitaGroup').style.display = 'none';
     document.getElementById('editId').value = n.id;
     document.getElementById('fCliente').value = n.cliente;
     document.getElementById('fMes').value = n.mes_ref;

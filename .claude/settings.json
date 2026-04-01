@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(curl -s https://apicenter.estaleiro.serpro.gov.br/documentacao/datavalid/simulador/assets/index-nM5ah8io.js)",
+      "Bash(grep -oE 'placeholder:\"\"\"\"[^\"\"\"\"]{3,50}\"\"\"\"')",
+      "Bash(grep -oE 'nome:[^,}]{1,60}')",
+      "Bash(grep -oE 'data_nascimento:[^,}]{1,60}')",
+      "Bash(grep -oE 'nome_mae:[^,}]{1,80}|nome_pai:[^,}]{1,80}|sexo:[^,}]{1,30}|nacionalidade:[^,}]{1,30}|data_nascimento:[^,}]{1,30}')",
+      "Bash(grep -oE 'logradouro:[^,}]{1,80}|bairro:[^,}]{1,80}|municipio:[^,}]{1,80}|cep:[^,}]{1,30}|uf:[^,}]{1,20}|numero:[^,}]{1,30}|complemento:[^,}]{1,50}')",
+      "Bash(grep -oE 'categoria:[^,}]{1,30}|numero_registro:[^,}]{1,30}|data_primeira_habilitacao:[^,}]{1,30}|data_validade:[^,}]{1,30}|data_ultima_emissao:[^,}]{1,30}|situacao_cnh:[^,}]{1,30}|rne:[^,}]{1,30}|observacoes:[^,}]{1,50}')",
+      "Bash(grep -oE 'tipo_documento:[^,}]{1,30}|num_documento:[^,}]{1,30}|orgao_expedidor:[^,}]{1,30}')",
+      "Bash(grep -oE 'situacao_cpf[^,}]{1,60}')",
+      "Bash(pip install:*)",
+      "Bash(powershell -Command \"Invoke-RestMethod -Uri ''http://localhost:8000/health''\")",
+      "Bash(powershell -Command \"Invoke-RestMethod -Uri ''http://localhost:8000/consulta/coren'' -Method POST -ContentType ''application/json'' -Body ''{\"\"cpf\"\":\"\"01030810893\"\"}''\")",
+      "WebFetch(domain:apicenter.estaleiro.serpro.gov.br)",
+      "Bash(python test_datavalid.py)"
     ]
   }
 }

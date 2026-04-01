@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes — Faturamento UP IT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <style>
+    /* ── Sidebar collapse ── */
+    .sidebar-toggle {
+      position: absolute; top: var(--space-5); right: calc(-1 * var(--space-4));
+      width: 24px; height: 24px; border-radius: var(--radius-full);
+      background: var(--color-surface); border: var(--border-strong);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 101; transition: background 0.15s; box-shadow: var(--shadow-sm);
+    }
+    .sidebar-toggle:hover { background: var(--color-accent-light); }
+    .sidebar-toggle svg { transition: transform 0.25s; }
+    .sidebar-brand { position: relative; }
+    .sidebar { transition: width 0.25s ease; overflow: hidden; }
+    .sidebar.collapsed { width: 56px; }
+    .sidebar.collapsed .brand-name,
+    .sidebar.collapsed .nav-section-label,
+    .sidebar.collapsed .user-name,
+    .sidebar.collapsed .user-role { display: none; }
+    .sidebar.collapsed .nav-item { justify-content: center; padding: var(--space-2); font-size: 0; gap: 0; }
+    .sidebar.collapsed .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .sidebar.collapsed .sidebar-brand { padding: 0 var(--space-3) var(--space-6); }
+    .sidebar.collapsed .sidebar-footer { padding: var(--space-4) var(--space-3); }
+    .sidebar.collapsed .user-info { justify-content: center; }
+    .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+    .sidebar.collapsed ~ .main-content { margin-left: 56px; }
+    .sidebar-footer { position: relative; }
+    .user-menu-trigger {
+      cursor: pointer; border-radius: var(--radius-md); padding: var(--space-2);
+      margin: calc(-1 * var(--space-2)); transition: background 0.15s;
+      width: calc(100% + var(--space-4));
+    }
+    .user-menu-trigger:hover { background: var(--color-accent-light); }
+    .user-menu {
+      position: absolute; bottom: calc(100% + var(--space-2)); left: 0; right: 0;
+      background: var(--color-surface); border: var(--border-strong);
+      border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+      padding: var(--space-2); display: none; z-index: 200;
+    }
+    .user-menu.open { display: block; }
+    .user-menu-item {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+      font-size: var(--text-sm); color: var(--color-text); text-decoration: none;
+      transition: background 0.15s; cursor: pointer; background: none;
+      border: none; width: 100%; font-family: var(--font-body);
+    }
+    .user-menu-item:hover { background: var(--color-accent-light); }
+    .user-menu-item-danger { color: var(--color-danger); }
+    .user-menu-item-danger:hover { background: var(--color-danger-bg); }
+    .sidebar.collapsed .user-menu { left: 0; right: auto; min-width: 160px; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; gap: var(--space-3); align-items: center;
+      margin-bottom: var(--space-6); flex-wrap: wrap;
+    }
+    .toolbar-spacer { flex: 1; }
+    .filter-toggle {
+      display: flex; border: var(--border-strong); border-radius: var(--radius-md); overflow: hidden;
+    }
+    .filter-toggle button {
+      padding: var(--space-2) var(--space-4); font-size: var(--text-sm);
+      font-family: var(--font-body); background: none; border: none; cursor: pointer;
+      color: var(--color-text-secondary); transition: background 0.15s, color 0.15s;
+    }
+    .filter-toggle button:not(:last-child) { border-right: var(--border-strong); }
+    .filter-toggle button.active { background: var(--color-accent); color: var(--color-surface); font-weight: 500; }
+    .filter-toggle button:not(.active):hover { background: var(--color-accent-light); color: var(--color-text); }
+
+    /* ── Table ── */
+    .clientes-table { width: 100%; border-collapse: collapse; }
+    .clientes-table th {
+      font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--color-text-secondary);
+      padding: var(--space-3) var(--space-4); border-bottom: var(--border-strong);
+      text-align: left; white-space: nowrap;
+    }
+    .clientes-table td {
+      padding: var(--space-3) var(--space-4); border-bottom: var(--border);
+      font-size: var(--text-sm); vertical-align: middle;
+    }
+    .clientes-table tbody tr:hover { background: var(--color-accent-light); cursor: pointer; }
+    .clientes-table th.text-right, .clientes-table td.text-right { text-align: right; }
+    td.col-actions { white-space: nowrap; }
+
+    /* Combined name+contact cell */
+    .cell-nome-nome { font-weight: 500; }
+    .cell-nome-contato { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 2px; }
+
+    /* Contact info cell */
+    .cell-contact { display: flex; flex-direction: column; gap: 2px; }
+    .cell-contact-email { font-size: var(--text-xs); color: var(--color-text-secondary); }
+    .cell-contact-tel { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+    /* Action buttons */
+    .action-btn {
+      background: none; border: none; cursor: pointer; padding: var(--space-1);
+      color: var(--color-text-secondary); border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s; display: inline-flex;
+      align-items: center; justify-content: center;
+    }
+    .action-btn:hover { background: var(--color-accent-light); color: var(--color-text); }
+    .action-btn.danger:hover { background: var(--color-danger-bg); color: var(--color-danger); }
+
+    .badge-status { cursor: pointer; user-select: none; transition: opacity 0.15s; }
+    .badge-status:hover { opacity: 0.75; }
+    .table-empty { text-align: center; padding: var(--space-12) var(--space-6); color: var(--color-text-muted); font-size: var(--text-sm); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500; padding: var(--space-4);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--color-surface); border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg); width: 520px; max-width: 100%;
+      max-height: 90vh; display: flex; flex-direction: column;
+    }
+    .modal-header {
+      padding: var(--space-6) var(--space-8) var(--space-4);
+      border-bottom: var(--border); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: var(--text-xl); font-weight: 600; }
+    .modal-close {
+      background: none; border: none; cursor: pointer; padding: var(--space-1);
+      color: var(--color-text-secondary); border-radius: var(--radius-sm);
+      display: flex; align-items: center; transition: background 0.15s;
+    }
+    .modal-close:hover { background: var(--color-accent-light); color: var(--color-text); }
+    .modal-body { padding: var(--space-6) var(--space-8); overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: var(--space-4) var(--space-8) var(--space-6);
+      border-top: var(--border); flex-shrink: 0;
+      display: flex; gap: var(--space-3); justify-content: flex-end;
+    }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+
+    /* Toggle switch */
+    .toggle-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; }
+    .toggle-label { font-size: var(--text-sm); color: var(--color-text); font-weight: 500; }
+    .toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0; background: var(--color-border-strong);
+      border-radius: var(--radius-full); cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--color-surface); transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-track { background: var(--color-success); }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+
+    /* Import modal */
+    .import-info {
+      font-size: var(--text-sm); color: var(--color-text-secondary);
+      background: var(--color-accent-light); border-radius: var(--radius-md);
+      padding: var(--space-4); margin-bottom: var(--space-4); line-height: 1.6;
+    }
+    .import-result { min-height: 2.5em; font-size: var(--text-sm); padding: var(--space-3) 0; }
+    .import-actions { display: flex; flex-direction: column; gap: var(--space-3); }
+    .import-action-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-3) var(--space-4); border: var(--border);
+      border-radius: var(--radius-md); gap: var(--space-4);
+    }
+    .import-action-label { font-size: var(--text-sm); font-weight: 500; }
+    .import-action-desc { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: 2px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: var(--space-6); right: var(--space-6);
+      background: var(--color-text); color: var(--color-surface);
+      padding: var(--space-3) var(--space-6); border-radius: var(--radius-md);
+      font-size: var(--text-sm); font-family: var(--font-body);
+      box-shadow: var(--shadow-lg); z-index: 1000;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--color-success); }
+    .toast.error   { background: var(--color-danger); }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-name">Faturamento UP IT</span>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Recolher menu">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+          Dashboard
+        </a>
+        <a href="/notas" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Notas Fiscais
+        </a>
+        <a href="/extrato" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Extrato OFX
+        </a>
+        <a href="/conciliacao" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Conciliação
+        </a>
+        <a href="/receitas" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="2" rx="1" fill="currentColor" opacity=".3"/><rect x="1" y="7" width="14" height="2" rx="1" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="10" height="2" rx="1" fill="currentColor"/></svg>
+          Receitas
+        </a>
+        <a href="/clientes" class="nav-item active">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M14 14c0-2-1-3.5-2-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Clientes
+        </a>
+        <a href="/aliases" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Aliases
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-menu" id="userMenu">
+          <a href="/login" class="user-menu-item user-menu-item-danger">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Sair
+          </a>
+        </div>
+        <div class="user-info user-menu-trigger" id="userMenuTrigger">
+          <div class="user-avatar">UP</div>
+          <div>
+            <div class="user-name">UP IT</div>
+            <div class="user-role">Financeiro</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="main-content-inner">
+
+        <header class="page-header">
+          <h1 class="page-title">Clientes</h1>
+          <p class="page-subtitle">Cadastro de clientes e parceiros</p>
+        </header>
+
+        <section class="page-body">
+          <div class="toolbar">
+            <div class="filter-toggle">
+              <button class="active" id="btnFilterAll"   onclick="setFilter('all')">Todos</button>
+              <button id="btnFilterAtivo" onclick="setFilter('ativo')">Ativos</button>
+            </div>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary" onclick="openImportModal()">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="margin-right:6px;">
+                <path d="M2 11v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Importar
+            </button>
+            <button class="btn btn-primary" onclick="openFormModal()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="margin-right:6px;">
+                <line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              Novo Cliente
+            </button>
+          </div>
+
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="table-wrapper" style="margin: 0;">
+              <table class="clientes-table">
+                <thead>
+                  <tr>
+                    <th>Nome / Contato</th>
+                    <th>CNPJ</th>
+                    <th>E-mail / Telefone</th>
+                    <th>Pagamento</th>
+                    <th>Status</th>
+                    <th class="text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="clientesTableBody">
+                  <tr><td colspan="6" class="table-empty">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <footer class="powered-bar">powered by <strong>up it</strong></footer>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Modal: Formulário ── -->
+  <div class="modal-overlay" id="formModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="formTitle">Novo Cliente</div>
+        <button class="modal-close" onclick="closeFormModal()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="clienteForm" onsubmit="handleSubmit(event)">
+          <input type="hidden" id="fieldId">
+
+          <div class="form-group">
+            <label class="form-label" for="fieldNome">Nome <span style="color:var(--color-danger)">*</span></label>
+            <input class="form-input" type="text" id="fieldNome" placeholder="Nome do cliente" required>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="fieldCNPJ">CNPJ</label>
+              <input class="form-input" type="text" id="fieldCNPJ" placeholder="00.000.000/0001-00">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fieldForma">Forma de Pagamento</label>
+              <select class="form-select" id="fieldForma">
+                <option value="PIX">PIX</option>
+                <option value="TED">TED</option>
+                <option value="BOLETO">BOLETO</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="fieldEmail">E-mail</label>
+              <input class="form-input" type="email" id="fieldEmail" placeholder="email@empresa.com.br">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fieldTelefone">Telefone</label>
+              <input class="form-input" type="text" id="fieldTelefone" placeholder="(00) 00000-0000">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="fieldContato">Pessoa de Contato</label>
+            <input class="form-input" type="text" id="fieldContato" placeholder="Nome do responsável">
+          </div>
+
+          <div class="toggle-row" style="margin-top: var(--space-2);">
+            <span class="toggle-label">Ativo</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="fieldAtivo" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeFormModal()">Cancelar</button>
+        <button type="submit" form="clienteForm" class="btn btn-primary" id="btnSalvar">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Importar ── -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal" style="width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title">Importar Clientes</div>
+        <button class="modal-close" onclick="closeImportModal()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="import-actions">
+          <div class="import-action-row">
+            <div>
+              <div class="import-action-label">Lista base UP IT</div>
+              <div class="import-action-desc">Carrega os 31 clientes conhecidos diretamente no banco</div>
+            </div>
+            <button class="btn btn-secondary" id="btnSeed" onclick="seedClientes()">Carregar</button>
+          </div>
+          <div class="import-action-row">
+            <div>
+              <div class="import-action-label">Google Sheets</div>
+              <div class="import-action-desc">Lê a aba <strong>Cadastros</strong> da planilha e sincroniza</div>
+            </div>
+            <button class="btn btn-secondary" id="btnSheets" onclick="importarSheets()">Importar</button>
+          </div>
+        </div>
+        <div class="import-result" id="importResult" style="color:var(--color-text-muted); margin-top: var(--space-4);">—</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeImportModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── Sidebar ───────────────────────────────────────────────────────────
+    const sidebar = document.querySelector('.sidebar');
+    document.getElementById('sidebarToggle').addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+    const userTrigger = document.getElementById('userMenuTrigger');
+    const userMenu    = document.getElementById('userMenu');
+    userTrigger.addEventListener('click', e => { e.stopPropagation(); userMenu.classList.toggle('open'); });
+    document.addEventListener('click', () => userMenu.classList.remove('open'));
+
+    // ── State ────────────────────────────────────────────────────────────
+    let allClientes = [];
+    let currentFilter = 'all';
+
+    // ── Toast ────────────────────────────────────────────────────────────
+    function showToast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast' + (type ? ' ' + type : '');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2800);
+    }
+
+    // ── Filter ────────────────────────────────────────────────────────────
+    function setFilter(f) {
+      currentFilter = f;
+      document.getElementById('btnFilterAll').classList.toggle('active', f === 'all');
+      document.getElementById('btnFilterAtivo').classList.toggle('active', f === 'ativo');
+      renderTable();
+    }
+
+    // ── Load ─────────────────────────────────────────────────────────────
+    async function loadClientes() {
+      try {
+        const res = await fetch('/api/clientes');
+        if (!res.ok) throw new Error();
+        allClientes = await res.json();
+        renderTable();
+      } catch {
+        document.getElementById('clientesTableBody').innerHTML =
+          `<tr><td colspan="6" class="table-empty" style="color:var(--color-danger)">Erro ao carregar clientes.</td></tr>`;
+      }
+    }
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Render table ─────────────────────────────────────────────────────
+    function renderTable() {
+      const data = currentFilter === 'ativo' ? allClientes.filter(c => c.ativo) : allClientes;
+      const tbody = document.getElementById('clientesTableBody');
+
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="table-empty">Nenhum cliente encontrado.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(c => `
+        <tr onclick="openEditModal(${c.id})" title="Clique para editar">
+          <td>
+            <div class="cell-nome-nome">${escHtml(c.nome)}</div>
+            ${c.contato ? `<div class="cell-nome-contato">${escHtml(c.contato)}</div>` : ''}
+          </td>
+          <td style="font-size:var(--text-xs);color:var(--color-text-secondary);font-family:monospace">${c.cnpj ? escHtml(c.cnpj) : '—'}</td>
+          <td>
+            <div class="cell-contact">
+              ${c.email   ? `<span class="cell-contact-email">${escHtml(c.email)}</span>`   : ''}
+              ${c.telefone ? `<span class="cell-contact-tel">${escHtml(c.telefone)}</span>` : ''}
+              ${!c.email && !c.telefone ? '<span style="color:var(--color-text-muted)">—</span>' : ''}
+            </div>
+          </td>
+          <td><span class="badge badge-neutral">${escHtml(c.forma_pagamento || '—')}</span></td>
+          <td>
+            <span class="badge ${c.ativo ? 'badge-success' : 'badge-neutral'} badge-status"
+              onclick="event.stopPropagation(); toggleAtivo(${c.id}, ${c.ativo})">
+              ${c.ativo ? 'Ativo' : 'Inativo'}
+            </span>
+          </td>
+          <td class="text-right col-actions">
+            <button class="action-btn" title="Editar" onclick="event.stopPropagation(); openEditModal(${c.id})">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5a1.5 1.5 0 0 1 2.121 2.121L5 13.243l-2.828.707.707-2.829L11.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="action-btn danger" title="Excluir" onclick="event.stopPropagation(); deleteCliente(${c.id}, '${escHtml(c.nome)}')">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ── Form modal ────────────────────────────────────────────────────────
+    function openFormModal(c = null) {
+      document.getElementById('formTitle').textContent = c ? 'Editar Cliente' : 'Novo Cliente';
+      document.getElementById('clienteForm').reset();
+      document.getElementById('fieldId').value       = c?.id        ?? '';
+      document.getElementById('fieldNome').value     = c?.nome      ?? '';
+      document.getElementById('fieldCNPJ').value     = c?.cnpj      ?? '';
+      document.getElementById('fieldEmail').value    = c?.email     ?? '';
+      document.getElementById('fieldTelefone').value = c?.telefone  ?? '';
+      document.getElementById('fieldContato').value  = c?.contato   ?? '';
+      document.getElementById('fieldForma').value    = c?.forma_pagamento ?? 'PIX';
+      document.getElementById('fieldAtivo').checked  = c != null ? !!c.ativo : true;
+      document.getElementById('btnSalvar').disabled = false;
+      document.getElementById('btnSalvar').textContent = 'Salvar';
+      document.getElementById('formModal').classList.add('open');
+    }
+
+    function openEditModal(id) {
+      const c = allClientes.find(x => x.id === id);
+      if (c) openFormModal(c);
+    }
+
+    function closeFormModal() {
+      document.getElementById('formModal').classList.remove('open');
+    }
+
+    // ── Save ─────────────────────────────────────────────────────────────
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('fieldId').value;
+      const body = {
+        nome:            document.getElementById('fieldNome').value.trim(),
+        cnpj:            document.getElementById('fieldCNPJ').value.trim()      || null,
+        email:           document.getElementById('fieldEmail').value.trim()     || null,
+        telefone:        document.getElementById('fieldTelefone').value.trim()  || null,
+        contato:         document.getElementById('fieldContato').value.trim()   || null,
+        forma_pagamento: document.getElementById('fieldForma').value,
+        ativo:           document.getElementById('fieldAtivo').checked,
+      };
+
+      const btn = document.getElementById('btnSalvar');
+      btn.disabled = true; btn.textContent = 'Salvando…';
+
+      try {
+        const res = await fetch(id ? `/api/clientes/${id}` : '/api/clientes', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error();
+        showToast(id ? 'Cliente atualizado.' : 'Cliente criado.', 'success');
+        closeFormModal();
+        await loadClientes();
+      } catch {
+        showToast('Erro ao salvar cliente.', 'error');
+        btn.disabled = false; btn.textContent = 'Salvar';
+      }
+    }
+
+    // ── Delete ────────────────────────────────────────────────────────────
+    async function deleteCliente(id, nome) {
+      if (!confirm(`Excluir o cliente "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+      try {
+        const res = await fetch(`/api/clientes/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        showToast('Cliente excluído.', 'success');
+        await loadClientes();
+      } catch {
+        showToast('Erro ao excluir cliente.', 'error');
+      }
+    }
+
+    // ── Toggle ativo ──────────────────────────────────────────────────────
+    async function toggleAtivo(id, current) {
+      const c = allClientes.find(x => x.id === id);
+      if (!c) return;
+      try {
+        const res = await fetch(`/api/clientes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...c, ativo: !current }),
+        });
+        if (!res.ok) throw new Error();
+        showToast(!current ? 'Cliente ativado.' : 'Cliente inativado.', 'success');
+        await loadClientes();
+      } catch {
+        showToast('Erro ao alterar status.', 'error');
+      }
+    }
+
+    // ── Import modal ──────────────────────────────────────────────────────
+    function openImportModal() {
+      document.getElementById('importResult').textContent = '—';
+      document.getElementById('importResult').style.color = 'var(--color-text-muted)';
+      document.getElementById('btnSeed').disabled = false;
+      document.getElementById('btnSeed').textContent = 'Carregar';
+      document.getElementById('btnSheets').disabled = false;
+      document.getElementById('btnSheets').textContent = 'Importar';
+      document.getElementById('importModal').classList.add('open');
+    }
+
+    function closeImportModal() {
+      document.getElementById('importModal').classList.remove('open');
+      loadClientes();
+    }
+
+    function setImportResult(html, color = 'var(--color-text)') {
+      const el = document.getElementById('importResult');
+      el.innerHTML = html;
+      el.style.color = color;
+    }
+
+    async function seedClientes() {
+      const btn = document.getElementById('btnSeed');
+      btn.disabled = true; btn.textContent = 'Carregando…';
+      setImportResult('Inserindo clientes base…', 'var(--color-text-muted)');
+      try {
+        const res  = await fetch('/api/clientes/seed', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Erro');
+        setImportResult(
+          `<span style="color:var(--color-success);font-weight:500">✓ Lista base carregada</span><br>
+           <span style="font-size:var(--text-xs)">${data.criados} criado(s) · ${data.ignorados ?? 0} já existiam</span>`,
+        );
+        await loadClientes();
+      } catch (err) {
+        setImportResult(`<span style="color:var(--color-danger)">${escHtml(err.message)}</span>`);
+        btn.disabled = false; btn.textContent = 'Carregar';
+      }
+    }
+
+    async function importarSheets() {
+      const btn = document.getElementById('btnSheets');
+      btn.disabled = true; btn.textContent = 'Importando…';
+      setImportResult('Conectando à planilha…', 'var(--color-text-muted)');
+      try {
+        const res  = await fetch('/api/clientes/importar-sheets', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Erro');
+        setImportResult(
+          `<span style="color:var(--color-success);font-weight:500">✓ Importação concluída — aba: ${escHtml(data.aba)}</span><br>
+           <span style="font-size:var(--text-xs)">${data.criados} criado(s) · ${data.atualizados} atualizado(s) · ${data.ignorados} ignorado(s)</span>`,
+        );
+        await loadClientes();
+      } catch (err) {
+        setImportResult(`<span style="color:var(--color-danger)">${escHtml(err.message)}</span>`);
+        btn.disabled = false; btn.textContent = 'Importar';
+      }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────
+    loadClientes();
+  </script>
+</body>
+</html>

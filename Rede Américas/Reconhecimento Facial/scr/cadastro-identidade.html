@@ -332,12 +332,12 @@
 
         <div class="form-group">
           <label class="form-label" for="nomeCompleto">Nome completo</label>
-          <input class="form-input" type="text" id="nomeCompleto" name="nomeCompleto" placeholder="Nome como consta no documento" value="Leopoldo Becker">
+          <input class="form-input" type="text" id="nomeCompleto" name="nomeCompleto" placeholder="Nome como consta no documento" value="Manuela Elisa da Mota">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="cpf">CPF</label>
-          <input class="form-input" type="text" id="cpf" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" value="219.607.028-90">
+          <input class="form-input" type="text" id="cpf" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" value="257.744.350-16">
         </div>
 
         <div class="form-row">
@@ -345,14 +345,14 @@
             <label class="form-label" for="sexo">Sexo</label>
             <select class="form-select" id="sexo" name="sexo">
               <option value="">Selecione...</option>
-              <option value="M" selected>Masculino</option>
-              <option value="F">Feminino</option>
+              <option value="M">Masculino</option>
+              <option value="F" selected>Feminino</option>
               <option value="O">Outro</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label" for="dataNascimento">Data de nascimento</label>
-            <input class="form-input" type="date" id="dataNascimento" name="dataNascimento" value="1981-04-04">
+            <input class="form-input" type="date" id="dataNascimento" name="dataNascimento" value="1975-06-04">
           </div>
         </div>
 
@@ -366,36 +366,94 @@
 
         <div class="form-group">
           <label class="form-label" for="nomeMae">Nome da mãe</label>
-          <input class="form-input" type="text" id="nomeMae" name="nomeMae" placeholder="Nome completo da mãe" value="Erica Becker">
+          <input class="form-input" type="text" id="nomeMae" name="nomeMae" placeholder="Nome completo da mãe" value="Simone Carla da Mota">
         </div>
 
         <div class="form-group">
           <label class="form-label" for="nomePai">Nome do pai</label>
-          <input class="form-input" type="text" id="nomePai" name="nomePai" placeholder="Nome completo do pai" value="Antônio Carlos Cordeiro">
+          <input class="form-input" type="text" id="nomePai" name="nomePai" placeholder="Nome completo do pai" value="Roberto Bruno da Mota">
         </div>
 
-        <div class="form-group" style="margin-top:var(--space-6);">
-          <label class="form-label" for="logradouro">Logradouro e número</label>
-          <input class="form-input" type="text" id="logradouro" name="logradouro" placeholder="Ex: Rua das Flores, 123" value="Rua Domingos Paiva, 152">
+        <!-- CNH -->
+        <div style="margin-top:var(--space-6); padding-top:var(--space-6); border-top:var(--border);">
+          <span class="section-label">CNH</span>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="cnhCategoria">Categoria</label>
+              <input class="form-input" type="text" id="cnhCategoria" name="cnhCategoria" placeholder="Ex: B" value="B">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cnhNumero">N° Registro</label>
+              <input class="form-input" type="text" id="cnhNumero" name="cnhNumero" placeholder="Número do registro" value="00000000">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="cnhPrimeiraHab">Data 1ª Habilitação</label>
+              <input class="form-input" type="date" id="cnhPrimeiraHab" name="cnhPrimeiraHab" value="2000-04-03">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cnhValidade">Data Validade</label>
+              <input class="form-input" type="date" id="cnhValidade" name="cnhValidade" value="2025-04-03">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cnhUltimaEmissao">Data última emissão</label>
+            <input class="form-input" type="date" id="cnhUltimaEmissao" name="cnhUltimaEmissao" value="2020-04-03">
+          </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="cep">CEP</label>
-            <input class="form-input" type="text" id="cep" name="cep" placeholder="00000-000" inputmode="numeric" maxlength="9" value="90040-190">
+        <!-- Endereço -->
+        <div style="margin-top:var(--space-6); padding-top:var(--space-6); border-top:var(--border);">
+          <span class="section-label">Endereço</span>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="logradouro">Logradouro</label>
+              <input class="form-input" type="text" id="logradouro" name="logradouro" placeholder="Ex: Rua das Flores" value="Rua Olívia Guedes Penteado">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="endNumero">Número</label>
+              <input class="form-input" type="text" id="endNumero" name="endNumero" placeholder="Ex: 123" value="941">
+            </div>
           </div>
+
           <div class="form-group">
-            <label class="form-label" for="cidade">Cidade</label>
-            <input class="form-input" type="text" id="cidade" name="cidade" placeholder="Ex: Porto Alegre" value="Porto Alegre">
+            <label class="form-label" for="bairro">Bairro</label>
+            <input class="form-input" type="text" id="bairro" name="bairro" placeholder="Ex: Centro" value="Capela do Socorro">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="cep">CEP</label>
+              <input class="form-input" type="text" id="cep" name="cep" placeholder="00000-000" inputmode="numeric" maxlength="9" value="04766-900">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cidade">Município</label>
+              <input class="form-input" type="text" id="cidade" name="cidade" placeholder="Ex: São Paulo" value="São Paulo">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="estado">Estado (UF)</label>
+              <input class="form-input" type="text" id="estado" name="estado" placeholder="Ex: SP" maxlength="2" value="SP">
+            </div>
+            <div></div>
           </div>
         </div>
 
-        <div class="form-row">
+        <!-- Dados profissionais -->
+        <div style="margin-top:var(--space-6); padding-top:var(--space-6); border-top:var(--border);">
+          <span class="section-label">Dados profissionais</span>
           <div class="form-group">
-            <label class="form-label" for="estado">Estado (UF)</label>
-            <input class="form-input" type="text" id="estado" name="estado" placeholder="Ex: RS" maxlength="2" value="RS">
+            <label class="form-label" for="coren">Inscrição COREN</label>
+            <input class="form-input" type="text" id="coren" name="coren" placeholder="Ex: 17168" value="17168">
+            <span class="form-hint">Número de inscrição no COREN-SP</span>
           </div>
-          <div></div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-verify">
@@ -415,19 +473,19 @@
   <!-- Loading overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
-    <p class="loading-title">Consultando a Receita Federal</p>
+    <p class="loading-title">Verificando Identidade</p>
     <div class="loading-steps">
-      <div class="loading-step active" id="lstep1">
+      <div class="loading-step" id="lstep1">
         <span class="loading-step-dot"></span>
-        Validando CPF
+        Iniciando consulta
       </div>
       <div class="loading-step" id="lstep2">
         <span class="loading-step-dot"></span>
-        Verificando dados cadastrais
+        Consultando COREN-SP e DataValid
       </div>
       <div class="loading-step" id="lstep3">
         <span class="loading-step-dot"></span>
-        Analisando reconhecimento facial
+        Processando resultado
       </div>
     </div>
   </div>
@@ -477,8 +535,19 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (e) {
-        facePreview.src = e.target.result;
-        faceOval.classList.add('has-image');
+        const img = new Image();
+        img.onload = function () {
+          const MAX = 800;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const resized = canvas.toDataURL('image/jpeg', 0.85);
+          facePreview.src = resized;
+          faceOval.classList.add('has-image');
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
       this.value = '';
@@ -528,17 +597,41 @@
       stopStream();
     });
 
-    /* ── Form submit + loading ────────────────────────────── */
-    document.getElementById('formCadastro').addEventListener('submit', function (e) {
+    /* ── Form submit + API ────────────────────────────────── */
+    const API_BASE = 'http://localhost:8000';
+
+    document.getElementById('formCadastro').addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      // Salva dados no sessionStorage para comparação no resultado
-      // Salva foto capturada
       const fotoEl = document.getElementById('facePreview');
-      if (fotoEl && fotoEl.src && fotoEl.src.startsWith('data:')) {
-        sessionStorage.setItem('fotoCapturada', fotoEl.src);
-      }
+      const hasFoto = fotoEl && fotoEl.src && fotoEl.src.startsWith('data:');
 
+      // Build payload for API
+      const payload = {
+        cpf: document.getElementById('cpf').value.replace(/\D/g, ''),
+        nome: document.getElementById('nomeCompleto').value.trim(),
+        inscricao_coren: document.getElementById('coren').value.trim(),
+      };
+      const optFields = {
+        data_nascimento: document.getElementById('dataNascimento').value,
+        nome_mae:        document.getElementById('nomeMae').value.trim(),
+        nome_pai:        document.getElementById('nomePai').value.trim(),
+        cnh_categoria:              document.getElementById('cnhCategoria').value.trim(),
+        cnh_numero_registro:        document.getElementById('cnhNumero').value.trim(),
+        cnh_data_primeira_habilitacao: document.getElementById('cnhPrimeiraHab').value,
+        cnh_data_validade:          document.getElementById('cnhValidade').value,
+        cnh_data_ultima_emissao:    document.getElementById('cnhUltimaEmissao').value,
+        endereco_logradouro: document.getElementById('logradouro').value.trim(),
+        endereco_numero:     document.getElementById('endNumero').value.trim(),
+        endereco_bairro:     document.getElementById('bairro').value.trim(),
+        endereco_cep:        document.getElementById('cep').value.replace(/\D/g, ''),
+        endereco_municipio:  document.getElementById('cidade').value.trim(),
+        endereco_uf:         document.getElementById('estado').value.trim().toUpperCase(),
+      };
+      for (const [k, v] of Object.entries(optFields)) { if (v) payload[k] = v; }
+      if (hasFoto) { payload.foto = fotoEl.src.split(',')[1]; }
+
+      // Save typed data for resultado.html
       sessionStorage.setItem('cadastro', JSON.stringify({
         nome:          document.getElementById('nomeCompleto').value.trim(),
         cpf:           document.getElementById('cpf').value.trim(),
@@ -548,37 +641,45 @@
         nomeMae:       document.getElementById('nomeMae').value.trim(),
         nomePai:       document.getElementById('nomePai').value.trim(),
         logradouro:    document.getElementById('logradouro').value.trim(),
+        numero:        document.getElementById('endNumero').value.trim(),
+        bairro:        document.getElementById('bairro').value.trim(),
         cep:           document.getElementById('cep').value.trim(),
         cidade:        document.getElementById('cidade').value.trim(),
         estado:        document.getElementById('estado').value.trim().toUpperCase(),
+        coren:         document.getElementById('coren').value.trim(),
+        cnhCategoria:      document.getElementById('cnhCategoria').value.trim(),
+        cnhNumero:         document.getElementById('cnhNumero').value.trim(),
+        cnhPrimeiraHab:    document.getElementById('cnhPrimeiraHab').value,
+        cnhValidade:       document.getElementById('cnhValidade').value,
+        cnhUltimaEmissao:  document.getElementById('cnhUltimaEmissao').value,
       }));
+      if (hasFoto) sessionStorage.setItem('fotoCapturada', fotoEl.src);
 
+      // Show loading
       const overlay = document.getElementById('loadingOverlay');
-      const steps   = [
-        document.getElementById('lstep1'),
-        document.getElementById('lstep2'),
-        document.getElementById('lstep3'),
-      ];
-
+      const steps = [document.getElementById('lstep1'), document.getElementById('lstep2'), document.getElementById('lstep3')];
       overlay.classList.add('open');
+      steps[0].classList.add('active');
 
-      let current = 0;
-      steps[current].classList.add('active');
+      try {
+        const res = await fetch(`${API_BASE}/consulta/admissao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+        const { job_id } = await res.json();
 
-      const advance = setInterval(() => {
-        steps[current].classList.remove('active');
-        steps[current].classList.add('done');
-        current++;
+        // Salva job_id e navega imediatamente — resultado.html faz o polling
+        sessionStorage.setItem('jobId', job_id);
+        sessionStorage.removeItem('apiResult');
+        window.location.href = 'resultado.html';
 
-        if (current < steps.length) {
-          steps[current].classList.add('active');
-        } else {
-          clearInterval(advance);
-          setTimeout(() => {
-            window.location.href = 'resultado.html';
-          }, 400);
-        }
-      }, 900);
+      } catch (err) {
+        overlay.classList.remove('open');
+        steps.forEach(s => { s.classList.remove('active', 'done'); });
+        alert('Erro ao consultar: ' + err.message);
+      }
     });
   </script>
 </body>

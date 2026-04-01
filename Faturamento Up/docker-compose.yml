@@ -9,6 +9,8 @@ services:
       - .env                                    # contém DATABASE_URL e GOOGLE_CREDENTIALS_JSON
     volumes:
       - faturamento_data:/app/data
+      - ./frontend:/app/frontend      # HTML editável sem rebuild
+      - ./assets:/app/assets          # CSS editável sem rebuild
     restart: unless-stopped
 
 volumes:
