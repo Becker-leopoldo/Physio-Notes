@@ -869,6 +869,12 @@
     }
     .relatorio-paciente-check label { cursor: pointer; flex: 1; font-size: var(--text-sm); }
 
+    /* ---- Anamnese rendered content ---- */
+    #anamnese-texto strong { font-weight: 600; color: var(--color-text); }
+    #anamnese-texto ul { padding-left: var(--space-5); margin: var(--space-1) 0 var(--space-2) 0; }
+    #anamnese-texto li { margin-bottom: 2px; }
+    #anamnese-texto p + p { margin-top: var(--space-1); }
+
     /* ---- Billing responsive grids ---- */
     .billing-kpi-grid {
       display: grid;
@@ -1591,6 +1597,39 @@
     return err?.message || 'Algo deu errado. Tente novamente.';
   }
 
+  // Renderiza texto de anamnese com markdown básico (**bold** e listas)
+  function anamneseToHtml(text) {
+    if (!text) return '';
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const lines = esc(text).split('\n');
+    const out = [];
+    let inList = false;
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        out.push('<div style="height:var(--space-2)"></div>');
+        continue;
+      }
+      if (line.startsWith('- ')) {
+        if (!inList) { out.push('<ul style="margin:var(--space-2) 0 var(--space-2) var(--space-5);padding:0;list-style:disc;">'); inList = true; }
+        out.push(`<li style="margin-bottom:2px;">${bold(line.slice(2))}</li>`);
+      } else {
+        if (inList) { out.push('</ul>'); inList = false; }
+        out.push(`<p style="margin:0 0 var(--space-1) 0;">${bold(line)}</p>`);
+      }
+    }
+    if (inList) out.push('</ul>');
+    return out.join('');
+  }
+
+  function anamnesePreviewText(text) {
+    if (!text) return 'Nenhuma anamnese registrada.';
+    const stripped = text.replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
+    return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
+  }
+
   // CPF: máscara e validação pelo algoritmo oficial
   function cpfMascara(v) {
     return v.replace(/\D/g, '').slice(0, 11)
@@ -2057,7 +2096,7 @@
             <div style="flex:1;min-width:0;">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);">Anamnese</div>
               <div id="anamnese-preview" style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                ${temAnamnese ? paciente.anamnese.replace(/\n/g,' ').substring(0,80) + (paciente.anamnese.length > 80 ? '…' : '') : 'Nenhuma anamnese registrada.'}
+                ${anamnesePreviewText(paciente.anamnese)}
               </div>
             </div>
             <div id="anamnese-caret" style="color:var(--color-text-muted);flex-shrink:0;transition:transform .2s;">
@@ -2069,7 +2108,7 @@
           <div id="anamnese-body" style="display:none;border-top:var(--border);">
             <!-- Texto completo -->
             <div style="padding:var(--space-4);">
-              <div id="anamnese-texto" style="font-size:var(--text-sm);color:${temAnamnese ? 'var(--color-text)' : 'var(--color-text-muted)'};line-height:1.7;white-space:pre-wrap;font-style:${temAnamnese ? 'normal' : 'italic'};">${paciente.anamnese || 'Nenhuma anamnese registrada.'}</div>
+              <div id="anamnese-texto" style="font-size:var(--text-sm);color:${temAnamnese ? 'var(--color-text)' : 'var(--color-text-muted)'};line-height:1.7;font-style:${temAnamnese ? 'normal' : 'italic'};">${temAnamnese ? anamneseToHtml(paciente.anamnese) : 'Nenhuma anamnese registrada.'}</div>
             </div>
 
             <!-- Ações -->
@@ -2173,10 +2212,10 @@
                   body: JSON.stringify({ transcricao: transJson.transcricao }),
                 });
                 const novaAnamnese = result.anamnese;
-                document.getElementById('anamnese-texto').textContent = novaAnamnese;
+                document.getElementById('anamnese-texto').innerHTML = anamneseToHtml(novaAnamnese);
                 document.getElementById('anamnese-texto').style.color = 'var(--color-text)';
                 document.getElementById('anamnese-texto').style.fontStyle = 'normal';
-                document.getElementById('anamnese-preview').textContent = novaAnamnese.replace(/\n/g,' ').substring(0,80) + (novaAnamnese.length > 80 ? '…' : '');
+                document.getElementById('anamnese-preview').textContent = anamnesePreviewText(novaAnamnese);
                 document.getElementById('anamnese-textarea-manual').value = novaAnamnese;
                 fecharGravacaoAnamnese();
               } catch (err) {
@@ -2223,8 +2262,11 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nome: paciente.nome, data_nascimento: paciente.data_nascimento, anamnese: texto, cpf: paciente.cpf, endereco: paciente.endereco }),
           });
-          document.getElementById('anamnese-texto').textContent = texto || 'Nenhuma anamnese registrada.';
-          document.getElementById('anamnese-preview').textContent = texto ? texto.replace(/\n/g,' ').substring(0,80) + (texto.length > 80 ? '…' : '') : 'Nenhuma anamnese registrada.';
+          const elTxt = document.getElementById('anamnese-texto');
+          elTxt.innerHTML = texto ? anamneseToHtml(texto) : 'Nenhuma anamnese registrada.';
+          elTxt.style.color = texto ? 'var(--color-text)' : 'var(--color-text-muted)';
+          elTxt.style.fontStyle = texto ? 'normal' : 'italic';
+          document.getElementById('anamnese-preview').textContent = anamnesePreviewText(texto);
           document.getElementById('anamnese-edicao-manual').style.display = 'none';
           document.getElementById('btn-editar-anamnese-manual').style.display = '';
         } catch (e) {
