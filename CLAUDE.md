@@ -456,6 +456,22 @@ Toda tela com sidebar deve ter um menu de contexto no clique do usuário logado,
 .sidebar.collapsed .user-menu { left: 0; right: auto; min-width: 160px; }
 ```
 
+---
+
+## Regra de Versionamento — Physio Notes
+
+**A cada commit de deploy no subprojeto `Physio Notes/`, a versão do app DEVE ser incrementada.**
+
+- Constante localizada em `Physio Notes/frontend/index.html`:
+  ```js
+  const APP_VERSION = 'Beta-0.XX'; // bump a cada deploy
+  ```
+- Incrementar o sufixo: `Beta-0.12` → `Beta-0.13` → `Beta-0.14` etc.
+- O commit de bump deve ser separado ou incluído no commit principal, com mensagem `chore(physio-notes): bump versão Beta-0.XX`.
+- **Nunca fazer deploy sem bumpar a versão** — é o principal controle de versão para o testador.
+
+---
+
 ### ✅ Sempre fazer
 - Importar `styles.css` global em toda tela
 - Usar variáveis CSS (`--color-*`, `--space-*`, etc.) — nunca valores hardcoded
