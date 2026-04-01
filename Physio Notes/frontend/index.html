@@ -1096,7 +1096,7 @@
     </div>
 
     <div style="padding:var(--space-3) var(--space-5) 0;display:flex;gap:var(--space-2);align-items:center;">
-      <input class="form-input" type="text" id="filtro-pacientes" placeholder="Buscar paciente..." style="font-size:var(--text-sm);flex:1;">
+      <input class="form-input" type="text" id="filtro-pacientes" placeholder="Buscar por nome, CPF, nascimento ou endereço..." style="font-size:var(--text-sm);flex:1;">
       <button id="btn-limpar-filtro-pac" class="btn btn-ghost btn-sm" style="display:none;flex-shrink:0;" title="Limpar busca">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
@@ -1724,7 +1724,19 @@
 
   function _renderPacientesFiltrado(pacientes, q) {
     const container = document.getElementById('pacientes-list');
-    const filtrados = q ? pacientes.filter(p => p.nome.toLowerCase().includes(q)) : pacientes;
+    const filtrados = q ? pacientes.filter(p => {
+      const qNum = q.replace(/\D/g, '');
+      if (p.nome.toLowerCase().includes(q)) return true;
+      if (p.cpf && qNum && p.cpf.replace(/\D/g, '').includes(qNum)) return true;
+      if (p.data_nascimento && p.data_nascimento.includes(q)) return true;
+      if (p.data_nascimento) {
+        // Aceita formatos dd/mm/aaaa, dd/mm ou mm/aaaa digitados
+        const [y, m, d] = p.data_nascimento.split('-');
+        if ([`${d}/${m}/${y}`, `${d}/${m}`, `${m}/${y}`].some(f => f.includes(q))) return true;
+      }
+      if (p.endereco && p.endereco.toLowerCase().includes(q)) return true;
+      return false;
+    }) : pacientes;
     container.innerHTML = '';
     if (filtrados.length === 0) {
       const wrap = el('div', { className: 'empty-state' });
