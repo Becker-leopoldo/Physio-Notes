@@ -1374,13 +1374,13 @@
             <input class="form-input" type="date" id="input-dob">
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label" for="input-cpf">CPF</label>
+            <label class="form-label" for="input-cpf">CPF *</label>
             <input class="form-input" type="text" id="input-cpf" placeholder="000.000.000-00" maxlength="14">
             <span class="form-hint" id="input-cpf-hint" style="display:none;"></span>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="input-endereco">Endereço</label>
+          <label class="form-label" for="input-endereco">Endereço *</label>
           <input class="form-input" type="text" id="input-endereco" placeholder="Rua, número, bairro, cidade">
         </div>
         <div class="form-group">
@@ -1773,10 +1773,10 @@
   let modalRecording = false;
   let modalTimerInterval = null;
   let modalSeconds = 0;
-  let capturedData = { nome: null, data_nascimento: null, anamnese: null };
+  let capturedData = { nome: null, data_nascimento: null, cpf: null, endereco: null, anamnese: null };
 
   function abrirModalNovoPaciente() {
-    capturedData = { nome: null, data_nascimento: null, anamnese: null };
+    capturedData = { nome: null, data_nascimento: null, cpf: null, endereco: null, anamnese: null };
     document.getElementById('modal-etapa-1').style.display = '';
     document.getElementById('modal-etapa-2').style.display = 'none';
     document.getElementById('modal-rec-feedback').innerHTML = '';
@@ -1786,7 +1786,7 @@
     document.getElementById('btn-salvar-paciente-voz').style.display = 'none';
     // Resetar conversa para mensagem inicial
     document.getElementById('modal-conversa').innerHTML =
-      '<div class="ai-bubble">Grave um áudio com o <strong>nome</strong>, <strong>data de nascimento</strong> e a <strong>anamnese</strong> do paciente — queixa principal e histórico clínico.</div>';
+      '<div class="ai-bubble">Grave um áudio com o <strong>nome</strong>, <strong>data de nascimento</strong>, <strong>CPF</strong>, <strong>endereço</strong> e a <strong>anamnese</strong> do paciente — queixa principal e histórico clínico.</div>';
     resetModalRecorder();
     // Limpar campos da etapa 2
     document.getElementById('input-nome').value = '';
@@ -1828,9 +1828,11 @@
   }
 
   function atualizarConversaVoz() {
-    const { nome, data_nascimento, anamnese } = capturedData;
+    const { nome, data_nascimento, cpf, endereco, anamnese } = capturedData;
     const faltando = [];
     if (!nome) faltando.push('nome completo');
+    if (!cpf) faltando.push('CPF');
+    if (!endereco) faltando.push('endereço');
     if (!anamnese) faltando.push('anamnese — queixa principal e histórico clínico');
 
     const conversa = document.getElementById('modal-conversa');
@@ -1843,11 +1845,13 @@
       const capturados = [];
       if (nome) capturados.push(`nome: <strong>${nome}</strong>`);
       if (data_nascimento) capturados.push(`nascimento: <strong>${formatDate(data_nascimento)}</strong>`);
+      if (cpf) capturados.push(`CPF: <strong>${cpfMascara(cpf)}</strong>`);
+      if (endereco) capturados.push(`endereço: <strong>${endereco}</strong>`);
       if (anamnese) capturados.push('anamnese registrada');
 
       let msg = '';
       if (capturados.length) msg += `Entendi — ${capturados.join(', ')}. `;
-      msg += `Ainda preciso de: <strong>${faltando.join('</strong> e <strong>')}</strong>. Grave novamente para completar.`;
+      msg += `Ainda preciso de: <strong>${faltando.join('</strong>, <strong>')}</strong>. Grave novamente para completar.`;
       bubble.innerHTML = msg;
     }
     conversa.appendChild(bubble);
@@ -1855,12 +1859,14 @@
 
     // Resumo dos dados capturados
     const resumoEl = document.getElementById('modal-dados-capturados');
-    if (nome || data_nascimento || anamnese) {
+    if (nome || data_nascimento || cpf || endereco || anamnese) {
       resumoEl.style.display = '';
       resumoEl.innerHTML = `
         <div class="dados-resumo">
           ${nome ? `<div class="dados-resumo-row"><span class="dados-resumo-label">Nome</span><span class="dados-resumo-value">${nome}</span></div>` : ''}
           ${data_nascimento ? `<div class="dados-resumo-row"><span class="dados-resumo-label">Data de nascimento</span><span class="dados-resumo-value">${formatDate(data_nascimento)}</span></div>` : ''}
+          ${cpf ? `<div class="dados-resumo-row"><span class="dados-resumo-label">CPF</span><span class="dados-resumo-value">${cpfMascara(cpf)}</span></div>` : ''}
+          ${endereco ? `<div class="dados-resumo-row"><span class="dados-resumo-label">Endereço</span><span class="dados-resumo-value">${endereco}</span></div>` : ''}
           ${anamnese ? `<div class="dados-resumo-row"><span class="dados-resumo-label">Anamnese</span><span class="dados-resumo-value">${anamnese}</span></div>` : ''}
         </div>`;
     }
@@ -1875,6 +1881,8 @@
     document.getElementById('modal-etapa-2').style.display = '';
     document.getElementById('input-nome').value = dados.nome || '';
     document.getElementById('input-dob').value = dados.data_nascimento || '';
+    document.getElementById('input-cpf').value = dados.cpf ? cpfMascara(dados.cpf) : '';
+    document.getElementById('input-endereco').value = dados.endereco || '';
     document.getElementById('input-anamnese').value = dados.anamnese || '';
     const hoje = new Date().toISOString().slice(0, 10);
     document.getElementById('input-data-atendimento').value = hoje;
@@ -1950,6 +1958,8 @@
           // Acumular dados capturados
           if (extRes.nome) capturedData.nome = extRes.nome;
           if (extRes.data_nascimento) capturedData.data_nascimento = extRes.data_nascimento;
+          if (extRes.cpf) capturedData.cpf = extRes.cpf.replace(/\D/g, '');
+          if (extRes.endereco) capturedData.endereco = extRes.endereco;
           if (extRes.anamnese) capturedData.anamnese = extRes.anamnese;
 
           fb.innerHTML = '';
@@ -1997,6 +2007,8 @@
           nome: capturedData.nome,
           data_nascimento: capturedData.data_nascimento || null,
           data_atendimento: hoje,
+          cpf: capturedData.cpf || null,
+          endereco: capturedData.endereco || null,
           anamnese: capturedData.anamnese,
         }),
       });
@@ -2015,8 +2027,22 @@
     const btn = this;
     const nome = document.getElementById('input-nome').value.trim();
     const anamnese = document.getElementById('input-anamnese').value.trim();
+    const cpfRaw = document.getElementById('input-cpf').value.replace(/\D/g, '');
+    const endereco = document.getElementById('input-endereco').value.trim();
     if (!nome) {
       showError('modal-paciente-error', 'O nome do paciente é obrigatório.');
+      return;
+    }
+    if (!cpfRaw) {
+      showError('modal-paciente-error', 'O CPF é obrigatório.');
+      return;
+    }
+    if (!cpfValido(cpfRaw)) {
+      showError('modal-paciente-error', 'CPF inválido. Verifique o número digitado.');
+      return;
+    }
+    if (!endereco) {
+      showError('modal-paciente-error', 'O endereço é obrigatório.');
       return;
     }
     if (!anamnese) {
@@ -2035,8 +2061,8 @@
           data_nascimento: document.getElementById('input-dob').value || null,
           data_atendimento: document.getElementById('input-data-atendimento').value || null,
           anamnese,
-          cpf: document.getElementById('input-cpf').value.replace(/\D/g, '') || null,
-          endereco: document.getElementById('input-endereco').value.trim() || null,
+          cpf: cpfRaw || null,
+          endereco: endereco || null,
         }),
       });
       fecharModalNovoPaciente();

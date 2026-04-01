@@ -147,10 +147,12 @@ Extraia as seguintes informações da transcrição e retorne APENAS um JSON vá
 {{
   "nome": "Nome completo do paciente",
   "data_nascimento": "Data de nascimento no formato YYYY-MM-DD (ou null se não mencionada)",
+  "cpf": "CPF do paciente contendo apenas os 11 dígitos numéricos, sem pontuação (ou null se não mencionado)",
+  "endereco": "Endereço completo do paciente — rua, número, bairro, cidade (ou null se não mencionado)",
   "anamnese": "Queixa principal, histórico clínico e qualquer outra informação clínica relevante mencionada"
 }}
 
-Se o nome não for mencionado, use null. Se a data não for clara, use null. Capture tudo de clínico relevante em anamnese.
+Se o nome não for mencionado, use null. Se a data não for clara, use null. Se o CPF não for mencionado, use null. Se o endereço não for mencionado, use null. Capture tudo de clínico relevante em anamnese.
 Responda APENAS com o JSON, sem texto adicional.
 
 Transcrição:
@@ -173,7 +175,7 @@ Transcrição:
     except json.JSONDecodeError:
         result = {"nome": None, "data_nascimento": None, "anamnese": raw_text}
 
-    for chave in ("nome", "data_nascimento", "anamnese"):
+    for chave in ("nome", "data_nascimento", "cpf", "endereco", "anamnese"):
         result.setdefault(chave, None)
 
     return result
