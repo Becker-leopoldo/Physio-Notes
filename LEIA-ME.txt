@@ -22,6 +22,7 @@ O que contém:
   - Padrão de menu de logout no clique do usuário
   - Pickers customizados: criarPickerMesAno (filtro de mês/ano) e criarPickerLista
     (combobox genérico) — substitutos obrigatórios do <select> nativo
+  - Labels de filtro: sempre centralizados e em negrito (text-align:center; font-weight:600)
 
 Por que fica na raiz:
   O Claude Code só carrega CLAUDE.md automaticamente se estiver na raiz do

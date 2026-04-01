@@ -467,6 +467,7 @@ Toda tela com sidebar deve ter um menu de contexto no clique do usuário logado,
 - Incluir `<footer class="powered-bar">powered by <strong>up it</strong></footer>` ao final de cada `.main-content`
 - Incluir menu de logout no clique do usuário em toda tela com sidebar (padrão `.user-menu-trigger` + `.user-menu`)
 - Usar **sempre os pickers customizados** para filtros de mês/ano e listas — nunca `<select>` nativo (ver seção abaixo)
+- **Labels de filtro** (ex: "Competência", "Paciente") devem ser sempre **centralizados e em negrito**: `style="text-align:center;font-weight:600;"`
 
 ### ❌ Nunca fazer
 - Sombras coloridas ou pesadas
