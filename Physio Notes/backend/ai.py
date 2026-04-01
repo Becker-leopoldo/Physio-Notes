@@ -412,7 +412,9 @@ Regras:
 - Mantenha todas as informações anteriores relevantes
 - Incorpore as novas informações de forma coerente
 - Use linguagem clínica objetiva (fisioterapia)
-- Organize por tópicos quando houver múltiplas informações (queixa principal, histórico, comorbidades, medicamentos, etc.)
+- Organize por tópicos usando **NOME DO TÓPICO:** em negrito (queixa principal, histórico, comorbidades, medicamentos, etc.)
+- NÃO inclua título geral como "# ANAMNESE CLÍNICA", "# ANAMNESE ATUALIZADA" ou qualquer cabeçalho com # — o título já é exibido pela interface
+- Use listas com "- " para enumerações dentro dos tópicos
 - Não repita informações redundantes
 - Retorne APENAS o texto da anamnese atualizada, sem introduções ou explicações{bloco_atual}
 
