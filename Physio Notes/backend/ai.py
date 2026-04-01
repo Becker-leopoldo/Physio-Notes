@@ -22,17 +22,17 @@ def _calcular_custo(modelo: str, input_tokens: int, output_tokens: int) -> float
     return (input_tokens / 1_000_000 * preco["input"]) + (output_tokens / 1_000_000 * preco["output"])
 
 
-def _registrar(tipo: str, message) -> None:
+def _registrar(tipo: str, message, owner_email: str | None = None) -> None:
     try:
         import database as db
         u = message.usage
         custo = _calcular_custo(message.model, u.input_tokens, u.output_tokens)
-        db.registrar_uso(tipo, message.model, u.input_tokens, u.output_tokens, custo)
+        db.registrar_uso(tipo, message.model, u.input_tokens, u.output_tokens, custo, owner_email)
     except Exception:
         pass  # billing nunca deve quebrar o fluxo principal
 
 
-async def consolidar_sessao(transcricoes: list[str]) -> dict:
+async def consolidar_sessao(transcricoes: list[str], owner_email: str | None = None) -> dict:
     """
     Recebe lista de transcrições da sessão de fisioterapia.
     Retorna dict com: nota (nota clínica profissional em texto corrido).
@@ -62,7 +62,7 @@ Transcrições:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("consolidar_sessao", message)
+    _registrar("consolidar_sessao", message, owner_email)
 
     nota = message.content[0].text.strip()
     return {"nota": nota}
@@ -78,6 +78,7 @@ async def resumir_historico(
     historico: list[dict],
     paciente: dict | None = None,
     documentos: list[dict] | None = None,
+    owner_email: str | None = None,
 ) -> str:
     """
     Recebe lista de sessões consolidadas, dados do paciente e documentos (PDFs).
@@ -130,12 +131,12 @@ O relatório deve cobrir (apenas com base nos dados disponíveis):
         max_tokens=2048,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("resumir_historico", message)
+    _registrar("resumir_historico", message, owner_email)
 
     return message.content[0].text.strip()
 
 
-async def extrair_dados_paciente(transcricao: str) -> dict:
+async def extrair_dados_paciente(transcricao: str, owner_email: str | None = None) -> dict:
     """
     Extrai dados estruturados do paciente a partir de uma transcrição de áudio.
     Retorna dict com: nome, data_nascimento (formato YYYY-MM-DD ou None), anamnese.
@@ -163,7 +164,7 @@ Transcrição:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_dados_paciente", message)
+    _registrar("extrair_dados_paciente", message, owner_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -181,7 +182,7 @@ Transcrição:
     return result
 
 
-async def extrair_dados_pacote(transcricao: str) -> dict:
+async def extrair_dados_pacote(transcricao: str, owner_email: str | None = None) -> dict:
     """
     Extrai dados de um pacote de sessões a partir de uma transcrição de áudio.
     Retorna dict com: total_sessoes (int), valor_pago (float|None),
@@ -210,7 +211,7 @@ Transcrição:
         max_tokens=256,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_dados_pacote", message)
+    _registrar("extrair_dados_pacote", message, owner_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -228,7 +229,7 @@ Transcrição:
     return result
 
 
-async def detectar_procedimentos_extras(transcricao_completa: str, nota_clinica: str | None) -> list[dict]:
+async def detectar_procedimentos_extras(transcricao_completa: str, nota_clinica: str | None, owner_email: str | None = None) -> list[dict]:
     """
     Analisa a transcrição bruta e a nota clínica da sessão em busca de
     procedimentos extras cobrados além do pacote.
@@ -262,7 +263,7 @@ TRANSCRIÇÃO:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_procedimento", message)
+    _registrar("extrair_procedimento", message, owner_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\[[\s\S]*\]", raw_text)
@@ -276,7 +277,6 @@ TRANSCRIÇÃO:
     except json.JSONDecodeError:
         result = []
 
-    # normaliza cada item
     clean = []
     for item in result:
         if isinstance(item, dict) and item.get("descricao"):
@@ -287,7 +287,7 @@ TRANSCRIÇÃO:
     return clean
 
 
-async def extrair_procedimento(transcricao: str) -> dict:
+async def extrair_procedimento(transcricao: str, owner_email: str | None = None) -> dict:
     """
     Extrai dados de um procedimento extra a partir de transcrição.
     Retorna dict com: descricao (str), valor (float|None).
@@ -312,7 +312,7 @@ Transcrição:
         max_tokens=128,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_procedimento", message)
+    _registrar("extrair_procedimento", message, owner_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -329,7 +329,7 @@ Transcrição:
     return result
 
 
-async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dict | None = None) -> str:
+async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dict | None = None, owner_email: str | None = None) -> str:
     """
     Responde pergunta da fisioterapeuta com base no histórico do paciente.
     """
@@ -365,12 +365,12 @@ Responda em português."""
         max_tokens=2048,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("responder_pergunta", message)
+    _registrar("responder_pergunta", message, owner_email)
 
     return message.content[0].text.strip()
 
 
-async def resumir_documento(texto: str) -> str:
+async def resumir_documento(texto: str, owner_email: str | None = None) -> str:
     """Gera resumo clínico de um documento PDF enviado pelo fisioterapeuta."""
     prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio de anatomia, biomecânica, reabilitação e dos jargões técnicos da fisioterapia brasileira.
 O documento abaixo é um prontuário, laudo, exame ou relatório médico de um paciente.
@@ -391,12 +391,12 @@ Documento:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("resumir_documento", message)
+    _registrar("resumir_documento", message, owner_email)
 
     return message.content[0].text.strip()
 
 
-async def complementar_anamnese(transcricao: str, anamnese_atual: str | None) -> str:
+async def complementar_anamnese(transcricao: str, anamnese_atual: str | None, owner_email: str | None = None) -> str:
     """
     Recebe uma transcrição de áudio com novas informações de anamnese e a anamnese
     atual do paciente. Retorna a anamnese completa e atualizada em linguagem clínica,
@@ -426,6 +426,6 @@ NOVA INFORMAÇÃO GRAVADA (transcrição):
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("complementar_anamnese", message)
+    _registrar("complementar_anamnese", message, owner_email)
 
     return message.content[0].text.strip()

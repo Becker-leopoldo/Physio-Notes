@@ -228,7 +228,7 @@ async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     _verificar_dono(paciente, _owner_email(request))
-    anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"))
+    anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), _owner_email(request))
     paciente_atualizado = db.atualizar_paciente(
         paciente_id,
         paciente["nome"],
@@ -257,7 +257,7 @@ async def extrair_dados_paciente(body: ExtrairPacienteBody):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
-        dados = await ai.extrair_dados_paciente(body.transcricao)
+        dados = await ai.extrair_dados_paciente(body.transcricao, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
     return dados
@@ -268,14 +268,14 @@ async def extrair_procedimento(body: ExtrairProcedimentoBody):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
-        dados = await ai.extrair_procedimento(body.transcricao)
+        dados = await ai.extrair_procedimento(body.transcricao, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
     return dados
 
 
 @app.post("/sessoes/{sessao_id}/detectar-procedimentos")
-async def detectar_procedimentos(sessao_id: int):
+async def detectar_procedimentos(sessao_id: int, request: Request):
     """
     Analisa transcrição + nota da sessão com IA e retorna sugestões de
     procedimentos extras detectados. NÃO salva automaticamente — retorna
@@ -295,7 +295,7 @@ async def detectar_procedimentos(sessao_id: int):
     nota = consolidado.get("nota") or consolidado.get("conduta") if consolidado else None
 
     try:
-        sugestoes = await ai.detectar_procedimentos_extras(transcricao, nota)
+        sugestoes = await ai.detectar_procedimentos_extras(transcricao, nota, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na IA: {str(e)}")
 
@@ -326,7 +326,7 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
-        dados = await ai.extrair_dados_pacote(body.transcricao)
+        dados = await ai.extrair_dados_pacote(body.transcricao, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
     return dados
@@ -335,7 +335,7 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody):
 # ---------- Relatorio CREFITO ----------
 
 @app.post("/relatorio/crefito")
-async def relatorio_crefito(body: RelatorioCREFITOBody):
+async def relatorio_crefito(body: RelatorioCREFITOBody, request: Request = None):
     resultado = []
     for paciente_id in body.paciente_ids:
         paciente = db.get_paciente(paciente_id)
@@ -346,7 +346,7 @@ async def relatorio_crefito(body: RelatorioCREFITOBody):
 
         if historico:
             try:
-                resumo = await ai.resumir_historico(historico, paciente)
+                resumo = await ai.resumir_historico(historico, paciente, owner_email=_owner_email(request))
             except Exception:
                 resumo = None
         else:
@@ -402,7 +402,7 @@ def buscar_sessao(sessao_id: int):
 
 
 @app.post("/sessoes/{sessao_id}/audio")
-async def upload_audio(sessao_id: int, audio: UploadFile = File(...)):
+async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: Request = None):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
@@ -463,7 +463,7 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
     # Re-consolida com todos os chunks (sem deducao de pacote)
     chunks = db.get_chunks_sessao(sessao_id)
     try:
-        dados = await ai.consolidar_sessao([c["transcricao"] for c in chunks])
+        dados = await ai.consolidar_sessao([c["transcricao"] for c in chunks], _owner_email(request))
         db.salvar_consolidado(sessao_id, dados)
     except Exception:
         pass
@@ -472,7 +472,7 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
 
 
 @app.post("/sessoes/{sessao_id}/encerrar")
-async def encerrar_sessao(sessao_id: int):
+async def encerrar_sessao(sessao_id: int, request: Request = None):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
@@ -489,7 +489,7 @@ async def encerrar_sessao(sessao_id: int):
     transcricoes = [c["transcricao"] for c in chunks]
 
     try:
-        dados_consolidados = await ai.consolidar_sessao(transcricoes)
+        dados_consolidados = await ai.consolidar_sessao(transcricoes, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao consolidar com IA: {str(e)}")
 
@@ -500,7 +500,7 @@ async def encerrar_sessao(sessao_id: int):
     transcricao_completa = "\n".join(transcricoes)
     nota = dados_consolidados.get("nota") or dados_consolidados.get("conduta")
     try:
-        extras = await ai.detectar_procedimentos_extras(transcricao_completa, nota)
+        extras = await ai.detectar_procedimentos_extras(transcricao_completa, nota, _owner_email(request))
         for item in extras:
             db.adicionar_procedimento(
                 sessao_id, sessao["paciente_id"],
@@ -537,17 +537,18 @@ def faturamento_pacientes(mes: str | None = None, paciente_id: int | None = None
 
 
 @app.get("/billing")
-def billing(mes: str | None = None):
+def billing(mes: str | None = None, request: Request = None):
     from datetime import date
+    owner = _owner_email(request)
     ano_mes = mes or date.today().strftime("%Y-%m")
     return {
-        "mes_atual": db.get_billing_mes(ano_mes),
-        "historico": db.get_billing_meses(),
+        "mes_atual": db.get_billing_mes(ano_mes, owner),
+        "historico": db.get_billing_meses(owner),
     }
 
 
 @app.get("/pacientes/{paciente_id}/resumo")
-async def resumo_paciente(paciente_id: int):
+async def resumo_paciente(paciente_id: int, request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
@@ -556,7 +557,7 @@ async def resumo_paciente(paciente_id: int):
     documentos = db.get_documentos_paciente(paciente_id)
 
     try:
-        resumo = await ai.resumir_historico(historico, paciente, documentos)
+        resumo = await ai.resumir_historico(historico, paciente, documentos, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao gerar resumo: {str(e)}")
 
@@ -564,7 +565,7 @@ async def resumo_paciente(paciente_id: int):
 
 
 @app.post("/pacientes/{paciente_id}/perguntar")
-async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody):
+async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody, request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
@@ -575,7 +576,7 @@ async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody):
     historico = db.get_historico_paciente(paciente_id)
 
     try:
-        resposta = await ai.responder_pergunta(body.pergunta, historico, paciente)
+        resposta = await ai.responder_pergunta(body.pergunta, historico, paciente, _owner_email(request))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao consultar IA: {str(e)}")
 
@@ -585,7 +586,7 @@ async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody):
 # ---------- Documentos ----------
 
 @app.post("/pacientes/{paciente_id}/documentos", status_code=201)
-async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...)):
+async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), request: Request = None):
     import io, uuid
     from pypdf import PdfReader
 
@@ -614,7 +615,7 @@ async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...)):
     resumo = None
     if texto:
         try:
-            resumo = await ai.resumir_documento(texto)
+            resumo = await ai.resumir_documento(texto, _owner_email(request))
         except Exception:
             pass
 

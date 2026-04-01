@@ -407,37 +407,43 @@ def get_historico_paciente(paciente_id: int) -> list[dict]:
 
 # ---------- Billing ----------
 
-def registrar_uso(tipo: str, modelo: str, input_tokens: int, output_tokens: int, custo_usd: float):
+def registrar_uso(tipo: str, modelo: str, input_tokens: int, output_tokens: int, custo_usd: float, owner_email: str | None = None):
     with get_conn() as conn:
+        # Adiciona owner_email na api_uso se ainda não existir
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(api_uso)").fetchall()]
+        if "owner_email" not in cols:
+            conn.execute("ALTER TABLE api_uso ADD COLUMN owner_email TEXT")
         conn.execute(
-            "INSERT INTO api_uso (tipo, modelo, input_tokens, output_tokens, custo_usd, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
-            (tipo, modelo, input_tokens, output_tokens, custo_usd, _now()),
+            "INSERT INTO api_uso (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, _now()),
         )
         conn.commit()
 
 
-def get_billing_mes(ano_mes: str) -> dict:
+def get_billing_mes(ano_mes: str, owner_email: str | None = None) -> dict:
     """ano_mes no formato YYYY-MM. Retorna totais e breakdown por tipo."""
+    owner_filter = "AND owner_email = ?" if owner_email else ""
+    params_mes = [ano_mes, owner_email] if owner_email else [ano_mes]
     with get_conn() as conn:
         totais = conn.execute(
-            """SELECT COUNT(*) as total_chamadas,
+            f"""SELECT COUNT(*) as total_chamadas,
                       SUM(input_tokens) as total_input,
                       SUM(output_tokens) as total_output,
                       SUM(custo_usd) as total_usd,
                       COUNT(DISTINCT DATE(criado_em)) as dias_com_uso
-               FROM api_uso WHERE strftime('%Y-%m', criado_em) = ?""",
-            (ano_mes,),
+               FROM api_uso WHERE strftime('%Y-%m', criado_em) = ? {owner_filter}""",
+            params_mes,
         ).fetchone()
 
         por_tipo = conn.execute(
-            """SELECT tipo,
+            f"""SELECT tipo,
                       COUNT(*) as chamadas,
                       SUM(input_tokens) as input_tokens,
                       SUM(output_tokens) as output_tokens,
                       SUM(custo_usd) as custo_usd
-               FROM api_uso WHERE strftime('%Y-%m', criado_em) = ?
+               FROM api_uso WHERE strftime('%Y-%m', criado_em) = ? {owner_filter}
                GROUP BY tipo ORDER BY custo_usd DESC""",
-            (ano_mes,),
+            params_mes,
         ).fetchall()
 
         return {
@@ -451,17 +457,20 @@ def get_billing_mes(ano_mes: str) -> dict:
         }
 
 
-def get_billing_meses() -> list[dict]:
+def get_billing_meses(owner_email: str | None = None) -> list[dict]:
     """Retorna lista de meses com totais, do mais recente ao mais antigo."""
+    owner_filter = "WHERE owner_email = ?" if owner_email else ""
+    params = [owner_email] if owner_email else []
     with get_conn() as conn:
         rows = conn.execute(
-            """SELECT strftime('%Y-%m', criado_em) as mes,
+            f"""SELECT strftime('%Y-%m', criado_em) as mes,
                       COUNT(*) as total_chamadas,
                       SUM(input_tokens) as total_input_tokens,
                       SUM(output_tokens) as total_output_tokens,
                       ROUND(SUM(custo_usd), 6) as total_usd
-               FROM api_uso
+               FROM api_uso {owner_filter}
                GROUP BY mes ORDER BY mes DESC""",
+            params,
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
 

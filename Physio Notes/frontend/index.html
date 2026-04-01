@@ -2811,14 +2811,10 @@
     formData.append('audio', blob, `gravacao.${ext}`);
 
     try {
-      const data = await fetch(`${API_BASE}/sessoes/${currentSessaoId}/audio`, {
+      fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
+      const data = await apiFetch(`/sessoes/${currentSessaoId}/audio`, {
         method: 'POST',
         body: formData,
-      }).then(async r => {
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.detail || `Erro ${r.status}`);
-        fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
-        return j;
       });
 
       fb.innerHTML = `<div class="alert alert-success" style="display:flex;align-items:center;gap:var(--space-2);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Trecho transcrito e salvo.</div>`;
@@ -3398,9 +3394,7 @@
             try {
               const formData = new FormData();
               formData.append('audio', blob, `pacote.${ext}`);
-              const transRes = await fetch(`${API_BASE}/transcrever`, { method: 'POST', body: formData });
-              const transJson = await transRes.json();
-              if (!transRes.ok) throw new Error(transJson.detail || `Erro ${transRes.status}`);
+              const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
 
               micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
               const extRes = await apiFetch('/extrair-pacote', {
