@@ -61,7 +61,11 @@ def _migrate():
         cols = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
         if "anamnese" not in cols:
             conn.execute("ALTER TABLE paciente ADD COLUMN anamnese TEXT")
-            conn.commit()
+        if "cpf" not in cols:
+            conn.execute("ALTER TABLE paciente ADD COLUMN cpf TEXT")
+        if "endereco" not in cols:
+            conn.execute("ALTER TABLE paciente ADD COLUMN endereco TEXT")
+        conn.commit()
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS api_uso (
@@ -181,21 +185,21 @@ def _row_to_dict(row) -> dict:
 
 # ---------- Paciente ----------
 
-def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None) -> dict:
+def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, criado_em) VALUES (?, ?, ?, ?, ?)",
-            (nome, data_nascimento, observacoes, anamnese, _now()),
+            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (nome, data_nascimento, observacoes, anamnese, cpf, endereco, _now()),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (cur.lastrowid,)).fetchone())
 
 
-def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None) -> dict:
+def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None) -> dict:
     with get_conn() as conn:
         conn.execute(
-            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ? WHERE id = ?",
-            (nome, data_nascimento, anamnese, paciente_id),
+            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, endereco = ? WHERE id = ?",
+            (nome, data_nascimento, anamnese, cpf, endereco, paciente_id),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone())

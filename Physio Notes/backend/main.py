@@ -59,6 +59,8 @@ class PacienteCreate(BaseModel):
     observacoes: str | None = None
     anamnese: str | None = None
     data_atendimento: str | None = None
+    cpf: str | None = None
+    endereco: str | None = None
 
 
 class SessaoCreate(BaseModel):
@@ -74,6 +76,10 @@ class ExtrairPacienteBody(BaseModel):
 
 
 class ExtrairPacoteBody(BaseModel):
+    transcricao: str
+
+
+class ComplementarAnamneseBody(BaseModel):
     transcricao: str
 
 
@@ -116,7 +122,7 @@ class NotaFiscalCreate(BaseModel):
 
 @app.post("/pacientes", status_code=201)
 def criar_paciente(body: PacienteCreate):
-    paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese)
+    paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco)
     return paciente
 
 
@@ -137,6 +143,8 @@ class PacienteUpdate(BaseModel):
     nome: str
     data_nascimento: str | None = None
     anamnese: str | None = None
+    cpf: str | None = None
+    endereco: str | None = None
 
 
 @app.delete("/pacientes/{paciente_id}", status_code=204)
@@ -152,7 +160,24 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese)
+    return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco)
+
+
+@app.post("/pacientes/{paciente_id}/complementar-anamnese")
+async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"))
+    paciente_atualizado = db.atualizar_paciente(
+        paciente_id,
+        paciente["nome"],
+        paciente.get("data_nascimento"),
+        anamnese_atualizada,
+        paciente.get("cpf"),
+        paciente.get("endereco"),
+    )
+    return {"anamnese": paciente_atualizado["anamnese"]}
 
 
 @app.post("/transcrever")

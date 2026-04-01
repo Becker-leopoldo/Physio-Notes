@@ -392,3 +392,36 @@ Documento:
     _registrar("resumir_documento", message)
 
     return message.content[0].text.strip()
+
+
+async def complementar_anamnese(transcricao: str, anamnese_atual: str | None) -> str:
+    """
+    Recebe uma transcrição de áudio com novas informações de anamnese e a anamnese
+    atual do paciente. Retorna a anamnese completa e atualizada em linguagem clínica,
+    integrando os dados novos com os existentes de forma coerente e técnica.
+    """
+    bloco_atual = f"\n\nANAMNESE ATUAL DO PACIENTE:\n{anamnese_atual}" if anamnese_atual else "\n\n(Paciente ainda não possui anamnese registrada.)"
+
+    prompt = f"""Você é um fisioterapeuta clínico experiente. A profissional gravou um áudio com novas informações ou complementos sobre a anamnese de um paciente.
+
+Sua tarefa é integrar as novas informações com a anamnese existente e retornar a anamnese COMPLETA e ATUALIZADA em linguagem clínica técnica.
+
+Regras:
+- Mantenha todas as informações anteriores relevantes
+- Incorpore as novas informações de forma coerente
+- Use linguagem clínica objetiva (fisioterapia)
+- Organize por tópicos quando houver múltiplas informações (queixa principal, histórico, comorbidades, medicamentos, etc.)
+- Não repita informações redundantes
+- Retorne APENAS o texto da anamnese atualizada, sem introduções ou explicações{bloco_atual}
+
+NOVA INFORMAÇÃO GRAVADA (transcrição):
+{transcricao}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("complementar_anamnese", message)
+
+    return message.content[0].text.strip()
