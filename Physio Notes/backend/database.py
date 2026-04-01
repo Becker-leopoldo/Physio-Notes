@@ -65,6 +65,10 @@ def _migrate():
             conn.execute("ALTER TABLE paciente ADD COLUMN cpf TEXT")
         if "endereco" not in cols:
             conn.execute("ALTER TABLE paciente ADD COLUMN endereco TEXT")
+        # Multi-tenant: dono de cada paciente
+        cols_pac = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
+        if "owner_email" not in cols_pac:
+            conn.execute("ALTER TABLE paciente ADD COLUMN owner_email TEXT")
         conn.commit()
 
         conn.execute("""
@@ -185,11 +189,11 @@ def _row_to_dict(row) -> dict:
 
 # ---------- Paciente ----------
 
-def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None) -> dict:
+def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None, owner_email: str | None = None) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (nome, data_nascimento, observacoes, anamnese, cpf, endereco, _now()),
+            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, _now()),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (cur.lastrowid,)).fetchone())
@@ -205,9 +209,11 @@ def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None,
         return _row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone())
 
 
-def listar_pacientes() -> list[dict]:
+def listar_pacientes(owner_email: str | None = None) -> list[dict]:
     with get_conn() as conn:
-        rows = conn.execute("""
+        owner_filter = "AND p.owner_email = ?" if owner_email else ""
+        params = [owner_email] if owner_email else []
+        rows = conn.execute(f"""
             SELECT p.*,
                    (SELECT (pk.total_sessoes - pk.sessoes_usadas)
                     FROM pacote pk
@@ -220,8 +226,8 @@ def listar_pacientes() -> list[dict]:
                       AND pk2.sessoes_usadas < pk2.total_sessoes
                     ORDER BY pk2.criado_em DESC LIMIT 1) AS pacote_total
             FROM paciente p
-            WHERE p.deletado_em IS NULL ORDER BY p.nome COLLATE NOCASE
-        """).fetchall()
+            WHERE p.deletado_em IS NULL {owner_filter} ORDER BY p.nome COLLATE NOCASE
+        """, params).fetchall()
         return [_row_to_dict(r) for r in rows]
 
 
@@ -760,7 +766,7 @@ def atualizar_sign_count(credential_id: str, sign_count: int):
 def _init_usuario_table():
     with get_conn() as conn:
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS usuario (
+            CREATE TABLE IF NOT EXISTS usuario_google (
                 id        INTEGER PRIMARY KEY AUTOINCREMENT,
                 email     TEXT    UNIQUE NOT NULL,
                 nome      TEXT,
@@ -772,15 +778,45 @@ def _init_usuario_table():
         conn.commit()
 
 
-def upsert_usuario(email: str, nome: str, foto_url: str | None) -> dict:
-    """Cria ou atualiza o usuário pelo e-mail. Retorna o registro atualizado."""
+def upsert_usuario(email: str, nome: str, foto_url: str | None, admin_email: str = "") -> dict:
+    """Cria ou atualiza o usuário pelo e-mail. Retorna o registro atualizado.
+    - Admin entra com ativo=1 automaticamente.
+    - Primeiro usuário assume pacientes órfãos e entra com ativo=1.
+    - Demais novos usuários entram com ativo=0 (pendente de aprovação)."""
     _init_usuario_table()
     agora = datetime.now(timezone.utc).isoformat()
     with get_conn() as conn:
+        is_new = conn.execute("SELECT COUNT(*) FROM usuario_google WHERE email = ?", (email,)).fetchone()[0] == 0
+        is_first = conn.execute("SELECT COUNT(*) FROM usuario_google").fetchone()[0] == 0
+        is_admin = email == admin_email
+        ativo = 1 if (is_admin or is_first) else 0
         conn.execute("""
-            INSERT INTO usuario (email, nome, foto_url, criado_em)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO usuario_google (email, nome, foto_url, ativo, criado_em)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(email) DO UPDATE SET nome = excluded.nome, foto_url = excluded.foto_url
-        """, (email, nome, foto_url, agora))
+        """, (email, nome, foto_url, ativo, agora))
+        if is_new and is_first:
+            conn.execute("UPDATE paciente SET owner_email = ? WHERE owner_email IS NULL", (email,))
         conn.commit()
-        return _row_to_dict(conn.execute("SELECT * FROM usuario WHERE email = ?", (email,)).fetchone())
+        return _row_to_dict(conn.execute("SELECT * FROM usuario_google WHERE email = ?", (email,)).fetchone())
+
+
+def listar_usuarios() -> list[dict]:
+    _init_usuario_table()
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM usuario_google ORDER BY ativo ASC, criado_em DESC").fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+def aprovar_usuario(email: str):
+    _init_usuario_table()
+    with get_conn() as conn:
+        conn.execute("UPDATE usuario_google SET ativo = 1 WHERE email = ?", (email,))
+        conn.commit()
+
+
+def revogar_usuario(email: str):
+    _init_usuario_table()
+    with get_conn() as conn:
+        conn.execute("UPDATE usuario_google SET ativo = 0 WHERE email = ?", (email,))
+        conn.commit()

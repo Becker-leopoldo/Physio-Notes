@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "physio-notes-dev-secret-mude-em-producao")
 JWT_ALGORITHM = "HS256"
-TOKEN_HOURS = 72  # token válido por 3 dias
+TOKEN_HOURS = 8  # token válido por 1 dia de trabalho
 
 
 def verificar_google_token(credential: str) -> dict:

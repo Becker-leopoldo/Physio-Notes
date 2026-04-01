@@ -8,4 +8,5 @@ aiofiles
 pypdf
 webauthn
 google-auth
+requests
 PyJWT

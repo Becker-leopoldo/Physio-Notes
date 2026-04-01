@@ -1078,6 +1078,10 @@
         <div id="drawer-user-email" style="font-size:10px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
     </div>
+    <a id="drawer-admin-link" href="/admin.html" class="drawer-item" style="display:none;text-decoration:none;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM3 13c0-2.8 2.2-4 5-4s5 1.2 5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Gerenciar usuários
+    </a>
     <button class="drawer-item drawer-item-danger" onclick="fecharDrawer(); fazerLogout();">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Sair
@@ -1483,7 +1487,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.13'; // bump a cada deploy: Beta-0.14, Beta-0.15...
+  const APP_VERSION = 'Beta-0.14'; // bump a cada deploy: Beta-0.15, Beta-0.16...
 
   /* ============================================================
      STATE
@@ -1997,9 +2001,7 @@
           const formData = new FormData();
           formData.append('audio', blob, `gravacao.${ext}`);
 
-          const transRes = await fetch(`${API_BASE}/transcrever`, { method: 'POST', body: formData });
-          const transJson = await transRes.json();
-          if (!transRes.ok) throw new Error(transJson.detail || `Erro ${transRes.status}`);
+          const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
 
           fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
           const extRes = await apiFetch('/extrair-paciente', {
@@ -2281,9 +2283,7 @@
               try {
                 const formData = new FormData();
                 formData.append('audio', blob, `anamnese.${ext}`);
-                const transRes = await fetch(`${API_BASE}/transcrever`, { method: 'POST', body: formData });
-                const transJson = await transRes.json();
-                if (!transRes.ok) throw new Error(transJson.detail || `Erro ${transRes.status}`);
+                const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
                 micFb.innerHTML = '<span style="color:var(--color-text-muted);">Analisando com IA e integrando anamnese...</span>';
                 const result = await apiFetch(`/pacientes/${pacienteId}/complementar-anamnese`, {
                   method: 'POST',
@@ -3051,9 +3051,7 @@
             try {
               const fd = new FormData();
               fd.append('audio', blob, `proc.${mimeType.includes('ogg') ? 'ogg' : 'webm'}`);
-              const tr = await fetch(`${API_BASE}/transcrever`, { method: 'POST', body: fd });
-              const tj = await tr.json();
-              if (!tr.ok) throw new Error(tj.detail || `Erro ${tr.status}`);
+              const tj = await apiFetch('/transcrever', { method: 'POST', body: fd });
               micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando...</div>';
               const ext = await apiFetch('/extrair-procedimento', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3645,6 +3643,12 @@
         document.getElementById('drawer-user-iniciais').textContent =
           u.nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
       }
+      // Mostra link admin apenas para o admin
+      fetch('/auth/config').then(r => r.json()).then(cfg => {
+        if (cfg.admin_email && u.email === cfg.admin_email) {
+          document.getElementById('drawer-admin-link').style.display = '';
+        }
+      }).catch(() => {});
     } catch (_) {}
   })();
 

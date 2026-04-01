@@ -4,6 +4,27 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.14 — 2026-04-01
+
+### Funcionalidades
+- **Multi-tenancy**: cada usuário vê apenas seus próprios pacientes — isolamento total de dados
+- **Painel de administração** (`/admin.html`): admin aprova ou revoga acesso de usuários
+- **Controle de acesso**: novos usuários ficam pendentes até aprovação do admin; mensagem clara na tela de login
+- **Saudação neutra** no login: "Olá, [nome]!" em vez de "Bem-vinda"
+
+### Melhorias
+- Login simplificado: apenas Google SSO (biometria removida para evitar acesso não rastreado)
+- Token JWT reduzido de 72h para 8h (melhor segurança para dados clínicos)
+- Link "Gerenciar usuários" no drawer visível apenas para o admin
+- `ADMIN_EMAIL` configurável via `.env`
+
+### Correções
+- Envio de áudio retornava 401: chamadas ao `/transcrever` não enviavam o token de autenticação
+- Conflito de schema entre tabela `usuario` (WebAuthn) e `usuario_google` (SSO)
+- Pacote `requests` adicionado ao `requirements.txt` (necessário para verificação do token Google)
+
+---
+
 ## Beta-0.12 — 2026-04-01
 
 ### Melhorias

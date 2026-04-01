@@ -58,7 +58,7 @@ _ROTAS_PUBLICAS = {
     "/auth/register/begin", "/auth/register/complete",
     "/auth/login/begin", "/auth/login/complete", "/auth/status",
 }
-_PREFIXOS_PUBLICOS = ("/login", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known")
+_PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known")
 
 @app.middleware("http")
 async def verificar_autenticacao(request: Request, call_next):
@@ -152,24 +152,47 @@ class NotaFiscalCreate(BaseModel):
     iss_aliquota: float | None = None  # percentual, ex: 2.5
 
 
+# ---------- Helper de autenticação ----------
+
+def _owner_email(request: Request) -> str | None:
+    """Extrai email do JWT. Retorna None para sessões WebAuthn (legado)."""
+    auth = request.headers.get("authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth.split(" ", 1)[1]
+        try:
+            payload = google_auth.verificar_jwt(token)
+            return payload.get("sub")
+        except Exception:
+            pass
+    return None
+
+
+def _verificar_dono(paciente: dict, owner: str | None):
+    """Lança 404 se o paciente não pertence ao usuário (None = WebAuthn, vê tudo)."""
+    if owner and paciente.get("owner_email") and paciente["owner_email"] != owner:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+
+
 # ---------- Pacientes ----------
 
 @app.post("/pacientes", status_code=201)
-def criar_paciente(body: PacienteCreate):
-    paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco)
+def criar_paciente(body: PacienteCreate, request: Request):
+    owner = _owner_email(request)
+    paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
     return paciente
 
 
 @app.get("/pacientes")
-def listar_pacientes():
-    return db.listar_pacientes()
+def listar_pacientes(request: Request):
+    return db.listar_pacientes(_owner_email(request))
 
 
 @app.get("/pacientes/{paciente_id}")
-def buscar_paciente(paciente_id: int):
+def buscar_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     return paciente
 
 
@@ -182,26 +205,29 @@ class PacienteUpdate(BaseModel):
 
 
 @app.delete("/pacientes/{paciente_id}", status_code=204)
-def deletar_paciente(paciente_id: int):
+def deletar_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     db.deletar_paciente(paciente_id)
 
 
 @app.put("/pacientes/{paciente_id}")
-def atualizar_paciente(paciente_id: int, body: PacienteUpdate):
+def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco)
 
 
 @app.post("/pacientes/{paciente_id}/complementar-anamnese")
-async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody):
+async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"))
     paciente_atualizado = db.atualizar_paciente(
         paciente_id,
@@ -761,7 +787,10 @@ class GoogleLoginBody(BaseModel):
 @app.get("/auth/config")
 async def auth_config():
     """Retorna o Google Client ID para o frontend inicializar o GIS."""
-    return {"google_client_id": google_auth.GOOGLE_CLIENT_ID}
+    return {
+        "google_client_id": google_auth.GOOGLE_CLIENT_ID,
+        "admin_email": os.environ.get("ADMIN_EMAIL", ""),
+    }
 
 @app.post("/auth/google-login")
 async def auth_google_login(body: GoogleLoginBody):
@@ -777,9 +806,41 @@ async def auth_google_login(body: GoogleLoginBody):
     foto  = info.get("picture")
     if not email:
         raise HTTPException(status_code=401, detail="E-mail não disponível no token Google.")
-    db.upsert_usuario(email, nome, foto)
+    admin_email = os.environ.get("ADMIN_EMAIL", "")
+    usuario = db.upsert_usuario(email, nome, foto, admin_email)
+    if not usuario.get("ativo"):
+        raise HTTPException(status_code=403, detail="Acesso pendente de aprovação do administrador.")
     token = google_auth.criar_jwt(email, nome, foto)
     return {"token": token, "nome": nome, "email": email, "foto": foto}
+
+
+# ---------- Admin ----------
+
+def _verificar_admin(request: Request):
+    admin_email = os.environ.get("ADMIN_EMAIL", "")
+    email = _owner_email(request)
+    if not email or email != admin_email:
+        raise HTTPException(status_code=403, detail="Acesso restrito ao administrador.")
+
+
+@app.get("/admin/usuarios")
+def admin_listar_usuarios(request: Request):
+    _verificar_admin(request)
+    return db.listar_usuarios()
+
+
+@app.post("/admin/usuarios/{email}/aprovar")
+def admin_aprovar_usuario(email: str, request: Request):
+    _verificar_admin(request)
+    db.aprovar_usuario(email)
+    return {"ok": True}
+
+
+@app.post("/admin/usuarios/{email}/revogar")
+def admin_revogar_usuario(email: str, request: Request):
+    _verificar_admin(request)
+    db.revogar_usuario(email)
+    return {"ok": True}
 
 
 # ---------- Auth WebAuthn ----------
