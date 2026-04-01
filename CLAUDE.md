@@ -469,6 +469,7 @@ Toda tela com sidebar deve ter um menu de contexto no clique do usuário logado,
 - Incrementar o sufixo: `Beta-0.12` → `Beta-0.13` → `Beta-0.14` etc.
 - O commit de bump deve ser separado ou incluído no commit principal, com mensagem `chore(physio-notes): bump versão Beta-0.XX`.
 - **Nunca fazer deploy sem bumpar a versão** — é o principal controle de versão para o testador.
+- A cada nova versão, **atualizar `Physio Notes/CHANGELOG.md`** com as mudanças da release antes do commit, seguindo o formato existente (`## Beta-0.XX — YYYY-MM-DD` + seções Funcionalidades / Melhorias / Correções).
 
 ---
 
