@@ -5,12 +5,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 import database as db
 import transcribe
 import ai
+import google_auth
 
 # ---------- WebAuthn session store (in-memory) ----------
 _challenges: dict[str, bytes] = {}   # username -> challenge bytes
@@ -49,6 +50,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------- Auth middleware ----------
+# Rotas que NÃO precisam de token (auth + arquivos estáticos)
+_ROTAS_PUBLICAS = {
+    "/auth/config", "/auth/google-login",
+    "/auth/register/begin", "/auth/register/complete",
+    "/auth/login/begin", "/auth/login/complete", "/auth/status",
+}
+_PREFIXOS_PUBLICOS = ("/login", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known")
+
+@app.middleware("http")
+async def verificar_autenticacao(request: Request, call_next):
+    path = request.url.path
+    # Arquivos estáticos e rotas de auth: livres
+    if (path in _ROTAS_PUBLICAS
+            or any(path.startswith(p) for p in _PREFIXOS_PUBLICOS)
+            or path in ("/", "/index.html")):
+        return await call_next(request)
+
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1]
+        # Aceita JWT do Google SSO
+        try:
+            google_auth.verificar_jwt(token)
+            return await call_next(request)
+        except Exception:
+            pass
+        # Aceita sessão WebAuthn (compatibilidade com usuário existente)
+        if token in _sessions:
+            return await call_next(request)
+
+    return JSONResponse(status_code=401, content={"detail": "Não autenticado"})
 
 
 # ---------- Schemas ----------
@@ -717,6 +751,35 @@ def cancelar_nota_fiscal(nf_id: int):
     if not nf:
         raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
     db.cancelar_nota_fiscal(nf_id)
+
+
+# ---------- Auth Google SSO ----------
+
+class GoogleLoginBody(BaseModel):
+    credential: str
+
+@app.get("/auth/config")
+async def auth_config():
+    """Retorna o Google Client ID para o frontend inicializar o GIS."""
+    return {"google_client_id": google_auth.GOOGLE_CLIENT_ID}
+
+@app.post("/auth/google-login")
+async def auth_google_login(body: GoogleLoginBody):
+    """Verifica o credential do Google, cria/atualiza usuário e retorna JWT."""
+    if not google_auth.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=501, detail="Google SSO não configurado no servidor.")
+    try:
+        info = google_auth.verificar_google_token(body.credential)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Token Google inválido: {e}")
+    email = info.get("email")
+    nome  = info.get("name", email)
+    foto  = info.get("picture")
+    if not email:
+        raise HTTPException(status_code=401, detail="E-mail não disponível no token Google.")
+    db.upsert_usuario(email, nome, foto)
+    token = google_auth.criar_jwt(email, nome, foto)
+    return {"token": token, "nome": nome, "email": email, "foto": foto}
 
 
 # ---------- Auth WebAuthn ----------

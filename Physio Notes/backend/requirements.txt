@@ -7,3 +7,5 @@ python-dotenv
 aiofiles
 pypdf
 webauthn
+google-auth
+PyJWT

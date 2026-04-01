@@ -753,3 +753,34 @@ def atualizar_sign_count(credential_id: str, sign_count: int):
     with get_conn() as conn:
         conn.execute("UPDATE webauthn_credential SET sign_count = ? WHERE id = ?", (sign_count, credential_id))
         conn.commit()
+
+
+# ── Usuários (Google SSO) ──────────────────────────────────────────────────────
+
+def _init_usuario_table():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS usuario (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                email     TEXT    UNIQUE NOT NULL,
+                nome      TEXT,
+                foto_url  TEXT,
+                ativo     INTEGER NOT NULL DEFAULT 1,
+                criado_em TEXT    NOT NULL
+            )
+        """)
+        conn.commit()
+
+
+def upsert_usuario(email: str, nome: str, foto_url: str | None) -> dict:
+    """Cria ou atualiza o usuário pelo e-mail. Retorna o registro atualizado."""
+    _init_usuario_table()
+    agora = datetime.now(timezone.utc).isoformat()
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO usuario (email, nome, foto_url, criado_em)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(email) DO UPDATE SET nome = excluded.nome, foto_url = excluded.foto_url
+        """, (email, nome, foto_url, agora))
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM usuario WHERE email = ?", (email,)).fetchone())
