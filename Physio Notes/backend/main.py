@@ -253,7 +253,7 @@ async def transcrever_audio_avulso(audio: UploadFile = File(...)):
 
 
 @app.post("/extrair-paciente")
-async def extrair_dados_paciente(body: ExtrairPacienteBody):
+async def extrair_dados_paciente(body: ExtrairPacienteBody, request: Request):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
@@ -264,7 +264,7 @@ async def extrair_dados_paciente(body: ExtrairPacienteBody):
 
 
 @app.post("/extrair-procedimento")
-async def extrair_procedimento(body: ExtrairProcedimentoBody):
+async def extrair_procedimento(body: ExtrairProcedimentoBody, request: Request):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
@@ -322,7 +322,7 @@ def deletar_procedimento(proc_id: int):
 
 
 @app.post("/extrair-pacote")
-async def extrair_dados_pacote(body: ExtrairPacoteBody):
+async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
@@ -438,7 +438,7 @@ def cancelar_sessao(sessao_id: int):
 
 
 @app.post("/sessoes/{sessao_id}/adicionar-audio")
-async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = File(...)):
+async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = File(...), request: Request = None):
     """Adiciona áudio a uma sessão encerrada do mesmo dia, sem abater do pacote."""
     from datetime import date
     sessao = db.get_sessao(sessao_id)
