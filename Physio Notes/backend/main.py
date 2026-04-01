@@ -532,8 +532,8 @@ def listar_sessoes_paciente(paciente_id: int):
 # ---------- Historico / IA ----------
 
 @app.get("/faturamento/pacientes")
-def faturamento_pacientes(mes: str | None = None, paciente_id: int | None = None):
-    return db.get_faturamento_pacientes(ano_mes=mes, paciente_id=paciente_id)
+def faturamento_pacientes(mes: str | None = None, paciente_id: int | None = None, request: Request = None):
+    return db.get_faturamento_pacientes(ano_mes=mes, paciente_id=paciente_id, owner_email=_owner_email(request))
 
 
 @app.get("/billing")
@@ -675,7 +675,7 @@ def deletar_pacote(pacote_id: int):
 # ---------- Notas Fiscais de Serviço (demo) ----------
 
 @app.post("/notas-fiscais", status_code=201)
-def emitir_nota_fiscal(body: NotaFiscalCreate):
+def emitir_nota_fiscal(body: NotaFiscalCreate, request: Request):
     import json as _json
     from datetime import date
 
@@ -717,6 +717,7 @@ def emitir_nota_fiscal(body: NotaFiscalCreate):
         descricao=body.descricao,
         competencia=body.competencia,
         dados_json=_json.dumps(dados, ensure_ascii=False),
+        owner_email=_owner_email(request),
     )
     return {**nf, "dados": dados}
 
@@ -726,10 +727,12 @@ def listar_notas_fiscais(
     q: str | None = None,
     paciente_id: int | None = None,
     competencia: str | None = None,
+    request: Request = None,
 ):
     import json as _json
-    # Busca todas as notas sem filtro para popular os pickers
-    todas = db.listar_notas_fiscais()
+    owner = _owner_email(request)
+    # Busca todas as notas do usuário para popular os pickers
+    todas = db.listar_notas_fiscais(owner_email=owner)
     competencias_disponiveis = sorted(
         {n["competencia"] for n in todas if n.get("competencia")}, reverse=True
     )
@@ -743,7 +746,7 @@ def listar_notas_fiscais(
         pac_map[key] = {"id": n.get("paciente_id"), "nome": nome}
     pacientes_disponiveis = sorted(pac_map.values(), key=lambda p: p["nome"])
 
-    notas = db.listar_notas_fiscais(q=q, paciente_id=paciente_id, competencia=competencia)
+    notas = db.listar_notas_fiscais(q=q, paciente_id=paciente_id, competencia=competencia, owner_email=owner)
     result = []
     for n in notas:
         try:

@@ -110,6 +110,11 @@ def _migrate():
         if "deletado_em" not in cols_doc:
             conn.execute("ALTER TABLE documento ADD COLUMN deletado_em TEXT")
 
+        # Multi-tenant: owner em nota_fiscal
+        cols_nf = [r[1] for r in conn.execute("PRAGMA table_info(nota_fiscal)").fetchall()]
+        if "owner_email" not in cols_nf:
+            conn.execute("ALTER TABLE nota_fiscal ADD COLUMN owner_email TEXT")
+
         # Pacotes de sessões
         conn.execute("""
             CREATE TABLE IF NOT EXISTS pacote (
@@ -560,7 +565,7 @@ def deletar_procedimento(proc_id: int):
 
 # ---------- Faturamento de Pacientes ----------
 
-def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | None = None) -> dict:
+def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | None = None, owner_email: str | None = None) -> dict:
     """
     Retorna pacotes e procedimentos extras, filtrado por mês e/ou paciente.
     ano_mes: 'YYYY-MM'. Para pacotes usa data_pagamento; para procedimentos usa data.
@@ -575,6 +580,9 @@ def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | Non
         if paciente_id:
             pk_where.append("pk.paciente_id = ?")
             pk_params.append(paciente_id)
+        if owner_email:
+            pk_where.append("p.owner_email = ?")
+            pk_params.append(owner_email)
 
         pacotes = [_row_to_dict(r) for r in conn.execute(f"""
             SELECT pk.id, pk.paciente_id, p.nome AS paciente_nome,
@@ -597,6 +605,9 @@ def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | Non
         if paciente_id:
             pe_where.append("pe.paciente_id = ?")
             pe_params.append(paciente_id)
+        if owner_email:
+            pe_where.append("p.owner_email = ?")
+            pe_params.append(owner_email)
 
         procedimentos = [_row_to_dict(r) for r in conn.execute(f"""
             SELECT pe.id, pe.sessao_id, pe.paciente_id, p.nome AS paciente_nome,
@@ -658,7 +669,7 @@ def _proximo_numero_nf(conn) -> str:
 
 
 def emitir_nota_fiscal(paciente_id: int | None, paciente_nome: str, valor_servico: float,
-                       descricao: str, competencia: str | None, dados_json: str) -> dict:
+                       descricao: str, competencia: str | None, dados_json: str, owner_email: str | None = None) -> dict:
     import secrets as _secrets
     now = _now()
     from datetime import datetime, timezone as tz
@@ -670,10 +681,10 @@ def emitir_nota_fiscal(paciente_id: int | None, paciente_nome: str, valor_servic
         cur = conn.execute(
             """INSERT INTO nota_fiscal
                (numero, paciente_id, paciente_nome, valor_servico, descricao,
-                competencia, data_emissao, codigo_verificacao, dados_json, criado_em)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                competencia, data_emissao, codigo_verificacao, dados_json, owner_email, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (numero, paciente_id, paciente_nome, valor_servico, descricao,
-             competencia, data_emissao, codigo, dados_json, now),
+             competencia, data_emissao, codigo, dados_json, owner_email, now),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM nota_fiscal WHERE id = ?", (cur.lastrowid,)).fetchone())
@@ -683,10 +694,14 @@ def listar_notas_fiscais(
     q: str | None = None,
     paciente_id: int | None = None,
     competencia: str | None = None,
+    owner_email: str | None = None,
 ) -> list[dict]:
     with get_conn() as conn:
         where_parts = ["deletado_em IS NULL"]
         params: list = []
+        if owner_email:
+            where_parts.append("owner_email = ?")
+            params.append(owner_email)
         if paciente_id:
             where_parts.append("paciente_id = ?")
             params.append(paciente_id)
