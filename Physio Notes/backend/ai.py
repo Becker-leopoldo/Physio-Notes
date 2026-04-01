@@ -179,6 +179,154 @@ Transcrição:
     return result
 
 
+async def extrair_dados_pacote(transcricao: str) -> dict:
+    """
+    Extrai dados de um pacote de sessões a partir de uma transcrição de áudio.
+    Retorna dict com: total_sessoes (int), valor_pago (float|None),
+    data_pagamento (str YYYY-MM-DD|None), descricao (str|None).
+    """
+    hoje = __import__("datetime").date.today().isoformat()
+    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio registrando um novo pacote de sessões para um paciente.
+
+Extraia as seguintes informações da transcrição e retorne APENAS um JSON válido com estas chaves:
+
+{{
+  "total_sessoes": <número inteiro de sessões do pacote, obrigatório>,
+  "valor_pago": <valor em reais como número decimal, ou null se não mencionado>,
+  "data_pagamento": <data do pagamento no formato YYYY-MM-DD, ou null se não mencionada. Hoje é {hoje}. Interprete expressões como "hoje", "ontem", "semana passada".>,
+  "descricao": <descrição breve do pacote, ou null se não houver>
+}}
+
+Se a quantidade de sessões não for mencionada, use null para total_sessoes.
+Responda APENAS com o JSON, sem texto adicional.
+
+Transcrição:
+{transcricao}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("extrair_dados_pacote", message)
+
+    raw_text = message.content[0].text.strip()
+    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    if json_match:
+        raw_text = json_match.group(0)
+
+    try:
+        result = json.loads(raw_text)
+    except json.JSONDecodeError:
+        result = {"total_sessoes": None, "valor_pago": None, "data_pagamento": None, "descricao": None}
+
+    for chave in ("total_sessoes", "valor_pago", "data_pagamento", "descricao"):
+        result.setdefault(chave, None)
+
+    return result
+
+
+async def detectar_procedimentos_extras(transcricao_completa: str, nota_clinica: str | None) -> list[dict]:
+    """
+    Analisa a transcrição bruta e a nota clínica da sessão em busca de
+    procedimentos extras cobrados além do pacote.
+    Retorna lista de {descricao, valor} — valor pode ser None.
+    """
+    nota_bloco = f"\n\nNOTA CLÍNICA CONSOLIDADA:\n{nota_clinica}" if nota_clinica else ""
+    prompt = f"""Você é um assistente de faturamento de clínica de fisioterapia.
+
+Analise o texto abaixo (transcrição de sessão clínica{' e nota consolidada' if nota_clinica else ''}) e identifique APENAS cobranças ou procedimentos extras que foram realizados ALÉM do pacote de sessões padrão.
+
+Exemplos do que deve ser identificado:
+- "fizemos laser que custa 200 reais a mais"
+- "cobrei 50 de eletroterapia adicional"
+- "acupuntura, 80 reais extra"
+- "ventosaterapia por fora do pacote"
+
+NÃO inclua: a própria sessão de fisioterapia, consultas já cobertas pelo pacote, ou itens sem indicação clara de cobrança extra.
+
+Retorne APENAS um JSON com uma lista. Se não houver extras, retorne lista vazia:
+
+[
+  {{"descricao": "nome do procedimento", "valor": <número decimal ou null>}},
+  ...
+]
+
+TRANSCRIÇÃO:
+{transcricao_completa}{nota_bloco}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("extrair_procedimento", message)
+
+    raw_text = message.content[0].text.strip()
+    json_match = re.search(r"\[[\s\S]*\]", raw_text)
+    if json_match:
+        raw_text = json_match.group(0)
+
+    try:
+        result = json.loads(raw_text)
+        if not isinstance(result, list):
+            result = []
+    except json.JSONDecodeError:
+        result = []
+
+    # normaliza cada item
+    clean = []
+    for item in result:
+        if isinstance(item, dict) and item.get("descricao"):
+            clean.append({
+                "descricao": str(item["descricao"]),
+                "valor": float(item["valor"]) if item.get("valor") else None,
+            })
+    return clean
+
+
+async def extrair_procedimento(transcricao: str) -> dict:
+    """
+    Extrai dados de um procedimento extra a partir de transcrição.
+    Retorna dict com: descricao (str), valor (float|None).
+    """
+    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio mencionando um procedimento ou serviço extra cobrado nesta sessão.
+
+Extraia as seguintes informações e retorne APENAS um JSON válido:
+
+{{
+  "descricao": "Nome ou descrição do procedimento/serviço cobrado",
+  "valor": <valor em reais como número decimal, ou null se não mencionado>
+}}
+
+Exemplos de entrada: "cobrei 50 de eletroterapia", "acupuntura, 80 reais", "ventosaterapia sem cobrança adicional"
+Responda APENAS com o JSON, sem texto adicional.
+
+Transcrição:
+{transcricao}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=128,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("extrair_procedimento", message)
+
+    raw_text = message.content[0].text.strip()
+    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    if json_match:
+        raw_text = json_match.group(0)
+
+    try:
+        result = json.loads(raw_text)
+    except json.JSONDecodeError:
+        result = {"descricao": raw_text, "valor": None}
+
+    result.setdefault("descricao", None)
+    result.setdefault("valor", None)
+    return result
+
+
 async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dict | None = None) -> str:
     """
     Responde pergunta da fisioterapeuta com base no histórico do paciente.
