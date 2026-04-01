@@ -849,6 +849,48 @@
         z-index: 10;
       }
     }
+
+    /* ============================================================
+       RESPONSIVIDADE MOBILE
+    ============================================================ */
+    @media (max-width: 400px) {
+      /* Header: quebra em 2 linhas em telas pequenas */
+      .home-header {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        padding: var(--space-4) var(--space-4) var(--space-3);
+      }
+      .home-header-actions {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .home-title { font-size: var(--text-xl) !important; }
+      .home-subtitle { font-size: var(--text-xs); }
+
+      /* Padding geral reduzido */
+      .section-body { padding: var(--space-4); gap: var(--space-4); }
+      .top-bar { padding: var(--space-3) var(--space-4); }
+
+      /* Botões menores */
+      .btn-sm { padding: var(--space-1) var(--space-2); font-size: 0.7rem; }
+
+      /* Modals ocupam tela cheia */
+      .modal-sheet {
+        max-width: 100% !important;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      }
+
+      /* Cards com menos padding */
+      .card-body { padding: var(--space-4) !important; }
+    }
+
+    @media (max-width: 480px) {
+      /* App ocupa 100% da tela no celular */
+      #app {
+        box-shadow: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -896,7 +938,7 @@
           <p class="home-subtitle">Prontuário clínico por voz</p>
         </div>
       </div>
-      <div style="display:flex;gap:var(--space-2);">
+      <div class="home-header-actions" style="display:flex;gap:var(--space-2);">
         <button class="btn btn-ghost btn-sm" id="btn-billing" title="Billing">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="margin-right:4px;vertical-align:-1px;">
             <rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/>
