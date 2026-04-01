@@ -86,6 +86,7 @@
       font-size: var(--text-base);
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     /* ---- App Shell ---- */
@@ -128,6 +129,7 @@
       font-family: var(--font-display);
       font-size: var(--text-xl);
       flex: 1;
+      min-width: 0;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
@@ -607,6 +609,7 @@
       background: var(--color-surface);
       border-bottom: var(--border);
     }
+    .patient-header > div { min-width: 0; }
     .patient-avatar-lg {
       width: 52px;
       height: 52px;
@@ -853,8 +856,14 @@
     /* ============================================================
        RESPONSIVIDADE MOBILE
     ============================================================ */
-    @media (max-width: 400px) {
-      /* Header: quebra em 2 linhas em telas pequenas */
+    @media (max-width: 480px) {
+      /* App ocupa 100% da tela no celular */
+      #app {
+        box-shadow: none;
+        max-width: 100%;
+      }
+
+      /* Header home: quebra em 2 linhas */
       .home-header {
         flex-wrap: wrap;
         gap: var(--space-3);
@@ -883,13 +892,12 @@
 
       /* Cards com menos padding */
       .card-body { padding: var(--space-4) !important; }
-    }
 
-    @media (max-width: 480px) {
-      /* App ocupa 100% da tela no celular */
-      #app {
-        box-shadow: none;
-      }
+      /* Sessão aberta: botões empilham se necessário */
+      .open-session-actions { flex-wrap: wrap; }
+
+      /* Chips de pergunta: ocupam largura disponível */
+      .ask-chip { white-space: normal; }
     }
   </style>
 </head>
