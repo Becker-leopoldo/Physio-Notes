@@ -7,7 +7,7 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 ## Beta-0.12 — 2026-04-01
 
 ### Melhorias
-- Agente IA com persona de fisioterapeuta especialista em todos os prompts (anatomia, biomecânica, jargões clínicos, abreviações como TENS, FNP, RPG, ADM, EVA)
+- Agente IA reclassificado como fisioterapeuta clínico experiente em todos os prompts — melhora a interpretação de jargões, abreviações (TENS, FNP, RPG, ADM, EVA) e a qualidade das notas de sessão, anamnese e respostas clínicas
 
 ---
 
