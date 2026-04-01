@@ -466,6 +466,7 @@ Toda tela com sidebar deve ter um menu de contexto no clique do usuário logado,
 - Espaçamento generoso — prefira `--space-8` ou mais entre seções
 - Incluir `<footer class="powered-bar">powered by <strong>up it</strong></footer>` ao final de cada `.main-content`
 - Incluir menu de logout no clique do usuário em toda tela com sidebar (padrão `.user-menu-trigger` + `.user-menu`)
+- Usar **sempre os pickers customizados** para filtros de mês/ano e listas — nunca `<select>` nativo (ver seção abaixo)
 
 ### ❌ Nunca fazer
 - Sombras coloridas ou pesadas
@@ -476,6 +477,92 @@ Toda tela com sidebar deve ter um menu de contexto no clique do usuário logado,
 - Accordions ou elementos colapsáveis para conteúdo informacional
 - Animações chamativas ou desnecessárias
 - Padding interno de card menor que `--space-6`
+- **`<select>` nativo** para filtros visíveis ao usuário — usar sempre `criarPickerMesAno` ou `criarPickerLista`
+
+---
+
+## Pickers Customizados (substitutos do `<select>` nativo)
+
+Nunca usar `<select class="form-select">` para filtros visíveis ao usuário. Sempre usar os dois componentes abaixo, que seguem o visual do design system (borda sutil, painel flutuante arredondado, item selecionado em fundo preto).
+
+---
+
+### `criarPickerMesAno(valorInicial, onChange, opções)`
+
+Para filtros de mês/ano (competência, período de billing, etc.).
+
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `valorInicial` | `string \| ''` | Valor inicial no formato `'YYYY-MM'` ou `''` para "todos" |
+| `onChange` | `(valor: string) => void` | Chamado com `'YYYY-MM'` ou `''` ao selecionar |
+| `opções.allowAll` | `boolean` | Exibe botão "Todos os meses" (padrão: `false`) |
+| `opções.fullWidth` | `boolean` | Botão ocupa 100% do container (padrão: `false`) |
+
+Retorna um elemento DOM com `.getValue()` → `string`.
+
+**Uso típico:**
+```html
+<div id="meu-picker-slot"></div>
+```
+```js
+const picker = criarPickerMesAno('2026-04', (mes) => {
+  recarregarDados(mes || null);
+}, { allowAll: true, fullWidth: true });
+document.getElementById('meu-picker-slot').appendChild(picker);
+
+// Ler valor atual:
+picker.getValue(); // → 'YYYY-MM' ou ''
+```
+
+---
+
+### `criarPickerLista(opcoes, valorInicial, onChange, opções)`
+
+Para qualquer lista plana de opções (pacientes, categorias, status, etc.).
+
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `opcoes` | `{value: string, label: string}[]` | Lista de opções; inclua `{value:'', label:'Todos os ...'}` como primeira opção para "sem filtro" |
+| `valorInicial` | `string` | Valor inicial (`value` da opção selecionada) |
+| `onChange` | `(valor: string) => void` | Chamado com o `value` da opção ao selecionar |
+| `opções.fullWidth` | `boolean` | Botão ocupa 100% do container (padrão: `false`) |
+
+Retorna um elemento DOM com `.getValue()` e `.setValue(v)`.
+
+**Uso típico:**
+```html
+<div id="meu-picker-pac-slot"></div>
+```
+```js
+const opcoes = [
+  { value: '', label: 'Todos os pacientes' },
+  { value: '1', label: 'Ana Silva' },
+  { value: '2', label: 'João Souza' },
+];
+const picker = criarPickerLista(opcoes, '', (pacId) => {
+  recarregarDados(pacId || null);
+}, { fullWidth: true });
+document.getElementById('meu-picker-pac-slot').appendChild(picker);
+```
+
+---
+
+### Padrão de filtros em par (grid 2 colunas)
+
+Quando há dois filtros lado a lado (ex: Competência + Paciente), usar sempre:
+
+```html
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-5);">
+  <div class="form-group" style="margin:0;">
+    <label class="form-label">Competência</label>
+    <div id="picker-mes-slot"></div>
+  </div>
+  <div class="form-group" style="margin:0;">
+    <label class="form-label">Paciente</label>
+    <div id="picker-pac-slot"></div>
+  </div>
+</div>
+```
 
 ---
 

@@ -716,26 +716,96 @@
       align-items: center;
       justify-content: space-between;
     }
-    #btn-logout {
-      position: absolute;
-      top: var(--space-4);
-      right: var(--space-4);
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-full);
-      background: transparent;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--color-text-muted);
-      z-index: 300;
-      transition: color 0.15s;
-    }
-    #btn-logout:hover { color: var(--color-danger); }
     .home-title { font-family: var(--font-display); font-size: var(--text-3xl); }
     .home-subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); margin-top: var(--space-1); }
+
+    /* ---- Drawer lateral ---- */
+    .drawer-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 400;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 260px;
+      background: var(--color-surface);
+      z-index: 401;
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: var(--space-6) var(--space-5) var(--space-5);
+      border-bottom: var(--border);
+    }
+    .drawer-brand {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      color: var(--color-text);
+    }
+    .drawer-subtitle {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-top: var(--space-1);
+    }
+    .drawer-nav {
+      flex: 1;
+      padding: var(--space-4) var(--space-3);
+      display: flex; flex-direction: column; gap: var(--space-1);
+    }
+    .drawer-nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      padding: var(--space-3) var(--space-3) var(--space-1);
+    }
+    .drawer-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      cursor: pointer;
+      background: none; border: none;
+      font-family: var(--font-body);
+      width: 100%; text-align: left;
+      transition: background 0.12s;
+    }
+    .drawer-item:hover { background: var(--color-accent-light); }
+    .drawer-item.active { background: var(--color-accent-light); font-weight: 600; }
+    .drawer-item svg { flex-shrink: 0; color: var(--color-text-secondary); }
+    .drawer-item.active svg { color: var(--color-text); }
+    .drawer-footer {
+      padding: var(--space-4) var(--space-3);
+      border-top: var(--border);
+    }
+    .drawer-item-danger { color: var(--color-danger) !important; }
+    .drawer-item-danger svg { color: var(--color-danger) !important; }
+    .drawer-item-danger:hover { background: var(--color-danger-bg) !important; }
+
+    /* ---- Faturamento cards ---- */
+    .fat-card {
+      background: var(--color-surface);
+      border: var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
+      display: flex; flex-direction: column; gap: var(--space-2);
+    }
+    .fat-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);
+    }
+    .fat-card-name { font-weight: 600; font-size: var(--text-base); }
+    .fat-card-value { font-size: var(--text-lg); font-weight: 700; color: var(--color-text); white-space: nowrap; }
+    .fat-card-meta { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; gap: var(--space-3); flex-wrap: wrap; }
 
     /* ---- Loading state overlay ---- */
     .loading-message {
@@ -816,6 +886,7 @@
       .print-section-text { font-size: 12px; line-height: 1.8; color: #1A1A1A; }
       .print-footer { margin-top: 48px; border-top: 1px solid #E8E6E1; padding-top: 12px; font-size: 10px; color: #A09D97; }
       .no-print { display: none !important; }
+      table td, table th { padding: 7px 4px; border-bottom: 1px solid #E8E6E1; }
     }
 
     @media screen {
@@ -910,7 +981,7 @@
 </div>
 
 <!-- ======================== OFFLINE OVERLAY ======================== -->
-<div id="offline-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#F9F8F6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-6);padding:var(--space-8);">
+<div id="offline-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#F9F8F6;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-6);padding:var(--space-8);">
   <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity:0.25;">
     <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
@@ -924,12 +995,47 @@
   </div>
 </div>
 
+<!-- Drawer lateral -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-brand">Physio Notes</div>
+    <div class="drawer-subtitle">Prontuário clínico por voz</div>
+  </div>
+  <nav class="drawer-nav">
+    <div class="drawer-nav-label">Principal</div>
+    <button class="drawer-item active" id="drawer-pacientes">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Pacientes
+    </button>
+    <div class="drawer-nav-label" style="margin-top:var(--space-2);">Financeiro</div>
+    <button class="drawer-item" id="drawer-faturamento">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v14M4 5h6a2 2 0 0 1 0 4H6a2 2 0 0 0 0 4h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Faturamento
+    </button>
+    <button class="drawer-item" id="drawer-notas">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Notas Fiscais
+    </button>
+    <button class="drawer-item" id="drawer-billing">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14M4 10h3M10 10h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Billing IA
+    </button>
+    <div class="drawer-nav-label" style="margin-top:var(--space-2);">Relatórios</div>
+    <button class="drawer-item" id="drawer-relatorio">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9H4V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M6 7h4M6 10h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Relatório CREFITO
+    </button>
+  </nav>
+  <div class="drawer-footer">
+    <button class="drawer-item drawer-item-danger" onclick="fecharDrawer(); fazerLogout();">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Sair
+    </button>
+  </div>
+</div>
+
 <div id="app">
-  <button id="btn-logout" title="Sair" onclick="fazerLogout()">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
 
   <!-- ======================== SECTION: HOME (Pacientes) ======================== -->
   <section id="sec-home" class="section active">
@@ -946,16 +1052,11 @@
           <p class="home-subtitle">Prontuário clínico por voz</p>
         </div>
       </div>
-      <div class="home-header-actions" style="display:flex;gap:var(--space-2);">
-        <button class="btn btn-ghost btn-sm" id="btn-billing" title="Billing">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="margin-right:4px;vertical-align:-1px;">
-            <rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M1 6h14" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M4 10h3M10 10h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>Billing
-        </button>
-        <button class="btn btn-secondary btn-sm" id="btn-relatorio-crefito">Relatório</button>
+      <div class="home-header-actions" style="display:flex;gap:var(--space-2);align-items:center;">
         <button class="btn btn-primary btn-sm" id="btn-novo-paciente">+ Paciente</button>
+        <button id="btn-menu" title="Menu" style="width:36px;height:36px;border-radius:var(--radius-md);background:none;border:var(--border-strong);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text);flex-shrink:0;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
       </div>
     </div>
 
@@ -1077,25 +1178,26 @@
 
       <div id="rec-feedback"></div>
 
-      <div id="rec-chunks-area">
+      <div id="rec-chunks-area" style="padding-bottom:var(--space-2);">
         <div id="rec-chunks-label" style="font-size:var(--text-sm);font-weight:600;color:var(--color-text-secondary);margin-bottom:var(--space-3);display:none;">Trechos transcritos nesta sessão</div>
         <div class="chunk-list" id="rec-chunks-list"></div>
       </div>
+    </div>
 
-      <div style="padding: var(--space-5) 0 var(--space-2);">
-        <div class="ac-indicator" style="display:none;text-align:center;margin-bottom:var(--space-4);">
-          <div class="ac-pill" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-accent-light);border-radius:var(--radius-full);padding:5px 12px 5px 8px;transition:background 0.4s,color 0.4s;">
-            <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0;">
-              <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
-              <circle class="ac-arc" cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"
-                      stroke-dasharray="34.56" stroke-dashoffset="0" stroke-linecap="round"
-                      transform="rotate(-90 8 8)" style="transition:stroke-dashoffset 1s linear,stroke 0.4s;"/>
-            </svg>
-            <span class="ac-countdown" style="font-variant-numeric:tabular-nums;letter-spacing:0.02em;">10:00</span>
-          </div>
+    <!-- Rodapé sticky: timer auto-encerramento + botão encerrar -->
+    <div style="position:sticky;bottom:0;background:var(--color-surface);border-top:var(--border);padding:var(--space-4) var(--space-5);z-index:10;">
+      <div class="ac-indicator" style="display:none;text-align:center;margin-bottom:var(--space-3);">
+        <div class="ac-pill" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-accent-light);border-radius:var(--radius-full);padding:5px 12px 5px 8px;transition:background 0.4s,color 0.4s;">
+          <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0;">
+            <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+            <circle class="ac-arc" cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-dasharray="34.56" stroke-dashoffset="0" stroke-linecap="round"
+                    transform="rotate(-90 8 8)" style="transition:stroke-dashoffset 1s linear,stroke 0.4s;"/>
+          </svg>
+          <span class="ac-countdown" style="font-variant-numeric:tabular-nums;letter-spacing:0.02em;">10:00</span>
         </div>
-        <button class="btn btn-danger btn-full" id="btn-encerrar-rec">Encerrar sessão</button>
       </div>
+      <button class="btn btn-danger btn-full" id="btn-encerrar-rec">Encerrar sessão</button>
     </div>
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
@@ -1139,6 +1241,32 @@
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
 
+  <!-- ======================== SECTION: FATURAMENTO DE PACIENTES ======================== -->
+  <section id="sec-faturamento" class="section">
+    <div class="top-bar">
+      <button class="top-bar-back" id="back-home-from-faturamento" title="Voltar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="top-bar-title">Faturamento</span>
+    </div>
+    <div class="section-body" id="faturamento-body" style="padding:var(--space-5);max-width:760px;margin:0 auto;">
+    </div>
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </section>
+
+  <!-- ======================== SECTION: NOTAS FISCAIS ======================== -->
+  <section id="sec-notas" class="section">
+    <div class="top-bar">
+      <button class="top-bar-back" id="back-home-from-notas" title="Voltar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="top-bar-title">Notas Fiscais de Serviço</span>
+    </div>
+    <div class="section-body" id="notas-body" style="padding:var(--space-5);max-width:760px;margin:0 auto;">
+    </div>
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </section>
+
 </div>
 
 <!-- ======================== MODAL: NOVO PACIENTE ======================== -->
@@ -1148,10 +1276,23 @@
 
     <!-- Etapa 1: Conversa por voz -->
     <div id="modal-etapa-1">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-4);">
+        <div style="flex:1;height:3px;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+        <div style="flex:1;height:3px;background:var(--color-border);border-radius:var(--radius-full);"></div>
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--color-text-muted);text-align:center;margin-bottom:var(--space-4);">Etapa 1 de 2 — Informações do paciente</div>
       <h2 class="modal-title">Novo paciente</h2>
 
-      <div id="modal-conversa" style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-5);max-height:200px;overflow-y:auto;">
-        <div class="ai-bubble">Grave um áudio com o <strong>nome</strong>, <strong>data de nascimento</strong> e a <strong>anamnese</strong> do paciente — queixa principal e histórico clínico.</div>
+      <div id="modal-conversa" style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-5);max-height:240px;overflow-y:auto;">
+        <div class="ai-bubble">
+          Grave um áudio com as seguintes informações:
+          <ul style="margin:var(--space-2) 0 0;padding-left:var(--space-5);display:flex;flex-direction:column;gap:2px;">
+            <li>Nome completo</li>
+            <li>Data de nascimento</li>
+            <li>Queixa principal</li>
+            <li>Histórico clínico relevante</li>
+          </ul>
+        </div>
       </div>
 
       <div id="modal-dados-capturados" style="display:none;margin-bottom:var(--space-5);"></div>
@@ -1169,18 +1310,23 @@
 
       <div id="modal-paciente-error-voz" style="margin-bottom:var(--space-3);"></div>
 
-      <div style="text-align:center;margin-top:var(--space-4);">
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-digitar-manualmente">Prefiro digitar</button>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-3);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);margin-top:var(--space-4);">
         <button type="button" class="btn btn-primary btn-full" id="btn-salvar-paciente-voz" style="display:none;">Salvar paciente</button>
-        <button type="button" class="btn btn-secondary btn-full" id="btn-cancelar-paciente-1">Cancelar</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-digitar-manualmente" style="gap:var(--space-2);display:inline-flex;align-items:center;">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2V4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5 8h.01M8 8h.01M11 8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Prefiro digitar
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-cancelar-paciente-1">Cancelar</button>
       </div>
     </div>
 
     <!-- Etapa 2: Confirmação -->
     <div id="modal-etapa-2" style="display:none;">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-4);">
+        <div style="flex:1;height:3px;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+        <div style="flex:1;height:3px;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--color-text-muted);text-align:center;margin-bottom:var(--space-4);">Etapa 2 de 2 — Confirmar e salvar</div>
       <h2 class="modal-title">Confirmar dados</h2>
       <div style="display:flex;flex-direction:column;gap:var(--space-5);">
         <div class="form-group">
@@ -1272,7 +1418,7 @@
   let recordTimerInterval = null;
   let recordSeconds     = 0;
 
-  const AUTO_CLOSE_MINUTES = 1; // TODO: voltar para 10 em produção
+  const AUTO_CLOSE_MINUTES = 5;
   let autoCloseInterval    = null;
   let autoCloseSecondsLeft = 0;
   let sessaoTemAudio       = false;
@@ -1313,6 +1459,56 @@
   }
 
   // Confirmação inline de exclusão — substitui alert() por banner discreto
+  function confirmarExcluirPaciente(nomePaciente, onConfirm) {
+    document.getElementById('_confirm-excluir-pac')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = '_confirm-excluir-pac';
+    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:var(--space-5);`;
+
+    overlay.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);max-width:420px;width:100%;box-shadow:var(--shadow-lg);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);">
+          <div style="width:36px;height:36px;background:var(--color-danger-bg);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="var(--color-danger)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:var(--text-base);">Excluir paciente</div>
+            <div style="font-size:var(--text-sm);color:var(--color-text-secondary);">${nomePaciente}</div>
+          </div>
+        </div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-4);line-height:1.6;">
+          Esta ação é <strong>irreversível</strong>. Todas as sessões, documentos e pacotes deste paciente serão removidos.
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-4);">
+          <label class="form-label" style="color:var(--color-danger);">Digite <strong>EXCLUIR</strong> para confirmar</label>
+          <input id="_excluir-input" class="form-input" type="text" placeholder="EXCLUIR" autocomplete="off" style="font-family:monospace;letter-spacing:0.05em;">
+        </div>
+        <div style="display:flex;gap:var(--space-3);">
+          <button id="_excluir-cancelar" class="btn btn-secondary" style="flex:1;">Cancelar</button>
+          <button id="_excluir-confirmar" class="btn btn-danger" style="flex:1;" disabled>Excluir</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#_excluir-input');
+    const btnConfirmar = overlay.querySelector('#_excluir-confirmar');
+    const close = () => overlay.remove();
+
+    input.addEventListener('input', () => {
+      btnConfirmar.disabled = input.value !== 'EXCLUIR';
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !btnConfirmar.disabled) { close(); onConfirm(); }
+      if (e.key === 'Escape') close();
+    });
+    overlay.querySelector('#_excluir-cancelar').addEventListener('click', close);
+    btnConfirmar.addEventListener('click', () => { close(); onConfirm(); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    setTimeout(() => input.focus(), 50);
+  }
+
   function confirmarDeletar(mensagem, onConfirm) {
     // Remove confirmação anterior se existir
     document.getElementById('_confirm-bar')?.remove();
@@ -1419,13 +1615,10 @@
         });
         item.querySelector('.btn-delete-inline').addEventListener('click', (e) => {
           e.stopPropagation();
-          confirmarDeletar(
-            `Excluir "${p.nome}"? Todas as sessões também serão removidas da lista.`,
-            async () => {
-              await apiFetch(`/pacientes/${p.id}`, { method: 'DELETE' });
-              loadPacientes();
-            }
-          );
+          confirmarExcluirPaciente(p.nome, async () => {
+            await apiFetch(`/pacientes/${p.id}`, { method: 'DELETE' });
+            loadPacientes();
+          });
         });
         container.appendChild(item);
       });
@@ -1465,7 +1658,6 @@
   }
 
   function fecharModalNovoPaciente() {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     resetModalRecorder();
     document.getElementById('modal-novo-paciente').classList.remove('open');
   }
@@ -1514,22 +1706,6 @@
     }
     conversa.appendChild(bubble);
     conversa.scrollTop = conversa.scrollHeight;
-
-    // Lê a resposta em voz alta
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const texto = bubble.innerText || bubble.textContent;
-      const utter = new SpeechSynthesisUtterance(texto);
-      utter.lang = 'pt-BR';
-      utter.rate = 1.05;
-      utter.pitch = 1;
-      const vozes = window.speechSynthesis.getVoices();
-      const vozPT = vozes.find(v => v.name.includes('Maria'))
-                 || vozes.find(v => v.lang.startsWith('pt') && v.name.toLowerCase().includes('female'))
-                 || vozes.find(v => v.lang.startsWith('pt'));
-      if (vozPT) utter.voice = vozPT;
-      window.speechSynthesis.speak(utter);
-    }
 
     // Resumo dos dados capturados
     const resumoEl = document.getElementById('modal-dados-capturados');
@@ -2221,7 +2397,7 @@
 
   async function sendAudio(blob) {
     const fb = document.getElementById('rec-feedback');
-    fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo...</div>';
+    fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo áudio...</div>';
 
     const ext = blob.type.includes('webm') ? 'webm' : blob.type.includes('mp4') ? 'mp4' : 'audio';
     const formData = new FormData();
@@ -2234,10 +2410,11 @@
       }).then(async r => {
         const j = await r.json();
         if (!r.ok) throw new Error(j.detail || `Erro ${r.status}`);
+        fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
         return j;
       });
 
-      fb.innerHTML = `<div class="alert alert-success">Transcrito com sucesso!</div>`;
+      fb.innerHTML = `<div class="alert alert-success" style="display:flex;align-items:center;gap:var(--space-2);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Trecho transcrito e salvo.</div>`;
       startAutoCloseTimer(); // reset apenas quando áudio novo é adicionado
       await loadChunksIntoRecorder(currentSessaoId);
     } catch (e) {
@@ -2254,31 +2431,89 @@
     body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando sessão...</div>';
 
     try {
-      const data = await apiFetch(`/sessoes/${sessaoId}`);
+      const [data, procs] = await Promise.all([
+        apiFetch(`/sessoes/${sessaoId}`),
+        apiFetch(`/sessoes/${sessaoId}/procedimentos`),
+      ]);
       document.getElementById('sessao-top-date').textContent = 'Sessão de ' + formatDate(data.data);
       body.innerHTML = '';
 
       const c = data.consolidado;
-      if (!c) {
-        body.innerHTML = '<div class="alert alert-info" style="margin:var(--space-5);">Esta sessão não possui consolidado gerado pela IA.</div>';
-        return;
+      if (c) {
+        const nota = c.nota || c.conduta || null;
+        const group = el('div', { className: 'field-group' });
+        group.innerHTML = `
+          <div class="field-label" style="display:flex;align-items:center;gap:var(--space-2);">
+            Nota clínica
+            <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--color-accent-light);color:var(--color-text-secondary);padding:1px 6px;border-radius:var(--radius-full);">IA</span>
+          </div>
+          ${nota
+            ? `<div class="field-value" style="white-space:pre-wrap;line-height:1.65;">${nota}</div>`
+            : `<div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--color-bg);border-radius:var(--radius-md);border:var(--border);">
+                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5M8 10.5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                 <span style="font-size:var(--text-sm);color:var(--color-text-muted);">Nota clínica não gerada — esta sessão foi encerrada sem consolidação por IA.</span>
+               </div>`
+          }`;
+        body.appendChild(group);
+      } else {
+        const info = el('div', { style: 'margin:var(--space-5);display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--color-bg);border-radius:var(--radius-md);border:var(--border);' });
+        info.innerHTML = `<svg width="20" height="20" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5M8 10.5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span style="font-size:var(--text-sm);color:var(--color-text-muted);">Sessão sem nota clínica — encerre a sessão para gerar a nota automaticamente.</span>`;
+        body.appendChild(info);
       }
 
-      const nota = c.nota || c.conduta || null;
-      const group = el('div', { className: 'field-group' });
-      group.innerHTML = `
-        <div class="field-label">Nota clínica</div>
-        <div class="field-value ${nota ? '' : 'empty'}" style="white-space:pre-wrap;">${nota || 'Nota não disponível'}</div>`;
-      body.appendChild(group);
+      // ---- Procedimentos extras ----
+      body.appendChild(el('div', { className: 'divider' }));
+      const procSection = el('div', { style: 'padding:var(--space-5) var(--space-5) var(--space-3);' });
+      body.appendChild(procSection);
 
+      function renderProcs(lista) {
+        procSection.innerHTML = '';
+        const header = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);gap:var(--space-2);flex-wrap:wrap;' });
+        header.innerHTML = `
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);">Procedimentos extras</span>
+          <button class="btn btn-secondary btn-sm" id="btn-add-proc" style="display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Adicionar
+          </button>`;
+        procSection.appendChild(header);
+
+        if (lista.length === 0) {
+          procSection.insertAdjacentHTML('beforeend',
+            `<div style="font-size:var(--text-sm);color:var(--color-text-muted);padding:var(--space-3) 0;">Nenhum procedimento extra nesta sessão.</div>`);
+        } else {
+          const fmtR = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          lista.forEach(p => {
+            const row = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:var(--border);gap:var(--space-3);' });
+            row.innerHTML = `
+              <div>
+                <div style="font-size:var(--text-sm);font-weight:500;">${p.descricao}</div>
+                ${p.valor ? `<div style="font-size:var(--text-xs);color:var(--color-text-secondary);">${fmtR(p.valor)}</div>` : '<div style="font-size:var(--text-xs);color:var(--color-text-muted);">Sem cobrança</div>'}
+              </div>
+              <button class="btn btn-ghost btn-sm btn-del-proc" data-id="${p.id}" style="color:var(--color-danger);flex-shrink:0;">Remover</button>`;
+            procSection.appendChild(row);
+          });
+        }
+
+        procSection.querySelector('#btn-add-proc').addEventListener('click', () => abrirModalProcedimento(sessaoId, lista, renderProcs));
+
+        procSection.querySelectorAll('.btn-del-proc').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            await apiFetch(`/procedimentos/${btn.dataset.id}`, { method: 'DELETE' });
+            const updated = await apiFetch(`/sessoes/${sessaoId}/procedimentos`);
+            renderProcs(updated);
+          });
+        });
+      }
+
+      renderProcs(procs);
+
+      // ---- Transcrições brutas ----
       if (data.chunks && data.chunks.length > 0) {
-        const sep = el('div', { className: 'divider' });
-        body.appendChild(sep);
-
-        const chunksTitle = el('div', { className: 'field-label', textContent: 'Transcrições brutas' });
+        body.appendChild(el('div', { className: 'divider' }));
+        const chunksTitle = el('div', { style: 'padding:var(--space-4) var(--space-5) var(--space-2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);' });
+        chunksTitle.textContent = `Transcrições brutas (${data.chunks.length})`;
         body.appendChild(chunksTitle);
-
-        const list = el('div', { className: 'chunk-list' });
+        const list = el('div', { className: 'chunk-list', style: 'padding:0 var(--space-5) var(--space-5);' });
         data.chunks.forEach(ch => {
           list.innerHTML += `<div class="chunk-item"><div class="chunk-item-time">${formatDate(ch.timestamp)}</div><div class="chunk-item-text">${ch.transcricao}</div></div>`;
         });
@@ -2288,6 +2523,182 @@
     } catch (e) {
       body.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
     }
+  }
+
+  function abrirModalRevisaoProcs(sessaoId, sugestoes, onSave) {
+    const fmtR = v => v != null ? (v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sem valor';
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;' });
+
+    const itens = sugestoes.map((s, i) => `
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:var(--border);" data-idx="${i}">
+        <input type="checkbox" id="proc-chk-${i}" checked style="width:18px;height:18px;flex-shrink:0;accent-color:var(--color-accent);cursor:pointer;">
+        <div style="flex:1;min-width:0;">
+          <input class="form-input proc-desc-input" type="text" value="${s.descricao}" data-idx="${i}" style="font-size:var(--text-sm);margin-bottom:var(--space-1);">
+          <input class="form-input proc-val-input" type="number" step="0.01" placeholder="Valor (R$) — opcional" value="${s.valor != null ? s.valor : ''}" data-idx="${i}" style="font-size:var(--text-sm);">
+        </div>
+      </div>`).join('');
+
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;max-width:480px;max-height:85dvh;overflow-y:auto;padding:var(--space-6);box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-2);">Procedimentos detectados</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-4);">A IA identificou ${sugestoes.length} procedimento${sugestoes.length > 1 ? 's' : ''} extra${sugestoes.length > 1 ? 's' : ''} na transcrição. Revise, edite valores e confirme os que deseja salvar.</p>
+        <div id="proc-rev-lista">${itens}</div>
+        <div id="proc-rev-error" style="color:var(--color-danger);font-size:var(--text-sm);margin:var(--space-3) 0;display:none;"></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-5);">
+          <button class="btn btn-primary btn-full" id="proc-rev-confirmar">Salvar selecionados</button>
+          <button class="btn btn-secondary btn-full" id="proc-rev-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    modal.querySelector('#proc-rev-cancelar').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    modal.querySelector('#proc-rev-confirmar').addEventListener('click', async () => {
+      const selecionados = [];
+      sugestoes.forEach((_, i) => {
+        const chk = modal.querySelector(`#proc-chk-${i}`);
+        if (!chk.checked) return;
+        const desc = modal.querySelector(`.proc-desc-input[data-idx="${i}"]`).value.trim();
+        const val  = parseFloat(modal.querySelector(`.proc-val-input[data-idx="${i}"]`).value) || null;
+        if (desc) selecionados.push({ descricao: desc, valor: val });
+      });
+
+      if (selecionados.length === 0) {
+        const err = modal.querySelector('#proc-rev-error');
+        err.textContent = 'Selecione ao menos um procedimento.';
+        err.style.display = '';
+        return;
+      }
+
+      try {
+        await Promise.all(selecionados.map(s =>
+          apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(s),
+          })
+        ));
+        modal.remove();
+        const updated = await apiFetch(`/sessoes/${sessaoId}/procedimentos`);
+        onSave(updated);
+      } catch (e) {
+        const err = modal.querySelector('#proc-rev-error');
+        err.textContent = e.message; err.style.display = '';
+      }
+    });
+  }
+
+  function abrirModalProcedimento(sessaoId, procsAtuais, onSave) {
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:380px;box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-2);">Procedimento extra</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Grave um áudio ou preencha manualmente.</p>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-3);margin-bottom:var(--space-5);padding:var(--space-4);background:var(--color-bg);border-radius:var(--radius-lg);border:var(--border);">
+          <button id="proc-mic-btn" style="width:56px;height:56px;border-radius:var(--radius-full);background:var(--color-accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;">
+            <svg id="proc-mic-icon" width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg id="proc-stop-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
+          </button>
+          <div id="proc-mic-label" style="font-size:var(--text-sm);color:var(--color-text-muted);">Toque para gravar</div>
+          <div id="proc-mic-fb" style="font-size:var(--text-sm);width:100%;text-align:center;min-height:18px;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Procedimento / descrição</label>
+          <input class="form-input" type="text" id="proc-desc" placeholder="Ex: Eletroterapia, Acupuntura...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor (R$) — opcional</label>
+          <input class="form-input" type="number" id="proc-valor" step="0.01" placeholder="Ex: 50.00">
+        </div>
+        <div id="proc-error" style="color:var(--color-danger);font-size:var(--text-sm);margin-bottom:var(--space-3);display:none;"></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <button class="btn btn-primary btn-full" id="proc-salvar">Salvar</button>
+          <button class="btn btn-secondary btn-full" id="proc-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    // Gravação de voz
+    let rec = null, chunks = [], recording = false;
+    const micBtn   = modal.querySelector('#proc-mic-btn');
+    const micIcon  = modal.querySelector('#proc-mic-icon');
+    const stopIcon = modal.querySelector('#proc-stop-icon');
+    const micLabel = modal.querySelector('#proc-mic-label');
+    const micFb    = modal.querySelector('#proc-mic-fb');
+
+    micBtn.addEventListener('click', async () => {
+      if (!recording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          chunks = [];
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+            : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+          rec = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+          rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+          rec.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+            micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo...</div>';
+            try {
+              const fd = new FormData();
+              fd.append('audio', blob, `proc.${mimeType.includes('ogg') ? 'ogg' : 'webm'}`);
+              const tr = await fetch(`${API_BASE}/transcrever`, { method: 'POST', body: fd });
+              const tj = await tr.json();
+              if (!tr.ok) throw new Error(tj.detail || `Erro ${tr.status}`);
+              micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando...</div>';
+              const ext = await apiFetch('/extrair-procedimento', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcricao: tj.transcricao }),
+              });
+              if (ext.descricao) modal.querySelector('#proc-desc').value = ext.descricao;
+              if (ext.valor)     modal.querySelector('#proc-valor').value = ext.valor;
+              micFb.innerHTML = '<span style="color:var(--color-success);">✓ Campos preenchidos — revise e salve</span>';
+            } catch (err) {
+              micFb.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(err)}</span>`;
+            }
+          };
+          rec.start();
+          recording = true;
+          micIcon.style.display = 'none'; stopIcon.style.display = '';
+          micBtn.style.background = 'var(--color-danger)';
+          micLabel.textContent = 'Gravando... toque para parar';
+          micFb.innerHTML = '';
+        } catch (e) {
+          micFb.innerHTML = `<span style="color:var(--color-danger);">Sem acesso ao microfone.</span>`;
+        }
+      } else {
+        rec.stop(); recording = false;
+        micIcon.style.display = ''; stopIcon.style.display = 'none';
+        micBtn.style.background = 'var(--color-accent)';
+        micLabel.textContent = 'Toque para gravar';
+      }
+    });
+
+    modal.querySelector('#proc-cancelar').addEventListener('click', () => modal.remove());
+    modal.querySelector('#proc-salvar').addEventListener('click', async () => {
+      const desc = modal.querySelector('#proc-desc').value.trim();
+      if (!desc) {
+        const err = modal.querySelector('#proc-error');
+        err.textContent = 'Informe a descrição do procedimento.';
+        err.style.display = '';
+        return;
+      }
+      const valor = parseFloat(modal.querySelector('#proc-valor').value) || null;
+      try {
+        await apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ descricao: desc, valor }),
+        });
+        modal.remove();
+        const updated = await apiFetch(`/sessoes/${sessaoId}/procedimentos`);
+        onSave(updated);
+      } catch (e) {
+        const err = modal.querySelector('#proc-error');
+        err.textContent = e.message; err.style.display = '';
+      }
+    });
   }
 
   /* ============================================================
@@ -2491,7 +2902,7 @@
         <div class="pacote-progress-bar">
           <div class="pacote-progress-fill ${fillClass}" style="width:${pct}%"></div>
         </div>
-        <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${ativo.sessoes_usadas} sessão${ativo.sessoes_usadas === 1 ? '' : 'ões'} utilizada${ativo.sessoes_usadas === 1 ? '' : 's'} ${ativo.valor_pago ? '· R$ ' + ativo.valor_pago.toFixed(2).replace('.', ',') : ''}</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${ativo.sessoes_usadas} sess${ativo.sessoes_usadas === 1 ? 'ão' : 'ões'} utilizada${ativo.sessoes_usadas === 1 ? '' : 's'} ${ativo.valor_pago ? '· R$ ' + ativo.valor_pago.toFixed(2).replace('.', ',') : ''}</div>
         ${alertaHtml}`;
     } else {
       card.innerHTML = `
@@ -2514,8 +2925,21 @@
   function abrirModalNovoPacote(pacienteId) {
     const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
     modal.innerHTML = `
-      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:380px;box-shadow:var(--shadow-lg);">
-        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-5);">Novo pacote</h3>
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:400px;box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-2);">Novo pacote</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Grave um áudio ou preencha manualmente.</p>
+
+        <!-- Área de voz -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-3);margin-bottom:var(--space-5);padding:var(--space-5);background:var(--color-bg);border-radius:var(--radius-lg);border:var(--border);">
+          <button id="mp-mic-btn" style="width:64px;height:64px;border-radius:var(--radius-full);background:var(--color-accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s;">
+            <svg id="mp-mic-icon" width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg id="mp-stop-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
+          </button>
+          <div id="mp-mic-label" style="font-size:var(--text-sm);color:var(--color-text-muted);">Toque para gravar</div>
+          <div id="mp-mic-feedback" style="font-size:var(--text-sm);width:100%;min-height:20px;text-align:center;"></div>
+        </div>
+
+        <!-- Campos manuais -->
         <div class="form-group">
           <label class="form-label">Qtd. de sessões</label>
           <input class="form-input" type="number" id="mp-total" min="1" placeholder="Ex: 10" style="font-size:var(--text-base);">
@@ -2539,6 +2963,80 @@
         </div>
       </div>`;
     document.body.appendChild(modal);
+
+    // --- Gravação de voz ---
+    let mpRecorder = null, mpChunks = [], mpRecording = false;
+
+    const micBtn   = modal.querySelector('#mp-mic-btn');
+    const micIcon  = modal.querySelector('#mp-mic-icon');
+    const stopIcon = modal.querySelector('#mp-stop-icon');
+    const micLabel = modal.querySelector('#mp-mic-label');
+    const micFb    = modal.querySelector('#mp-mic-feedback');
+
+    micBtn.addEventListener('click', async () => {
+      if (!mpRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mpChunks = [];
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+          mpRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+          mpRecorder.ondataavailable = e => { if (e.data.size > 0) mpChunks.push(e.data); };
+          mpRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(mpChunks, { type: mimeType || 'audio/webm' });
+            const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+            micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo...</div>';
+            try {
+              const formData = new FormData();
+              formData.append('audio', blob, `pacote.${ext}`);
+              const transRes = await fetch(`${API_BASE}/transcrever`, { method: 'POST', body: formData });
+              const transJson = await transRes.json();
+              if (!transRes.ok) throw new Error(transJson.detail || `Erro ${transRes.status}`);
+
+              micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
+              const extRes = await apiFetch('/extrair-pacote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcricao: transJson.transcricao }),
+              });
+
+              const aiFieldStyle = (input) => {
+                input.style.background = 'rgba(45,106,79,0.07)';
+                input.style.borderColor = 'var(--color-success)';
+              };
+              if (extRes.total_sessoes) { const i = modal.querySelector('#mp-total'); i.value = extRes.total_sessoes; aiFieldStyle(i); }
+              if (extRes.valor_pago)    { const i = modal.querySelector('#mp-valor'); i.value = extRes.valor_pago;    aiFieldStyle(i); }
+              if (extRes.data_pagamento){ const i = modal.querySelector('#mp-data');  i.value = extRes.data_pagamento; aiFieldStyle(i); }
+              if (extRes.descricao)     { const i = modal.querySelector('#mp-desc');  i.value = extRes.descricao;     aiFieldStyle(i); }
+
+              micFb.innerHTML = `<div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--color-success-bg);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4L6.5 11 3 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Campos preenchidos — revise e salve</div>`;
+            } catch (err) {
+              micFb.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(err)}</span>`;
+            }
+          };
+          mpRecorder.start();
+          mpRecording = true;
+          micIcon.style.display = 'none';
+          stopIcon.style.display = '';
+          micBtn.style.background = 'var(--color-danger)';
+          micLabel.textContent = 'Gravando... toque para parar';
+          micFb.innerHTML = '';
+        } catch (e) {
+          micFb.innerHTML = `<span style="color:var(--color-danger);">Sem acesso ao microfone: ${e.message}</span>`;
+        }
+      } else {
+        mpRecorder.stop();
+        mpRecording = false;
+        micIcon.style.display = '';
+        stopIcon.style.display = 'none';
+        micBtn.style.background = 'var(--color-accent)';
+        micLabel.textContent = 'Toque para gravar';
+      }
+    });
+
+    // --- Salvar ---
     modal.querySelector('#mp-cancelar').addEventListener('click', () => modal.remove());
     modal.querySelector('#mp-salvar').addEventListener('click', async () => {
       const total = parseInt(modal.querySelector('#mp-total').value);
@@ -2711,11 +3209,60 @@
   });
 
   document.getElementById('back-home-from-billing').addEventListener('click', () => {
+    setDrawerActive('drawer-pacientes');
     showSection('sec-home');
     loadPacientes();
   });
 
-  document.getElementById('btn-billing').addEventListener('click', () => openBilling());
+  // btn-billing removido do header — agora acessado via drawer
+
+  /* ============================================================
+     DRAWER LATERAL
+  ============================================================ */
+  function abrirDrawer() {
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('open');
+  }
+  function fecharDrawer() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+  }
+
+  function setDrawerActive(id) {
+    document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  }
+
+  document.getElementById('btn-menu').addEventListener('click', abrirDrawer);
+  document.getElementById('drawerOverlay').addEventListener('click', fecharDrawer);
+
+  document.getElementById('drawer-pacientes').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+  });
+
+  document.getElementById('drawer-faturamento').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-faturamento');
+    openFaturamento();
+  });
+
+  document.getElementById('drawer-billing').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-billing');
+    openBilling();
+  });
+
+  document.getElementById('drawer-relatorio').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+    setTimeout(abrirModalRelatorio, 80);
+  });
 
   /* ============================================================
      BILLING
@@ -2838,20 +3385,9 @@
 
     body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6);">
-        <div style="position:relative;">
-          <button id="billing-mes-trigger" style="display:flex;align-items:center;gap:var(--space-2);background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-md);padding:var(--space-2) var(--space-4);cursor:pointer;font-family:var(--font-body);font-size:var(--text-base);font-weight:600;color:var(--color-text);transition:background 0.15s;">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-            ${labelMes}
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <div id="billing-mes-picker" style="display:none;position:absolute;top:calc(100% + var(--space-2));left:0;z-index:300;background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-4);min-width:240px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
-              <button id="picker-ano-prev" style="background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);color:var(--color-text);font-size:var(--text-lg);">‹</button>
-              <span id="picker-ano-label" style="font-weight:700;font-size:var(--text-base);">${anoAtual}</span>
-              <button id="picker-ano-next" style="background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);color:var(--color-text);font-size:var(--text-lg);">›</button>
-            </div>
-            <div id="picker-meses-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);"></div>
-          </div>
+        <div style="display:flex;align-items:center;gap:var(--space-3);">
+          <div id="billing-picker-mes-slot"></div>
+          ${isMesAtual ? `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--color-accent);color:#fff;padding:3px 9px;border-radius:var(--radius-full);">Mês atual</span>` : ''}
         </div>
         <span style="font-size:var(--text-xs);color:var(--color-text-muted);">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
       </div>
@@ -2903,51 +3439,26 @@
               <tr><th>Mês</th><th class="text-right">Chamadas</th><th class="text-right">Tokens entrada</th><th class="text-right">Tokens saída</th><th class="text-right">Custo</th></tr>
             </thead>
             <tbody>
-              ${historico.map(h => `
-              <tr>
-                <td>${h.mes}</td>
-                <td class="text-right">${h.total_chamadas}</td>
-                <td class="text-right">${fmtTokens(h.total_input_tokens)}</td>
-                <td class="text-right">${fmtTokens(h.total_output_tokens)}</td>
-                <td class="text-right" style="font-variant-numeric:tabular-nums;">${fmtBRL(h.total_usd, cotacao)}</td>
-              </tr>`).join('')}
+              ${historico.map(h => {
+                const isSelected = h.mes === mes_atual.mes;
+                return `<tr style="${isSelected ? 'background:var(--color-accent-light);font-weight:600;' : ''}">
+                  <td style="white-space:nowrap;">${h.mes}${isSelected ? '&nbsp;<span style="font-size:9px;background:var(--color-accent);color:#fff;padding:1px 6px;border-radius:var(--radius-full);font-weight:600;letter-spacing:0.03em;display:inline-block;vertical-align:middle;line-height:16px;">atual</span>' : ''}</td>
+                  <td class="text-right">${h.total_chamadas}</td>
+                  <td class="text-right">${fmtTokens(h.total_input_tokens)}</td>
+                  <td class="text-right">${fmtTokens(h.total_output_tokens)}</td>
+                  <td class="text-right" style="font-variant-numeric:tabular-nums;">${fmtBRL(h.total_usd, cotacao)}</td>
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>
       </div>` : ''}
     `;
 
-    const mesesCurtos = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    let pickerAno = anoAtual;
-
-    function renderPickerGrid() {
-      document.getElementById('picker-ano-label').textContent = pickerAno;
-      const grid = document.getElementById('picker-meses-grid');
-      grid.innerHTML = mesesCurtos.map((m, i) => {
-        const val = `${pickerAno}-${String(i+1).padStart(2,'0')}`;
-        const isSelected = val === mes_atual.mes;
-        return `<button data-val="${val}" style="padding:var(--space-2);border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:var(--font-body);font-size:var(--text-sm);font-weight:${isSelected?'700':'400'};background:${isSelected?'var(--color-accent)':'transparent'};color:${isSelected?'#fff':'var(--color-text)'};transition:background 0.12s;" onmouseover="if(!this.dataset.sel)this.style.background='var(--color-accent-light)'" onmouseout="if(!this.dataset.sel)this.style.background='transparent'">${m}</button>`;
-      }).join('');
-      grid.querySelectorAll('button[data-val]').forEach(btn => {
-        if (btn.style.background.includes('accent)') && !btn.style.background.includes('light')) btn.dataset.sel = '1';
-        btn.addEventListener('click', () => {
-          document.getElementById('billing-mes-picker').style.display = 'none';
-          openBilling(btn.dataset.val);
-        });
-      });
-    }
-
-    const trigger = document.getElementById('billing-mes-trigger');
-    const picker = document.getElementById('billing-mes-picker');
-    trigger.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = picker.style.display === 'block';
-      picker.style.display = open ? 'none' : 'block';
-      if (!open) renderPickerGrid();
+    const pickerBilling = criarPickerMesAno(mes_atual.mes, (novoMes) => {
+      openBilling(novoMes);
     });
-    document.getElementById('picker-ano-prev').addEventListener('click', e => { e.stopPropagation(); pickerAno--; renderPickerGrid(); });
-    document.getElementById('picker-ano-next').addEventListener('click', e => { e.stopPropagation(); pickerAno++; renderPickerGrid(); });
-    document.addEventListener('click', () => picker.style.display = 'none');
+    body.querySelector('#billing-picker-mes-slot').appendChild(pickerBilling);
   }
 
   /* ============================================================
@@ -2961,7 +3472,6 @@
      RELATÓRIO CREFITO
   ============================================================ */
 
-  document.getElementById('btn-relatorio-crefito').addEventListener('click', abrirModalRelatorio);
   document.getElementById('btn-cancelar-relatorio').addEventListener('click', fecharModalRelatorio);
   document.getElementById('modal-relatorio').addEventListener('click', function(e) {
     if (e.target === this) fecharModalRelatorio();
@@ -3030,22 +3540,12 @@
 
   function renderRelatorioPrint(relatorios) {
     const view = document.getElementById('print-view');
-    const content = document.getElementById('print-content');
     const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-    let html = `
-      <div class="print-actions no-print">
-        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none'">Fechar</button>
-      </div>
-      <div class="print-header">
-        <div class="print-title">Relatório de Atendimento — CREFITO</div>
-        <div class="print-subtitle">Gerado em ${hoje} · Physio Notes</div>
-      </div>`;
-
+    let pacientesHtml = '';
     relatorios.forEach(r => {
       const p = r.paciente;
-      html += `
+      pacientesHtml += `
         <div class="print-patient">
           <div class="print-patient-name">${p.nome}</div>
           <div class="print-patient-meta">
@@ -3059,9 +3559,18 @@
         </div>`;
     });
 
-    html += `<div class="print-footer">Documento gerado pelo sistema Physio Notes · powered by up it</div>`;
-
-    content.innerHTML = html;
+    view.innerHTML = `
+      <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;">
+        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none'">Fechar</button>
+      </div>
+      <div class="print-header">
+        <div class="print-title">Relatório de Atendimento — CREFITO</div>
+        <div class="print-subtitle">Gerado em ${hoje} · Physio Notes</div>
+      </div>
+      ${pacientesHtml}
+      <div class="print-footer">Documento gerado pelo sistema Physio Notes · powered by up it</div>
+    `;
     view.style.display = 'block';
   }
 
@@ -3139,6 +3648,924 @@
      INIT
   ============================================================ */
   loadPacientes();
+
+  /* ============================================================
+     FATURAMENTO DE PACIENTES
+  ============================================================ */
+
+  document.getElementById('back-home-from-faturamento').addEventListener('click', () => {
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+  });
+
+  async function openFaturamento(mes, pacienteId) {
+    showSection('sec-faturamento');
+    const body = document.getElementById('faturamento-body');
+    body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
+    try {
+      const params = new URLSearchParams();
+      if (mes) params.set('mes', mes);
+      if (pacienteId) params.set('paciente_id', pacienteId);
+      const qs = params.toString() ? `?${params}` : '';
+      const data = await apiFetch(`/faturamento/pacientes${qs}`);
+      renderFaturamento(data, mes || '', pacienteId || '');
+    } catch (e) {
+      body.innerHTML = `<div class="alert alert-error">Erro ao carregar faturamento: ${e.message}</div>`;
+    }
+  }
+
+  function renderFaturamento(data, mesSel, pacienteSel) {
+    const body = document.getElementById('faturamento-body');
+    const { pacotes, procedimentos = [], total_recebido,
+            total_pacotes_valor, total_procedimentos_valor,
+            qtd_pacotes, total_sessoes_vendidas, qtd_procedimentos,
+            meses_disponiveis, pacientes_disponiveis } = data;
+
+    const fmtR = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtData = (s) => s ? s.split('-').reverse().join('/') : null;
+    const mesLabel = (m) => {
+      if (!m) return '';
+      const [y, mo] = m.split('-');
+      return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1] + '/' + y;
+    };
+
+    // Agrupa por paciente + mês
+    const grupos = {};
+    pacotes.forEach(p => {
+      const mes = p.data_pagamento ? p.data_pagamento.substring(0, 7) : '';
+      const key = `${p.paciente_nome}||${mes}`;
+      if (!grupos[key]) grupos[key] = { paciente: p.paciente_nome, mes, itens: [], total: 0 };
+      grupos[key].itens.push({ tipo: 'pacote', desc: `Pacote · ${p.sessoes_usadas}/${p.total_sessoes} sessões${p.descricao ? ' · ' + p.descricao : ''}`, valor: p.valor_pago, badge: p.status === 'ativo' ? 'Ativo' : 'Esgotado', badgeClass: p.status === 'ativo' ? 'badge-success' : 'badge-neutral', data: p.data_pagamento });
+      grupos[key].total += p.valor_pago || 0;
+    });
+    procedimentos.forEach(p => {
+      const mes = p.data ? p.data.substring(0, 7) : '';
+      const key = `${p.paciente_nome}||${mes}`;
+      if (!grupos[key]) grupos[key] = { paciente: p.paciente_nome, mes, itens: [], total: 0 };
+      grupos[key].itens.push({ tipo: 'proc', desc: p.descricao, valor: p.valor, data: p.data });
+      grupos[key].total += p.valor || 0;
+    });
+
+    const gruposOrdenados = Object.values(grupos).sort((a, b) =>
+      (b.mes || '').localeCompare(a.mes || '') || a.paciente.localeCompare(b.paciente)
+    );
+
+    const cardsGrupos = gruposOrdenados.length === 0
+      ? `<div style="text-align:center;padding:var(--space-10) 0;color:var(--color-text-muted);font-size:var(--text-sm);">Nenhum dado no período selecionado.</div>`
+      : gruposOrdenados.map((g, idx) => {
+          const mesLbl = g.mes ? mesLabel(g.mes) : '—';
+          const itensHtml = g.itens.map(i => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-top:var(--border);gap:var(--space-3);">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:var(--text-sm);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.desc}</div>
+                ${i.data ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${fmtData(i.data)}</div>` : ''}
+              </div>
+              <div style="display:flex;align-items:center;gap:var(--space-2);flex-shrink:0;">
+                ${i.badge ? `<span class="badge ${i.badgeClass}">${i.badge}</span>` : ''}
+                <span style="font-size:var(--text-sm);font-weight:600;">${fmtR(i.valor)}</span>
+              </div>
+            </div>`).join('');
+
+          return `<div class="fat-card fat-grupo" data-idx="${idx}" style="cursor:pointer;">
+            <div class="fat-grupo-header" style="display:flex;align-items:center;gap:var(--space-3);">
+              <input type="checkbox" class="fat-grupo-check" data-idx="${idx}" style="width:16px;height:16px;flex-shrink:0;cursor:pointer;accent-color:var(--color-accent);">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;font-size:var(--text-base);color:var(--color-text);">${g.paciente}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${mesLbl} · ${g.itens.length} item${g.itens.length !== 1 ? 'ns' : ''}</div>
+              </div>
+              <div style="font-weight:700;font-size:var(--text-base);color:var(--color-text);white-space:nowrap;">${fmtR(g.total)}</div>
+              <div class="fat-grupo-caret" style="color:var(--color-text-muted);flex-shrink:0;transition:transform 0.2s;">
+                <svg width="16" height="16" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="fat-grupo-body" style="display:none;">${itensHtml}</div>
+          </div>`;
+        }).join('');
+
+    const temDados = pacotes.length > 0 || procedimentos.length > 0;
+
+    body.innerHTML = `
+      <!-- Filtros -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-5);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Competência</label>
+          <div id="fat-picker-mes-slot"></div>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Paciente</label>
+          <div id="fat-picker-pac-slot"></div>
+        </div>
+      </div>
+
+      <!-- KPI principal -->
+      <div style="padding:var(--space-5) 0 var(--space-4);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-1);">Total recebido no período</div>
+        <div style="font-family:var(--font-display);font-size:var(--text-3xl);color:var(--color-text);margin-bottom:var(--space-3);">${fmtR(total_recebido)}</div>
+        <div style="display:flex;gap:var(--space-5);">
+          <div>
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);">Pacotes</div>
+            <div style="font-size:var(--text-base);font-weight:600;">${fmtR(total_pacotes_valor || 0)} <span style="font-weight:400;color:var(--color-text-muted);">(${qtd_pacotes})</span></div>
+          </div>
+          <div style="width:1px;background:var(--color-border);"></div>
+          <div>
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);">Procedimentos</div>
+            <div style="font-size:var(--text-base);font-weight:600;">${fmtR(total_procedimentos_valor || 0)} <span style="font-weight:400;color:var(--color-text-muted);">(${qtd_procedimentos})</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-5);">
+        <button class="btn btn-secondary" id="fat-btn-extrato" ${!temDados ? 'disabled title="Nenhum dado no período selecionado"' : ''}>Gerar extrato</button>
+        <button class="btn btn-secondary" id="fat-btn-nfse" disabled style="display:flex;align-items:center;justify-content:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span id="fat-nfse-label">Emitir NFS-e</span>
+        </button>
+      </div>
+
+      <!-- Cards agrupados -->
+      <div style="display:flex;flex-direction:column;gap:var(--space-3);">${cardsGrupos}</div>
+    `;
+
+    // Picker de competência customizado
+    const pickerMes = criarPickerMesAno(mesSel || '', (novoMes) => {
+      openFaturamento(novoMes || null, pickerPac.getValue() || null);
+    }, { allowAll: true, fullWidth: true });
+    body.querySelector('#fat-picker-mes-slot').appendChild(pickerMes);
+
+    // Picker de paciente customizado
+    const opcoespac = [
+      { value: '', label: 'Todos os pacientes' },
+      ...pacientes_disponiveis.map(p => ({ value: String(p.id), label: p.nome })),
+    ];
+    const pickerPac = criarPickerLista(opcoespac, String(pacienteSel || ''), (novoPac) => {
+      openFaturamento(pickerMes.getValue() || null, novoPac || null);
+    }, { fullWidth: true });
+    body.querySelector('#fat-picker-pac-slot').appendChild(pickerPac);
+
+    // Expand/colapso + checkbox dos grupos
+    const btnNfse = body.querySelector('#fat-btn-nfse');
+    const nfseLabel = body.querySelector('#fat-nfse-label');
+
+    function atualizarBtnNfse() {
+      const checked = body.querySelectorAll('.fat-grupo-check:checked');
+      if (checked.length === 0) {
+        btnNfse.disabled = true;
+        nfseLabel.textContent = 'Emitir NFS-e';
+      } else {
+        btnNfse.disabled = false;
+        nfseLabel.textContent = `Emitir ${checked.length} NFS-e`;
+      }
+    }
+
+    body.querySelectorAll('.fat-grupo').forEach((card, idx) => {
+      const check = card.querySelector('.fat-grupo-check');
+      check.addEventListener('click', (e) => {
+        e.stopPropagation();
+        atualizarBtnNfse();
+      });
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.fat-grupo-check')) return;
+        const bodyEl = card.querySelector('.fat-grupo-body');
+        const caret = card.querySelector('.fat-grupo-caret');
+        const aberto = bodyEl.style.display !== 'none';
+        bodyEl.style.display = aberto ? 'none' : 'block';
+        caret.style.transform = aberto ? '' : 'rotate(180deg)';
+      });
+    });
+
+    if (temDados) {
+      body.querySelector('#fat-btn-extrato').addEventListener('click', () =>
+        abrirModalExtrato(data, mesSel, pacienteSel, mesLabel, fmtR, fmtData));
+    }
+
+    btnNfse.addEventListener('click', () => {
+      const checkedIdxs = [...body.querySelectorAll('.fat-grupo-check:checked')].map(c => parseInt(c.dataset.idx));
+      const selecionados = checkedIdxs.map(i => gruposOrdenados[i]);
+      abrirNFSeMultiplos(selecionados, mesLabel, fmtR);
+    });
+  }
+
+  async function abrirNFSeMultiplos(grupos, mesLabel, fmtR) {
+    const iss = 2;
+    const calcIss = (v) => Math.round((v || 0) * iss / 100 * 100) / 100;
+    const calcLiquido = (v) => Math.round(((v || 0) - calcIss(v)) * 100) / 100;
+    const printView = document.getElementById('print-view');
+
+    const previewCards = grupos.map((g, i) => {
+      const descricao = g.itens.map(it => it.desc).join('; ');
+      const comp = g.mes || '';
+      const compLabel = comp ? mesLabel(comp) : '—';
+      return `
+        <div style="background:var(--color-bg);border:var(--border);border-radius:var(--radius-lg);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-2);" data-grupo-idx="${i}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);">
+            <div>
+              <div style="font-weight:700;font-size:var(--text-base);">${g.paciente}</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Competência ${compLabel}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-weight:700;font-size:var(--text-base);">${fmtR(g.total)}</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);">líquido ${fmtR(calcLiquido(g.total))}</div>
+            </div>
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);border-top:var(--border);padding-top:var(--space-2);line-height:1.5;">${descricao}</div>
+          <div id="nfse-status-${i}" style="font-size:var(--text-xs);color:var(--color-text-muted);"></div>
+        </div>`;
+    }).join('');
+
+    printView.innerHTML = `
+      <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="nfse-multi-confirmar">Emitir ${grupos.length} NFS-e</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none';">Cancelar</button>
+      </div>
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:28px;max-width:620px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#92600A;background:#FEF7EC;border:1px solid #F6C66B;border-radius:4px;padding:2px 8px;display:inline-block;margin-bottom:14px;">DEMONSTRAÇÃO</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Emissão de Notas Fiscais</div>
+        <div style="font-size:12px;color:#6B6860;margin-bottom:20px;">${grupos.length} nota${grupos.length !== 1 ? 's' : ''} · ISS ${iss}% · Cod. Serv. 08.01</div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);" id="nfse-multi-cards">${previewCards}</div>
+        <div style="background:#FEF7EC;border:1px solid #F6C66B;border-radius:6px;padding:10px 14px;font-size:11px;color:#92600A;margin-top:20px;">
+          ⚠ Notas fiscais demonstrativas — dados fictícios para fins de demonstração. Não possuem validade fiscal.
+        </div>
+      </div>
+    `;
+    printView.style.display = 'block';
+
+    printView.querySelector('#nfse-multi-confirmar').addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Emitindo...';
+
+      let sucesso = 0;
+      for (let i = 0; i < grupos.length; i++) {
+        const g = grupos[i];
+        const statusEl = printView.querySelector(`#nfse-status-${i}`);
+        statusEl.innerHTML = '<span style="color:var(--color-text-muted);">Emitindo...</span>';
+        try {
+          await apiFetch('/notas-fiscais', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paciente_id: null,
+              paciente_nome: g.paciente,
+              valor_servico: g.total,
+              descricao: `Serviços de Fisioterapia: ${g.itens.map(it => it.desc).join('; ')}`,
+              competencia: g.mes || null,
+            }),
+          });
+          statusEl.innerHTML = '<span style="color:var(--color-success);">✓ Nota emitida</span>';
+          sucesso++;
+        } catch (e) {
+          statusEl.innerHTML = `<span style="color:var(--color-danger);">✗ Erro: ${e.message}</span>`;
+        }
+      }
+
+      btn.textContent = `${sucesso} de ${grupos.length} emitida${sucesso !== 1 ? 's' : ''}`;
+      if (sucesso === grupos.length) {
+        setTimeout(() => {
+          printView.style.display = 'none';
+          openNotasFiscais();
+        }, 1500);
+      }
+    });
+  }
+
+  function abrirModalExtrato(data, mesSel, pacienteSel, mesLabel, fmtR, fmtData) {
+    const { pacotes, procedimentos = [], total_recebido,
+            total_pacotes_valor, total_procedimentos_valor } = data;
+
+    const periodoLabel = mesSel ? mesLabel(mesSel) : 'Todos os períodos';
+    const pacienteLabel = pacienteSel
+      ? (data.pacientes_disponiveis.find(p => String(p.id) === String(pacienteSel))?.nome || '')
+      : 'Todos os pacientes';
+    const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    // Monta linhas de itens ordenadas por data
+    const todosItens = [
+      ...pacotes.map(p => ({ data: p.data_pagamento, label: `Pacote — ${p.total_sessoes} sessões${p.descricao ? ' · ' + p.descricao : ''}`, paciente: p.paciente_nome, valor: p.valor_pago, tipo: 'pacote' })),
+      ...procedimentos.map(p => ({ data: p.data, label: `Procedimento — ${p.descricao}`, paciente: p.paciente_nome, valor: p.valor, tipo: 'proc' })),
+    ].sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+
+    const linhas = todosItens.map((i, idx) => `
+      <tr style="${idx % 2 === 1 ? 'background:#F9F8F6;' : ''}">
+        <td style="white-space:nowrap;">${fmtData(i.data) || '—'}</td>
+        <td>${i.paciente}</td>
+        <td>${i.label}</td>
+        <td style="text-align:right;font-weight:600;white-space:nowrap;">${fmtR(i.valor)}</td>
+      </tr>`).join('');
+
+    const printView = document.getElementById('print-view');
+    printView.innerHTML = `
+      <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;">
+        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none';">Fechar</button>
+      </div>
+      <div class="print-header">
+        <div class="print-title">Extrato Financeiro</div>
+        <div class="print-subtitle" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="display:inline-flex;align-items:center;background:#1A1A1A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;letter-spacing:0.05em;">${periodoLabel}</span> ${pacienteLabel} · Gerado em ${hoje}</div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;">
+        <thead>
+          <tr style="border-bottom:2px solid #1A1A1A;">
+            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Data</th>
+            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Paciente</th>
+            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Item</th>
+            <th style="text-align:right;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+
+      <div style="border-top:2px solid #1A1A1A;padding-top:16px;display:flex;flex-direction:column;gap:6px;max-width:320px;margin-left:auto;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B6860;">
+          <span>Pacotes de sessões</span><span>${fmtR(total_pacotes_valor || 0)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B6860;">
+          <span>Procedimentos extras</span><span>${fmtR(total_procedimentos_valor || 0)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;border-top:1px solid #E8E6E1;padding-top:8px;margin-top:4px;">
+          <span>Total</span><span>${fmtR(total_recebido)}</span>
+        </div>
+      </div>
+
+      <div class="print-footer" style="margin-top:48px;">powered by up it · Physio Notes</div>
+    `;
+    printView.style.display = 'block';
+  }
+
+  /* ============================================================
+     NOTAS FISCAIS DE SERVIÇO (NFS-e demo)
+  ============================================================ */
+
+  document.getElementById('back-home-from-notas').addEventListener('click', () => {
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+  });
+
+  document.getElementById('drawer-notas').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-notas');
+    openNotasFiscais();
+  });
+
+  async function openNotasFiscais(mes, pacienteId, q) {
+    showSection('sec-notas');
+    const body = document.getElementById('notas-body');
+    body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
+    try {
+      const params = new URLSearchParams();
+      if (mes) params.set('competencia', mes);
+      if (pacienteId) params.set('paciente_id', pacienteId);
+      if (q) params.set('q', q);
+      const qs = params.toString() ? `?${params}` : '';
+      const data = await apiFetch(`/notas-fiscais${qs}`);
+      renderNotasFiscais(data, mes || '', pacienteId || '', q || '');
+    } catch (e) {
+      body.innerHTML = `<div class="alert alert-error">Erro ao carregar notas fiscais: ${e.message}</div>`;
+    }
+  }
+
+  function renderNotasFiscais(data, mesSel, pacienteSel, qAtual) {
+    const body = document.getElementById('notas-body');
+    const notas = data.notas || [];
+    const competencias_disponiveis = data.competencias_disponiveis || [];
+    const pacientes_disponiveis = data.pacientes_disponiveis || [];
+
+    const fmtR = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const statusBadge = (s) => s === 'emitida'
+      ? '<span class="badge badge-success">Emitida</span>'
+      : '<span class="badge badge-danger">Cancelada</span>';
+
+    const mesLabel = (m) => {
+      if (!m) return '';
+      const [y, mo] = m.split('-');
+      return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1] + '/' + y;
+    };
+
+    const cards = notas.length === 0
+      ? `<div style="text-align:center;padding:var(--space-10) 0;color:var(--color-text-muted);">
+           <svg width="40" height="40" viewBox="0 0 16 16" fill="none" style="display:block;margin:0 auto var(--space-3);opacity:.3;"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+           <div style="font-size:var(--text-sm);margin-bottom:var(--space-2);">Nenhuma nota fiscal encontrada.</div>
+           <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Vá para <button onclick="openFaturamento(null,null)" style="background:none;border:none;cursor:pointer;color:var(--color-text);text-decoration:underline;font-size:inherit;padding:0;">Faturamento</button> e clique em <strong>Emitir NFS-e</strong> para gerar a primeira nota.</div>
+         </div>`
+      : notas.map(nf => {
+          const compLabel = nf.competencia ? mesLabel(nf.competencia) : null;
+          return `<div class="fat-card nf-card" data-nf-id="${nf.id}" style="cursor:pointer;border-left:3px solid ${nf.status === 'emitida' ? 'var(--color-accent)' : 'var(--color-border-strong)'};padding-left:calc(var(--space-4) - 3px);">
+            <div class="fat-card-top">
+              <div style="display:flex;align-items:flex-start;gap:var(--space-2);">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:1px;color:var(--color-text-secondary);"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <div>
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:2px;">NFS-e nº ${nf.numero}</div>
+                  <span class="fat-card-name">${nf.paciente_nome}</span>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="fat-card-value">${fmtR(nf.valor_servico)}</div>
+                <div style="margin-top:4px;">${statusBadge(nf.status)}</div>
+              </div>
+            </div>
+            <div class="fat-card-meta">
+              ${compLabel ? `<span style="font-weight:500;">${compLabel}</span><span style="color:var(--color-border-strong);">·</span>` : ''}
+              <span>${nf.descricao.length > 60 ? nf.descricao.substring(0, 60) + '…' : nf.descricao}</span>
+              <span style="color:var(--color-border-strong);">·</span><span style="color:var(--color-text-muted);">Emitida em ${nf.data_emissao}</span>
+            </div>
+          </div>`;
+        }).join('');
+
+    body.innerHTML = `
+      <!-- Filtros -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-3);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Competência</label>
+          <div id="notas-picker-mes-slot"></div>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Paciente</label>
+          <div id="notas-picker-pac-slot"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-5);align-items:center;">
+        <div class="form-group" style="margin:0;flex:1;">
+          <input class="form-input" id="notas-busca" placeholder="Buscar por número ou descrição..." value="${qAtual}">
+        </div>
+        <button class="btn btn-secondary" id="notas-btn-busca">Buscar</button>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-3);">
+        ${notas.length} nota${notas.length !== 1 ? 's' : ''} encontrada${notas.length !== 1 ? 's' : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-3);">${cards}</div>
+    `;
+
+    // Picker de competência — mesmo componente visual de Faturamento/Billing
+    const pickerMes = criarPickerMesAno(mesSel || '', (novoMes) => {
+      openNotasFiscais(novoMes || null, pickerPac.getValue() || null, body.querySelector('#notas-busca').value.trim() || null);
+    }, { allowAll: true, fullWidth: true });
+    body.querySelector('#notas-picker-mes-slot').appendChild(pickerMes);
+
+    // Picker de paciente (id pode ser null para notas multi-paciente — usa nome como chave)
+    const opcoesPac = [
+      { value: '', label: 'Todos os pacientes' },
+      ...pacientes_disponiveis.map(p => ({ value: p.id != null ? String(p.id) : `nome:${p.nome}`, label: p.nome })),
+    ];
+    const pickerPac = criarPickerLista(opcoesPac, String(pacienteSel || ''), (novoPac) => {
+      const pacId = novoPac && !novoPac.startsWith('nome:') ? novoPac : null;
+      openNotasFiscais(pickerMes.getValue() || null, pacId, body.querySelector('#notas-busca').value.trim() || null);
+    }, { fullWidth: true });
+    body.querySelector('#notas-picker-pac-slot').appendChild(pickerPac);
+
+    const busca = body.querySelector('#notas-busca');
+    body.querySelector('#notas-btn-busca').addEventListener('click', () =>
+      openNotasFiscais(pickerMes.getValue() || null, pickerPac.getValue() || null, busca.value.trim() || null));
+    busca.addEventListener('keydown', e => {
+      if (e.key === 'Enter') openNotasFiscais(pickerMes.getValue() || null, pickerPac.getValue() || null, busca.value.trim() || null);
+    });
+
+    body.querySelectorAll('.nf-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const nf = notas.find(n => String(n.id) === card.dataset.nfId);
+        if (nf) verDetalheNF(nf);
+      });
+    });
+  }
+
+  // ---------- Picker de mês/ano ----------
+  // allowAll=true: mostra botão "Todos os meses" que chama onChange('')
+  // Picker genérico de lista plana — mesmo visual do criarPickerMesAno
+  // opcoes: [{value, label}, ...] (pode incluir {value:'', label:'Todos os ...'})
+  function criarPickerLista(opcoes, valorInicial, onChange, { fullWidth = false } = {}) {
+    let sel = valorInicial != null ? String(valorInicial) : '';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position:relative;display:${fullWidth ? 'block' : 'inline-block'};${fullWidth ? 'width:100%;' : ''}`;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = `
+      display:flex;align-items:center;gap:8px;
+      border:1px solid #D0CEC9;border-radius:8px;padding:8px 14px;
+      background:#fff;font-size:14px;font-family:inherit;cursor:pointer;
+      color:#1A1A1A;font-weight:500;transition:border-color .15s;
+      ${fullWidth ? 'width:100%;' : 'min-width:150px;'}
+      justify-content:space-between;
+    `;
+    btn.addEventListener('mouseenter', () => btn.style.borderColor = '#A09D97');
+    btn.addEventListener('mouseleave', () => btn.style.borderColor = '#D0CEC9');
+
+    const labelEl = document.createElement('span');
+    const caretEl = document.createElement('span');
+    caretEl.style.cssText = 'flex-shrink:0;color:#6B6860;';
+    caretEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    function atualizarLabel() {
+      const opt = opcoes.find(o => String(o.value) === sel);
+      const isTodos = !sel || sel === '';
+      labelEl.textContent = opt ? opt.label : (opcoes[0]?.label || '—');
+      labelEl.style.color = isTodos ? '#6B6860' : '#1A1A1A';
+    }
+    atualizarLabel();
+    btn.appendChild(labelEl);
+    btn.appendChild(caretEl);
+
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+      position:absolute;top:calc(100% + 8px);left:0;z-index:500;
+      background:#fff;border:1px solid #D0CEC9;border-radius:14px;
+      box-shadow:0 8px 32px rgba(0,0,0,.13);padding:8px;
+      min-width:${fullWidth ? '100%' : '200px'};max-width:280px;max-height:280px;
+      overflow-y:auto;display:none;
+    `;
+
+    function renderPanel() {
+      panel.innerHTML = opcoes.map(o => {
+        const isSel = String(o.value) === sel;
+        const isTodos = o.value === '' || o.value == null;
+        return `<button type="button" data-v="${o.value}" style="
+          display:block;width:100%;text-align:left;
+          padding:9px 12px;border-radius:8px;border:none;
+          font-size:13px;font-family:inherit;cursor:pointer;
+          background:${isSel ? '#1A1A1A' : '#fff'};
+          color:${isSel ? '#fff' : (isTodos ? '#6B6860' : '#1A1A1A')};
+          font-weight:${isSel ? '600' : '400'};
+          transition:background .1s;
+        ">${o.label}</button>`;
+      }).join('');
+
+      panel.querySelectorAll('[data-v]').forEach(b => {
+        b.addEventListener('mouseenter', () => { if (String(b.dataset.v) !== sel) b.style.background = '#F9F8F6'; });
+        b.addEventListener('mouseleave', () => { if (String(b.dataset.v) !== sel) b.style.background = '#fff'; });
+        b.addEventListener('click', () => {
+          sel = b.dataset.v;
+          atualizarLabel();
+          panel.style.display = 'none';
+          onChange(sel);
+        });
+      });
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const aberto = panel.style.display === 'block';
+      panel.style.display = aberto ? 'none' : 'block';
+      if (!aberto) renderPanel();
+    });
+    panel.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', () => { panel.style.display = 'none'; });
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(panel);
+    wrapper.getValue = () => sel;
+    wrapper.setValue = (v) => { sel = v != null ? String(v) : ''; atualizarLabel(); };
+    return wrapper;
+  }
+
+  function criarPickerMesAno(valorInicial, onChange, { allowAll = false, fullWidth = false } = {}) {
+    const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const hoje = new Date();
+    // valorInicial pode ser '' (todos) ou 'YYYY-MM'
+    let competenciaSel = valorInicial || '';
+    let anoAtivo = competenciaSel
+      ? parseInt(competenciaSel.split('-')[0])
+      : hoje.getFullYear();
+    let mesAtivo = competenciaSel
+      ? parseInt(competenciaSel.split('-')[1]) - 1
+      : hoje.getMonth();
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position:relative;display:${fullWidth ? 'block' : 'inline-block'};${fullWidth ? 'width:100%;' : ''}`;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = `
+      display:flex;align-items:center;gap:8px;
+      border:1px solid #D0CEC9;border-radius:8px;padding:8px 14px;
+      background:#fff;font-size:14px;font-family:inherit;cursor:pointer;
+      color:#1A1A1A;font-weight:500;transition:border-color .15s;
+      ${fullWidth ? 'width:100%;' : 'min-width:150px;'}
+      justify-content:space-between;
+    `;
+    btn.addEventListener('mouseenter', () => btn.style.borderColor = '#A09D97');
+    btn.addEventListener('mouseleave', () => btn.style.borderColor = '#D0CEC9');
+
+    const labelEl = document.createElement('span');
+    const caretEl = document.createElement('span');
+    caretEl.style.cssText = 'flex-shrink:0;color:#6B6860;';
+    caretEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    function atualizarLabel() {
+      if (!competenciaSel) {
+        labelEl.textContent = 'Todos os meses';
+        labelEl.style.color = '#6B6860';
+      } else {
+        const [y, mo] = competenciaSel.split('-');
+        labelEl.textContent = `${MESES[parseInt(mo)-1]}/${y}`;
+        labelEl.style.color = '#1A1A1A';
+      }
+    }
+    atualizarLabel();
+    btn.appendChild(labelEl);
+    btn.appendChild(caretEl);
+
+    const panel = document.createElement('div');
+    panel.style.cssText = `
+      position:absolute;top:calc(100% + 8px);left:0;z-index:500;
+      background:#fff;border:1px solid #D0CEC9;border-radius:14px;
+      box-shadow:0 8px 32px rgba(0,0,0,.13);padding:16px;width:240px;
+      display:none;
+    `;
+
+    function renderPanel() {
+      const selAnoCurrent = competenciaSel ? parseInt(competenciaSel.split('-')[0]) : null;
+      const selMesCurrent = competenciaSel ? parseInt(competenciaSel.split('-')[1]) - 1 : null;
+
+      panel.innerHTML = `
+        ${allowAll ? `
+          <button type="button" id="picker-all" style="
+            width:100%;padding:8px 10px;border-radius:8px;border:none;
+            background:${!competenciaSel ? '#1A1A1A' : '#F9F8F6'};
+            color:${!competenciaSel ? '#fff' : '#6B6860'};
+            font-size:13px;font-family:inherit;cursor:pointer;font-weight:${!competenciaSel ? '600' : '400'};
+            text-align:left;margin-bottom:12px;transition:background .12s;
+          ">Todos os meses</button>
+        ` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <button type="button" id="picker-prev" style="background:#F9F8F6;border:none;cursor:pointer;padding:5px 10px;border-radius:7px;color:#1A1A1A;font-size:15px;line-height:1;font-weight:600;">‹</button>
+          <span style="font-weight:700;font-size:14px;color:#1A1A1A;">${anoAtivo}</span>
+          <button type="button" id="picker-next" style="background:#F9F8F6;border:none;cursor:pointer;padding:5px 10px;border-radius:7px;color:#1A1A1A;font-size:15px;line-height:1;font-weight:600;">›</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
+          ${MESES.map((m, i) => {
+            const sel = (i === selMesCurrent && anoAtivo === selAnoCurrent);
+            return `<button type="button" data-m="${i}" style="
+              padding:8px 4px;border-radius:8px;font-size:13px;font-family:inherit;
+              cursor:pointer;border:none;transition:background .12s;
+              background:${sel ? '#1A1A1A' : '#F9F8F6'};
+              color:${sel ? '#fff' : '#1A1A1A'};
+              font-weight:${sel ? '700' : '400'};
+            ">${m}</button>`;
+          }).join('')}
+        </div>
+      `;
+
+      if (allowAll) {
+        panel.querySelector('#picker-all').addEventListener('click', () => {
+          competenciaSel = '';
+          atualizarLabel();
+          panel.style.display = 'none';
+          onChange('');
+        });
+      }
+      panel.querySelector('#picker-prev').addEventListener('click', () => { anoAtivo--; renderPanel(); });
+      panel.querySelector('#picker-next').addEventListener('click', () => { anoAtivo++; renderPanel(); });
+      panel.querySelectorAll('[data-m]').forEach(b => {
+        b.addEventListener('click', () => {
+          mesAtivo = parseInt(b.dataset.m);
+          competenciaSel = `${anoAtivo}-${String(mesAtivo + 1).padStart(2,'0')}`;
+          atualizarLabel();
+          panel.style.display = 'none';
+          onChange(competenciaSel);
+        });
+      });
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const aberto = panel.style.display === 'block';
+      panel.style.display = aberto ? 'none' : 'block';
+      if (!aberto) renderPanel();
+    });
+    panel.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', () => { panel.style.display = 'none'; });
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(panel);
+    wrapper.getValue = () => competenciaSel;
+    return wrapper;
+  }
+
+  // ---------- Modal de emissão NFS-e (total do mês) ----------
+  async function abrirModalEmitirNFSe(data, mesSel, mesLabel, fmtR) {
+    const { pacotes, procedimentos = [], total_recebido,
+            total_pacotes_valor, total_procedimentos_valor,
+            pacientes_disponiveis } = data;
+
+    const iss = 2.0;
+    const valor = total_recebido || 0;
+    const calcIss = (v) => Math.round(v * iss * 100) / 10000;
+    const calcLiquido = (v) => Math.round((v - calcIss(v)) * 100) / 100;
+
+    // Competência padrão = mês selecionado ou mês atual
+    const hoje = new Date();
+    const compDefault = mesSel || `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+
+    // Tomador
+    const nomeTomador = pacientes_disponiveis.length === 1
+      ? pacientes_disponiveis[0].nome
+      : 'Múltiplos pacientes';
+
+    // Descrição composta dos itens
+    const itensDescricao = [
+      ...pacotes.map(p => `Pacote ${p.total_sessoes} sessões (${p.paciente_nome})`),
+      ...procedimentos.map(p => `${p.descricao} (${p.paciente_nome})`),
+    ];
+    const descricaoBase = itensDescricao.length > 0
+      ? `Serviços de Fisioterapia: ${itensDescricao.join('; ')}`
+      : 'Serviços de Fisioterapia';
+
+    const printView = document.getElementById('print-view');
+
+    // Estado reativo da competência
+    let competenciaAtual = compDefault;
+    let issAtual = calcIss(valor);
+    let liquidoAtual = calcLiquido(valor);
+
+    function renderPreview() {
+      return `
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:28px;max-width:620px;position:relative;overflow:hidden;">
+          <!-- Watermark -->
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:56px;font-weight:900;color:rgba(0,0,0,0.04);white-space:nowrap;pointer-events:none;user-select:none;z-index:0;letter-spacing:0.12em;">DEMONSTRAÇÃO</div>
+
+          <div style="position:relative;z-index:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+              <div>
+                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#92600A;background:#FEF7EC;border:1px solid #F6C66B;border-radius:4px;padding:2px 8px;display:inline-block;margin-bottom:8px;">DEMONSTRAÇÃO</div>
+                <div style="font-size:18px;font-weight:700;">Nota Fiscal de Serviço Eletrônica</div>
+                <div style="font-size:11px;color:#6B6860;margin-top:3px;">NFS-e · São Paulo · ISS ${iss}% · Cod. Serv. 08.01</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;">Número</div>
+                <div style="font-size:22px;font-weight:700;">—</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;margin-bottom:16px;">
+              <div style="background:#F9F8F6;border-radius:8px;padding:12px 14px;">
+                <div style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;margin-bottom:6px;">Prestador</div>
+                <div style="font-weight:600;">Clínica Physio Notes Ltda</div>
+                <div style="color:#6B6860;margin-top:2px;">CNPJ: 00.000.000/0001-00</div>
+                <div style="color:#6B6860;">Insc. Mun.: 123456-7 · São Paulo/SP</div>
+              </div>
+              <div style="background:#F9F8F6;border-radius:8px;padding:12px 14px;">
+                <div style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;margin-bottom:6px;">Tomador</div>
+                <div style="font-weight:600;">${nomeTomador}</div>
+                <div style="color:#6B6860;margin-top:2px;">CPF: a informar</div>
+              </div>
+            </div>
+
+            <div style="background:#F9F8F6;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;">
+              <div style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;margin-bottom:6px;">Discriminação do serviço</div>
+              <div>${descricaoBase}</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:5px;max-width:280px;margin-left:auto;background:#F9F8F6;border-radius:8px;padding:14px 16px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#6B6860;">Valor bruto</span><span style="font-weight:500;">${fmtR(valor)}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#6B6860;">ISS ${iss}%</span><span style="color:#6B6860;">- ${fmtR(issAtual)}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;border-top:1px solid #E8E6E1;padding-top:8px;margin-top:4px;"><span>Valor líquido</span><span>${fmtR(liquidoAtual)}</span></div>
+            </div>
+
+            <div style="background:#FEF7EC;border:1px solid #F6C66B;border-radius:6px;padding:10px 14px;font-size:11px;color:#92600A;margin-top:16px;">
+              ⚠ Nota fiscal demonstrativa — dados fictícios para fins de demonstração. Não possui validade fiscal.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const MESES_LABEL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    function montarTela() {
+      printView.innerHTML = `
+        <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" id="nfse-btn-confirmar">Emitir NFS-e</button>
+          <div id="nfse-picker-slot" style="display:inline-block;"></div>
+          <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none';">Cancelar</button>
+        </div>
+        <div id="nfse-preview-wrap">${renderPreview()}</div>
+      `;
+
+      // Insere o picker no slot (header)
+      const slot = printView.querySelector('#nfse-picker-slot');
+      const picker = criarPickerMesAno(competenciaAtual, (novaComp) => {
+        competenciaAtual = novaComp;
+      });
+      slot.appendChild(picker);
+
+      printView.querySelector('#nfse-btn-confirmar').addEventListener('click', async () => {
+        const btn = printView.querySelector('#nfse-btn-confirmar');
+        btn.disabled = true;
+        btn.textContent = 'Emitindo...';
+        try {
+          const nf = await apiFetch('/notas-fiscais', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paciente_id: pacientes_disponiveis.length === 1 ? pacientes_disponiveis[0].id : null,
+              paciente_nome: nomeTomador,
+              valor_servico: valor,
+              descricao: descricaoBase,
+              competencia: picker.getValue(),
+            }),
+          });
+          printView.style.display = 'none';
+          verDetalheNF(nf);
+        } catch (e) {
+          alert('Erro ao emitir NFS-e: ' + e.message);
+          btn.disabled = false;
+          btn.textContent = 'Emitir NFS-e';
+        }
+      });
+    }
+
+    montarTela();
+    printView.style.display = 'block';
+  }
+
+  function verDetalheNF(nf) {
+    const fmtR = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const dados = nf.dados || {};
+    const prestador = dados.prestador || {};
+    const tomador = dados.tomador || {};
+    const servico = dados.servico || {};
+
+    const printView = document.getElementById('print-view');
+    printView.innerHTML = `
+      <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+        ${nf.status === 'emitida' ? `<button class="btn btn-secondary" id="nfse-btn-cancelar">Cancelar nota</button>` : ''}
+        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none';openNotasFiscais();">Fechar</button>
+      </div>
+
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:8px;padding:32px;max-width:620px;font-size:12px;">
+        <!-- Cabeçalho -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#92600A;background:#FEF7EC;border:1px solid #F6C66B;border-radius:4px;padding:2px 8px;display:inline-block;margin-bottom:6px;">DEMONSTRAÇÃO</div>
+            <div style="font-size:20px;font-weight:700;font-family:Georgia,serif;">Nota Fiscal de Serviço Eletrônica</div>
+            <div style="font-size:11px;color:#6B6860;margin-top:2px;">NFS-e · Município de São Paulo · Cod. Serv. 08.01</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;">Nº da Nota</div>
+            <div style="font-size:26px;font-weight:700;color:#1A1A1A;">${nf.numero}</div>
+            <div style="font-size:10px;color:#6B6860;">Cód. verificação: <strong>${nf.codigo_verificacao}</strong></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#F9F8F6;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:11px;">
+          <div><span style="color:#6B6860;">Data emissão:</span> <strong>${nf.data_emissao}</strong></div>
+          <div><span style="color:#6B6860;">Competência:</span> <strong>${servico.competencia || nf.competencia || '—'}</strong></div>
+          <div><span style="color:#6B6860;">Status:</span> <strong style="color:${nf.status === 'emitida' ? '#2D6A4F' : '#9B1C1C'}">${nf.status === 'emitida' ? 'Emitida' : 'Cancelada'}</strong></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div style="background:#F9F8F6;border-radius:6px;padding:12px 16px;">
+            <div style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;margin-bottom:8px;">Prestador de Serviços</div>
+            <div style="font-weight:600;">${prestador.razao_social || 'Clínica Physio Notes Ltda'}</div>
+            <div style="color:#6B6860;margin-top:2px;">CNPJ: ${prestador.cnpj || '00.000.000/0001-00'}</div>
+            <div style="color:#6B6860;">Insc. Mun.: ${prestador.inscricao_municipal || '123456-7'}</div>
+            <div style="color:#6B6860;">${prestador.municipio || 'São Paulo'} / ${prestador.uf || 'SP'}</div>
+          </div>
+          <div style="background:#F9F8F6;border-radius:6px;padding:12px 16px;">
+            <div style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;margin-bottom:8px;">Tomador de Serviços</div>
+            <div style="font-weight:600;">${tomador.nome || nf.paciente_nome}</div>
+            <div style="color:#6B6860;margin-top:2px;">CPF: ${tomador.cpf || '—'}</div>
+            <div style="color:#6B6860;">${tomador.endereco || '—'}</div>
+          </div>
+        </div>
+
+        <div style="background:#F9F8F6;border-radius:6px;padding:12px 16px;margin-bottom:16px;">
+          <div style="font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6B6860;margin-bottom:6px;">Discriminação do Serviço</div>
+          <div>${servico.descricao || nf.descricao}</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:5px;max-width:280px;margin-left:auto;padding:12px 16px;background:#F9F8F6;border-radius:6px;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:#6B6860;">Valor bruto do serviço</span><span>${fmtR(servico.valor_servico || nf.valor_servico)}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#6B6860;">ISS ${servico.iss_aliquota || 2}%</span><span>- ${fmtR(servico.iss_valor)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px;border-top:1px solid #E8E6E1;padding-top:8px;margin-top:4px;"><span>Valor líquido</span><span>${fmtR(servico.valor_liquido)}</span></div>
+        </div>
+
+        <div style="background:#FEF7EC;border:1px solid #F6C66B;border-radius:6px;padding:10px 14px;font-size:10px;color:#92600A;margin-top:20px;text-align:center;">
+          ⚠ NOTA FISCAL DEMONSTRATIVA — dados fictícios gerados pelo sistema Physio Notes para fins de demonstração. Não possui validade fiscal.
+        </div>
+
+        <div style="text-align:center;font-size:10px;color:#A09D97;margin-top:20px;">powered by up it · Physio Notes</div>
+      </div>
+    `;
+    printView.style.display = 'block';
+
+    const btnCancelar = printView.querySelector('#nfse-btn-cancelar');
+    if (btnCancelar) {
+      btnCancelar.addEventListener('click', async () => {
+        if (!confirm('Cancelar esta nota fiscal?')) return;
+        try {
+          await apiFetch(`/notas-fiscais/${nf.id}`, { method: 'DELETE' });
+          printView.style.display = 'none';
+          openNotasFiscais();
+        } catch (e) {
+          alert('Erro ao cancelar: ' + e.message);
+        }
+      });
+    }
+  }
 
   /* ============================================================
      AUTH — Logout e inatividade

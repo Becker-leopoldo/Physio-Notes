@@ -73,6 +73,10 @@ class ExtrairPacienteBody(BaseModel):
     transcricao: str
 
 
+class ExtrairPacoteBody(BaseModel):
+    transcricao: str
+
+
 class RelatorioCREFITOBody(BaseModel):
     paciente_ids: list[int]
 
@@ -82,6 +86,30 @@ class PacoteCreate(BaseModel):
     valor_pago: float | None = None
     data_pagamento: str | None = None
     descricao: str | None = None
+
+
+class ProcedimentoCreate(BaseModel):
+    descricao: str
+    valor: float | None = None
+    data: str | None = None
+
+
+class ExtrairProcedimentoBody(BaseModel):
+    transcricao: str
+
+
+class NotaFiscalCreate(BaseModel):
+    paciente_id: int | None = None
+    paciente_nome: str
+    valor_servico: float
+    descricao: str
+    competencia: str | None = None  # YYYY-MM
+    # dados extras para compor o "fake NFS-e"
+    prestador_razao: str | None = None
+    prestador_cnpj: str | None = None
+    tomador_cpf: str | None = None
+    tomador_endereco: str | None = None
+    iss_aliquota: float | None = None  # percentual, ex: 2.5
 
 
 # ---------- Pacientes ----------
@@ -145,6 +173,75 @@ async def extrair_dados_paciente(body: ExtrairPacienteBody):
         raise HTTPException(status_code=400, detail="Transcrição vazia")
     try:
         dados = await ai.extrair_dados_paciente(body.transcricao)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
+    return dados
+
+
+@app.post("/extrair-procedimento")
+async def extrair_procedimento(body: ExtrairProcedimentoBody):
+    if not body.transcricao.strip():
+        raise HTTPException(status_code=400, detail="Transcrição vazia")
+    try:
+        dados = await ai.extrair_procedimento(body.transcricao)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
+    return dados
+
+
+@app.post("/sessoes/{sessao_id}/detectar-procedimentos")
+async def detectar_procedimentos(sessao_id: int):
+    """
+    Analisa transcrição + nota da sessão com IA e retorna sugestões de
+    procedimentos extras detectados. NÃO salva automaticamente — retorna
+    as sugestões para o frontend confirmar.
+    """
+    sessao = db.get_sessao(sessao_id)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+
+    chunks = db.get_chunks_sessao(sessao_id)
+    consolidado = db.get_consolidado_sessao(sessao_id)
+
+    transcricao = "\n".join(c["transcricao"] for c in chunks if c.get("transcricao"))
+    if not transcricao.strip():
+        return {"sugestoes": []}
+
+    nota = consolidado.get("nota") or consolidado.get("conduta") if consolidado else None
+
+    try:
+        sugestoes = await ai.detectar_procedimentos_extras(transcricao, nota)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro na IA: {str(e)}")
+
+    return {"sugestoes": sugestoes}
+
+
+@app.get("/sessoes/{sessao_id}/procedimentos")
+def listar_procedimentos(sessao_id: int):
+    return db.get_procedimentos_sessao(sessao_id)
+
+
+@app.post("/sessoes/{sessao_id}/procedimentos")
+def criar_procedimento(sessao_id: int, body: ProcedimentoCreate):
+    sessao = db.get_sessao(sessao_id)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    return db.adicionar_procedimento(sessao_id, sessao["paciente_id"], body.descricao, body.valor, body.data)
+
+
+@app.delete("/procedimentos/{proc_id}")
+def deletar_procedimento(proc_id: int):
+    db.deletar_procedimento(proc_id)
+    return {"ok": True}
+
+
+@app.post("/extrair-pacote")
+async def extrair_dados_pacote(body: ExtrairPacoteBody):
+    if not body.transcricao.strip():
+        raise HTTPException(status_code=400, detail="Transcrição vazia")
+    try:
+        dados = await ai.extrair_dados_pacote(body.transcricao)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
     return dados
@@ -314,6 +411,19 @@ async def encerrar_sessao(sessao_id: int):
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
     db.encerrar_sessao(sessao_id)
 
+    # Detecção automática de procedimentos extras na transcrição
+    transcricao_completa = "\n".join(transcricoes)
+    nota = dados_consolidados.get("nota") or dados_consolidados.get("conduta")
+    try:
+        extras = await ai.detectar_procedimentos_extras(transcricao_completa, nota)
+        for item in extras:
+            db.adicionar_procedimento(
+                sessao_id, sessao["paciente_id"],
+                item["descricao"], item.get("valor"), None,
+            )
+    except Exception:
+        pass  # detecção de extras é best-effort, não bloqueia o encerramento
+
     return {"consolidado": consolidado, "sessao_id": sessao_id, "status": "encerrada"}
 
 
@@ -335,6 +445,11 @@ def listar_sessoes_paciente(paciente_id: int):
 
 
 # ---------- Historico / IA ----------
+
+@app.get("/faturamento/pacientes")
+def faturamento_pacientes(mes: str | None = None, paciente_id: int | None = None):
+    return db.get_faturamento_pacientes(ano_mes=mes, paciente_id=paciente_id)
+
 
 @app.get("/billing")
 def billing(mes: str | None = None):
@@ -470,6 +585,113 @@ def listar_pacotes(paciente_id: int):
 @app.delete("/pacotes/{pacote_id}", status_code=204)
 def deletar_pacote(pacote_id: int):
     db.deletar_pacote(pacote_id)
+
+
+# ---------- Notas Fiscais de Serviço (demo) ----------
+
+@app.post("/notas-fiscais", status_code=201)
+def emitir_nota_fiscal(body: NotaFiscalCreate):
+    import json as _json
+    from datetime import date
+
+    prestador_razao = body.prestador_razao or "Clínica Physio Notes Ltda"
+    prestador_cnpj = body.prestador_cnpj or "00.000.000/0001-00"
+    iss_aliquota = body.iss_aliquota if body.iss_aliquota is not None else 2.0
+    iss_valor = round(body.valor_servico * iss_aliquota / 100, 2)
+    valor_liquido = round(body.valor_servico - iss_valor, 2)
+
+    dados = {
+        "prestador": {
+            "razao_social": prestador_razao,
+            "cnpj": prestador_cnpj,
+            "inscricao_municipal": "123456-7",
+            "municipio": "São Paulo",
+            "uf": "SP",
+        },
+        "tomador": {
+            "nome": body.paciente_nome,
+            "cpf": body.tomador_cpf or "000.000.000-00",
+            "endereco": body.tomador_endereco or "Não informado",
+        },
+        "servico": {
+            "descricao": body.descricao,
+            "codigo_servico": "08.01",
+            "iss_aliquota": iss_aliquota,
+            "iss_valor": iss_valor,
+            "valor_servico": body.valor_servico,
+            "valor_liquido": valor_liquido,
+            "competencia": body.competencia or date.today().strftime("%Y-%m"),
+        },
+        "observacoes": "NOTA FISCAL DEMONSTRATIVA — dados fictícios para fins de demonstração",
+    }
+
+    nf = db.emitir_nota_fiscal(
+        paciente_id=body.paciente_id,
+        paciente_nome=body.paciente_nome,
+        valor_servico=body.valor_servico,
+        descricao=body.descricao,
+        competencia=body.competencia,
+        dados_json=_json.dumps(dados, ensure_ascii=False),
+    )
+    return {**nf, "dados": dados}
+
+
+@app.get("/notas-fiscais")
+def listar_notas_fiscais(
+    q: str | None = None,
+    paciente_id: int | None = None,
+    competencia: str | None = None,
+):
+    import json as _json
+    # Busca todas as notas sem filtro para popular os pickers
+    todas = db.listar_notas_fiscais()
+    competencias_disponiveis = sorted(
+        {n["competencia"] for n in todas if n.get("competencia")}, reverse=True
+    )
+    # Agrupa por nome (cobre notas com paciente_id=null emitidas para múltiplos)
+    pac_map = {}
+    for n in todas:
+        nome = n.get("paciente_nome") or ""
+        if not nome:
+            continue
+        key = n["paciente_id"] if n.get("paciente_id") else f"nome:{nome}"
+        pac_map[key] = {"id": n.get("paciente_id"), "nome": nome}
+    pacientes_disponiveis = sorted(pac_map.values(), key=lambda p: p["nome"])
+
+    notas = db.listar_notas_fiscais(q=q, paciente_id=paciente_id, competencia=competencia)
+    result = []
+    for n in notas:
+        try:
+            dados = _json.loads(n.get("dados_json") or "{}")
+        except Exception:
+            dados = {}
+        result.append({**n, "dados": dados})
+    return {
+        "notas": result,
+        "competencias_disponiveis": competencias_disponiveis,
+        "pacientes_disponiveis": pacientes_disponiveis,
+    }
+
+
+@app.get("/notas-fiscais/{nf_id}")
+def buscar_nota_fiscal(nf_id: int):
+    import json as _json
+    nf = db.get_nota_fiscal(nf_id)
+    if not nf:
+        raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
+    try:
+        dados = _json.loads(nf.get("dados_json") or "{}")
+    except Exception:
+        dados = {}
+    return {**nf, "dados": dados}
+
+
+@app.delete("/notas-fiscais/{nf_id}", status_code=204)
+def cancelar_nota_fiscal(nf_id: int):
+    nf = db.get_nota_fiscal(nf_id)
+    if not nf:
+        raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
+    db.cancelar_nota_fiscal(nf_id)
 
 
 # ---------- Auth WebAuthn ----------

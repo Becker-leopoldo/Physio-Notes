@@ -117,6 +117,39 @@ def _migrate():
             )
         """)
 
+        # Procedimentos extras por sessão
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS procedimento_extra (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                sessao_id   INTEGER NOT NULL REFERENCES sessao(id),
+                paciente_id INTEGER NOT NULL REFERENCES paciente(id),
+                descricao   TEXT    NOT NULL,
+                valor       REAL,
+                data        TEXT,
+                criado_em   TEXT    NOT NULL,
+                deletado_em TEXT
+            )
+        """)
+
+        # Notas Fiscais de Serviço (demo)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS nota_fiscal (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                numero              TEXT    NOT NULL,
+                paciente_id         INTEGER REFERENCES paciente(id),
+                paciente_nome       TEXT    NOT NULL,
+                valor_servico       REAL    NOT NULL,
+                descricao           TEXT    NOT NULL,
+                competencia         TEXT,
+                data_emissao        TEXT    NOT NULL,
+                codigo_verificacao  TEXT    NOT NULL,
+                dados_json          TEXT    NOT NULL,
+                status              TEXT    NOT NULL DEFAULT 'emitida',
+                criado_em           TEXT    NOT NULL,
+                deletado_em         TEXT
+            )
+        """)
+
         # WebAuthn
         conn.execute("""
             CREATE TABLE IF NOT EXISTS usuario (
@@ -485,6 +518,191 @@ def get_pacote_ativo(paciente_id: int) -> dict | None:
 def deletar_pacote(pacote_id: int):
     with get_conn() as conn:
         conn.execute("UPDATE pacote SET deletado_em = ? WHERE id = ?", (_now(), pacote_id))
+        conn.commit()
+
+
+# ---------- Procedimentos Extras ----------
+
+def adicionar_procedimento(sessao_id: int, paciente_id: int, descricao: str, valor: float | None, data: str | None) -> dict:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO procedimento_extra (sessao_id, paciente_id, descricao, valor, data, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+            (sessao_id, paciente_id, descricao, valor, data, _now()),
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM procedimento_extra WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def get_procedimentos_sessao(sessao_id: int) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM procedimento_extra WHERE sessao_id = ? AND deletado_em IS NULL ORDER BY criado_em",
+            (sessao_id,),
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+def deletar_procedimento(proc_id: int):
+    with get_conn() as conn:
+        conn.execute("UPDATE procedimento_extra SET deletado_em = ? WHERE id = ?", (_now(), proc_id))
+        conn.commit()
+
+
+# ---------- Faturamento de Pacientes ----------
+
+def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | None = None) -> dict:
+    """
+    Retorna pacotes e procedimentos extras, filtrado por mês e/ou paciente.
+    ano_mes: 'YYYY-MM'. Para pacotes usa data_pagamento; para procedimentos usa data.
+    """
+    with get_conn() as conn:
+        # ---- Pacotes ----
+        pk_where = ["pk.deletado_em IS NULL", "pk.valor_pago IS NOT NULL"]
+        pk_params: list = []
+        if ano_mes:
+            pk_where.append("strftime('%Y-%m', COALESCE(pk.data_pagamento, DATE(pk.criado_em))) = ?")
+            pk_params.append(ano_mes)
+        if paciente_id:
+            pk_where.append("pk.paciente_id = ?")
+            pk_params.append(paciente_id)
+
+        pacotes = [_row_to_dict(r) for r in conn.execute(f"""
+            SELECT pk.id, pk.paciente_id, p.nome AS paciente_nome,
+                   pk.total_sessoes, pk.sessoes_usadas, pk.valor_pago,
+                   COALESCE(pk.data_pagamento, DATE(pk.criado_em)) AS data_pagamento,
+                   pk.descricao, pk.criado_em,
+                   CASE WHEN pk.sessoes_usadas < pk.total_sessoes THEN 'ativo' ELSE 'esgotado' END AS status
+            FROM pacote pk
+            JOIN paciente p ON p.id = pk.paciente_id
+            WHERE {" AND ".join(pk_where)}
+            ORDER BY pk.data_pagamento DESC, pk.criado_em DESC
+        """, pk_params).fetchall()]
+
+        # ---- Procedimentos extras ----
+        pe_where = ["pe.deletado_em IS NULL", "pe.valor IS NOT NULL"]
+        pe_params: list = []
+        if ano_mes:
+            pe_where.append("strftime('%Y-%m', COALESCE(pe.data, pe.criado_em)) = ?")
+            pe_params.append(ano_mes)
+        if paciente_id:
+            pe_where.append("pe.paciente_id = ?")
+            pe_params.append(paciente_id)
+
+        procedimentos = [_row_to_dict(r) for r in conn.execute(f"""
+            SELECT pe.id, pe.sessao_id, pe.paciente_id, p.nome AS paciente_nome,
+                   pe.descricao, pe.valor,
+                   COALESCE(pe.data, DATE(pe.criado_em)) AS data,
+                   pe.criado_em
+            FROM procedimento_extra pe
+            JOIN paciente p ON p.id = pe.paciente_id
+            WHERE {" AND ".join(pe_where)}
+            ORDER BY pe.data DESC, pe.criado_em DESC
+        """, pe_params).fetchall()]
+
+        total_pacotes = sum(p["valor_pago"] or 0 for p in pacotes)
+        total_procedimentos = sum(p["valor"] or 0 for p in procedimentos)
+        total_recebido = round(total_pacotes + total_procedimentos, 2)
+        total_sessoes_vendidas = sum(p["total_sessoes"] or 0 for p in pacotes)
+
+        # meses disponíveis (união de datas de pacotes e procedimentos)
+        meses_rows = conn.execute("""
+            SELECT DISTINCT mes FROM (
+                SELECT strftime('%Y-%m', COALESCE(data_pagamento, DATE(criado_em))) AS mes
+                FROM pacote WHERE deletado_em IS NULL AND valor_pago IS NOT NULL
+                UNION
+                SELECT strftime('%Y-%m', COALESCE(data, criado_em)) AS mes
+                FROM procedimento_extra WHERE deletado_em IS NULL AND valor IS NOT NULL
+            ) ORDER BY mes DESC
+        """).fetchall()
+
+        # pacientes disponíveis (união de pacotes e procedimentos)
+        pacientes_rows = conn.execute("""
+            SELECT DISTINCT p.id, p.nome FROM paciente p
+            WHERE p.deletado_em IS NULL AND (
+                EXISTS (SELECT 1 FROM pacote pk WHERE pk.paciente_id = p.id AND pk.deletado_em IS NULL AND pk.valor_pago IS NOT NULL)
+                OR
+                EXISTS (SELECT 1 FROM procedimento_extra pe WHERE pe.paciente_id = p.id AND pe.deletado_em IS NULL AND pe.valor IS NOT NULL)
+            )
+            ORDER BY p.nome COLLATE NOCASE
+        """).fetchall()
+
+        return {
+            "pacotes": pacotes,
+            "procedimentos": procedimentos,
+            "total_recebido": total_recebido,
+            "total_pacotes_valor": round(total_pacotes, 2),
+            "total_procedimentos_valor": round(total_procedimentos, 2),
+            "qtd_pacotes": len(pacotes),
+            "total_sessoes_vendidas": total_sessoes_vendidas,
+            "qtd_procedimentos": len(procedimentos),
+            "meses_disponiveis": [r["mes"] for r in meses_rows if r["mes"]],
+            "pacientes_disponiveis": [_row_to_dict(r) for r in pacientes_rows],
+        }
+
+
+# ---------- Notas Fiscais ----------
+
+def _proximo_numero_nf(conn) -> str:
+    row = conn.execute("SELECT COUNT(*) as total FROM nota_fiscal").fetchone()
+    return str((row["total"] or 0) + 1).zfill(7)
+
+
+def emitir_nota_fiscal(paciente_id: int | None, paciente_nome: str, valor_servico: float,
+                       descricao: str, competencia: str | None, dados_json: str) -> dict:
+    import secrets as _secrets
+    now = _now()
+    from datetime import datetime, timezone as tz
+    data_emissao = datetime.now(tz.utc).strftime("%d/%m/%Y %H:%M:%S")
+    codigo = _secrets.token_hex(4).upper()
+
+    with get_conn() as conn:
+        numero = _proximo_numero_nf(conn)
+        cur = conn.execute(
+            """INSERT INTO nota_fiscal
+               (numero, paciente_id, paciente_nome, valor_servico, descricao,
+                competencia, data_emissao, codigo_verificacao, dados_json, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (numero, paciente_id, paciente_nome, valor_servico, descricao,
+             competencia, data_emissao, codigo, dados_json, now),
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM nota_fiscal WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def listar_notas_fiscais(
+    q: str | None = None,
+    paciente_id: int | None = None,
+    competencia: str | None = None,
+) -> list[dict]:
+    with get_conn() as conn:
+        where_parts = ["deletado_em IS NULL"]
+        params: list = []
+        if paciente_id:
+            where_parts.append("paciente_id = ?")
+            params.append(paciente_id)
+        if competencia:
+            where_parts.append("competencia = ?")
+            params.append(competencia)
+        if q:
+            where_parts.append("(paciente_nome LIKE ? OR numero LIKE ? OR descricao LIKE ?)")
+            like = f"%{q}%"
+            params += [like, like, like]
+        where = " AND ".join(where_parts)
+        rows = conn.execute(
+            f"SELECT * FROM nota_fiscal WHERE {where} ORDER BY criado_em DESC",
+            params,
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+def get_nota_fiscal(nf_id: int) -> dict | None:
+    with get_conn() as conn:
+        return _row_to_dict(conn.execute("SELECT * FROM nota_fiscal WHERE id = ?", (nf_id,)).fetchone())
+
+
+def cancelar_nota_fiscal(nf_id: int):
+    with get_conn() as conn:
+        conn.execute("UPDATE nota_fiscal SET status = 'cancelada' WHERE id = ?", (nf_id,))
         conn.commit()
 
 

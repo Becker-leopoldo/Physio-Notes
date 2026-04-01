@@ -37,8 +37,8 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 | Arquivo            | Descrição |
 |--------------------|-----------|
 | `main.py`          | Aplicação FastAPI. Define todos os endpoints REST (ver seção Endpoints abaixo). Monta o frontend como `StaticFiles` ao final — deve ficar por último para não interceptar as rotas da API. |
-| `database.py`      | Camada de acesso ao SQLite. Gerencia 7 tabelas: `paciente`, `sessao`, `audio_chunk`, `sessao_consolidada`, `api_uso`, `documento` e `pacote`. Inclui `init_db()` para criação inicial e `_migrate()` para adicionar colunas/tabelas sem quebrar bancos existentes. O caminho do banco é configurável via `DB_PATH`. |
-| `ai.py`            | Integração com a API Anthropic. Funções: `consolidar_sessao` (gera nota clínica profissional a partir da transcrição bruta), `resumir_historico` (gera resumo narrativo do paciente para CREFITO), `extrair_dados_paciente` (extrai nome/data/anamnese do áudio de cadastro), `responder_pergunta` (responde perguntas sobre o histórico), `resumir_documento` (resume PDFs clínicos). Registra uso de tokens e custo em `api_uso` após cada chamada. |
+| `database.py`      | Camada de acesso ao SQLite. Gerencia 7 tabelas: `paciente`, `sessao`, `audio_chunk`, `sessao_consolidada`, `api_uso`, `documento` e `pacote`. Inclui `init_db()` para criação inicial e `_migrate()` para adicionar colunas/tabelas sem quebrar bancos existentes. O caminho do banco é configurável via `DB_PATH`. Inclui `get_faturamento_pacientes()` com filtros por mês de competência e paciente. |
+| `ai.py`            | Integração com a API Anthropic. Funções: `consolidar_sessao` (gera nota clínica profissional a partir da transcrição bruta), `resumir_historico` (gera resumo narrativo do paciente para CREFITO), `extrair_dados_paciente` (extrai nome/data/anamnese do áudio de cadastro), `extrair_dados_pacote` (extrai total de sessões, valor, data e descrição do pacote a partir de áudio), `responder_pergunta` (responde perguntas sobre o histórico), `resumir_documento` (resume PDFs clínicos). Registra uso de tokens e custo em `api_uso` após cada chamada. |
 | `transcribe.py`    | Integração com Groq Whisper via SDK OpenAI (compatível). Recebe bytes de áudio e retorna transcrição em português. |
 | `requirements.txt` | Dependências: `fastapi`, `uvicorn[standard]`, `python-multipart`, `openai`, `anthropic`, `python-dotenv`, `aiofiles`, `pypdf`. |
 | `start.bat`        | Script Windows para desenvolvimento local. Instala dependências e inicia o servidor em `localhost:8000` com hot-reload. |
@@ -98,6 +98,23 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 - Projeção de custo até fim do mês (baseada na média diária)
 - Histórico de meses anteriores
 
+### Faturamento
+- Seção acessível via menu lateral (drawer)
+- Filtros por mês de competência e paciente
+- KPI com total recebido (pacotes + procedimentos extras)
+- Cards de pacotes com botão **Emitir NFS-e** — abre preview com ISS calculado
+- Cards de procedimentos extras cobrados por sessão
+- Botão "Gerar extrato" → `#print-view` com tabela imprimível
+
+### Notas Fiscais de Serviço (NFS-e demo)
+- Seção dedicada acessível via menu lateral (drawer)
+- Lista de NFS-e emitidas com busca por paciente/número/descrição
+- Emissão via botão no card do pacote no faturamento: preview antes de confirmar
+- NFS-e contém: número sequencial 7 dígitos, código de verificação hex, prestador/tomador, ISS 2%, valor líquido
+- Badge "DEMONSTRAÇÃO" — dados fictícios sem validade fiscal
+- Opção de cancelar nota emitida
+- Visualização detalhada com layout de nota fiscal real imprimível
+
 ### PWA
 - Instalável via Chrome/Edge ("Add to Home Screen")
 - Ícone personalizado (PN) com PNG nas resoluções 192 e 512
@@ -152,10 +169,20 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 |--------|------|-----------|
 | `POST` | `/transcrever` | Transcrição avulsa de áudio |
 | `POST` | `/extrair-paciente` | Extrai dados do paciente de uma transcrição |
+| `POST` | `/extrair-pacote` | Extrai dados do pacote (sessões, valor, data, descrição) de uma transcrição |
 | `GET` | `/pacientes/{id}/resumo` | Gera resumo clínico completo (histórico + documentos) |
 | `POST` | `/pacientes/{id}/perguntar` | Responde pergunta sobre o histórico do paciente |
 | `POST` | `/relatorio/crefito` | Gera relatório CREFITO para múltiplos pacientes |
 | `GET` | `/billing?mes=YYYY-MM` | Retorna uso e custo de IA do mês |
+| `GET` | `/faturamento/pacientes?mes=YYYY-MM&paciente_id=X` | Retorna pacotes com valor pago, filtrado por mês de competência e/ou paciente |
+
+### Notas Fiscais de Serviço (demo)
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/notas-fiscais` | Emite NFS-e demo (gera número sequencial, código de verificação, dados_json) |
+| `GET` | `/notas-fiscais?q=texto&paciente_id=X&competencia=YYYY-MM` | Lista NFS-e filtrada; retorna também `competencias_disponiveis` e `pacientes_disponiveis` para popular os pickers |
+| `GET` | `/notas-fiscais/{id}` | Busca NFS-e por ID |
+| `DELETE` | `/notas-fiscais/{id}` | Cancela a nota (status = 'cancelada') |
 
 ---
 
@@ -169,6 +196,8 @@ sessao_consolidada → nota clínica gerada pela IA ao encerrar sessão
 api_uso            → log de chamadas IA (tokens + custo_usd)
 documento          → PDFs enviados ao prontuário + resumo IA + soft delete
 pacote             → pacotes de sessões comprados pelo paciente + soft delete
+procedimento_extra → procedimentos extras cobrados por sessão (detecção automática IA + manual) + soft delete
+nota_fiscal        → NFS-e demo emitida pelo sistema (número sequencial, código verificação, dados_json)
 ```
 
 ### Regras de negócio do pacote
