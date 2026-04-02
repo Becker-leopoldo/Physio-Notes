@@ -1033,19 +1033,12 @@
   <button onclick="window.location.reload()" style="background:#fff;color:var(--color-text);border:none;border-radius:var(--radius-full);padding:var(--space-1) var(--space-4);font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;cursor:pointer;">Agora</button>
 </div>
 
-<!-- ======================== OFFLINE OVERLAY ======================== -->
-<div id="offline-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#F9F8F6;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-6);padding:var(--space-8);">
-  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="opacity:0.25;">
-    <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- ======================== OFFLINE BANNER ======================== -->
+<div id="offline-overlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#92600A;color:#fff;padding:10px var(--space-5);flex-direction:row;align-items:center;justify-content:center;gap:var(--space-3);font-family:var(--font-body);font-size:var(--text-sm);">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
+    <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
-  <div style="text-align:center;">
-    <h2 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--color-text);margin:0 0 var(--space-3);">Sem conexão com a internet</h2>
-    <p style="font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text-secondary);max-width:360px;line-height:1.6;margin:0;">O Physio Notes requer internet para funcionar — transcrição de voz e processamento por IA dependem de conexão ativa.</p>
-  </div>
-  <div style="font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text-muted);display:flex;align-items:center;gap:var(--space-2);">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-    Reconectando automaticamente...
-  </div>
+  <span>Sem internet — você pode continuar gravando. O áudio será enviado quando a conexão voltar.</span>
 </div>
 
 <!-- Drawer lateral -->
@@ -1506,7 +1499,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.219'; // bump a cada deploy: Beta-0.220, Beta-0.221...
+  const APP_VERSION = 'Beta-0.220'; // bump a cada deploy: Beta-0.221, Beta-0.222...
 
   /* ============================================================
      STATE
@@ -1777,7 +1770,6 @@
     try {
       res = await fetch(API_BASE + path, opts);
     } catch (e) {
-      document.getElementById('offline-overlay').style.display = 'flex';
       throw new Error('Sem conexão com a internet.');
     }
     if (res.status === 401) {

@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.220 — 2026-04-02
+
+### Correções
+- **Overlay offline bloqueava gravação**: tela "sem internet" ocupava tela inteira e impedia clicar no microfone — substituída por banner sutil no topo ("Sem internet — você pode continuar gravando. O áudio será enviado quando a conexão voltar.") que não bloqueia a interação
+
+---
+
 ## Beta-0.219 — 2026-04-02
 
 ### Melhorias
