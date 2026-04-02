@@ -4,6 +4,25 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.244 — 2026-04-02
+
+### Funcionalidades
+
+**Checkbox "Cobrar automaticamente" nas Configurações**
+- Novo campo no painel de Configurações → Sessão avulsa: checkbox "Cobrar automaticamente" (padrão: marcado)
+- Se marcado + valor configurado → ao encerrar sessão avulsa, cobrança gerada automaticamente sem nenhum modal
+- Se marcado + sem valor → após fechar a sessão, aparece prompt flutuante "Qual foi o valor?" (30s)
+- Se desmarcado → sessão encerra sem cobrança, sem prompt
+- Campo de valor fica desabilitado/opaco quando checkbox desmarcado
+- Configuração salva no banco (`cobrar_avulsa` em `usuario_google`)
+
+### Correções
+
+- **CSP**: adicionado `https://accounts.google.com` ao `style-src` — corrige erro de bloqueio do stylesheet do Google Sign-In após o endurecimento de headers de segurança da Beta-0.242
+- Removido modal por sessão (`abrirModalEncerrarAvulsa`) — substituído pelo comportamento configurado globalmente
+
+---
+
 ## Beta-0.243 — 2026-04-02
 
 ### Funcionalidades

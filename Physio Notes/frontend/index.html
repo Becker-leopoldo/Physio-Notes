@@ -1100,14 +1100,19 @@
     <!-- Painel de configurações inline -->
     <div id="drawer-config-panel" style="display:none;padding:var(--space-3);border:var(--border);border-radius:var(--radius-md);margin:var(--space-2) 0;background:var(--color-bg);">
       <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-text-muted);margin-bottom:var(--space-3);">Sessão avulsa</div>
-      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
+      <!-- Checkbox cobrar automaticamente -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border:var(--border);border-radius:var(--radius-sm);margin-bottom:var(--space-3);">
+        <label for="config-cobrar-avulsa" style="font-size:var(--text-sm);color:var(--color-text);cursor:pointer;">Cobrar automaticamente</label>
+        <input type="checkbox" id="config-cobrar-avulsa" checked style="width:16px;height:16px;cursor:pointer;accent-color:#1A1A1A;">
+      </div>
+      <!-- Valor -->
+      <div id="config-valor-row" style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
         <span style="font-size:var(--text-sm);color:var(--color-text-secondary);flex-shrink:0;">R$</span>
         <input id="config-valor-avulsa" type="number" min="0" step="0.01" placeholder="280,00"
           style="flex:1;min-width:0;padding:6px 10px;border:var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);background:var(--color-surface);color:var(--color-text);outline:none;">
       </div>
       <button id="config-salvar-btn" style="width:100%;padding:7px;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);cursor:pointer;font-weight:500;">Salvar</button>
       <div id="config-feedback" style="font-size:var(--text-xs);margin-top:var(--space-2);color:var(--color-success);display:none;">Salvo!</div>
-      <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2);">Se não houver pacote ativo, cada sessão encerrada gera esse valor no faturamento.</div>
     </div>
   </nav>
   <div class="drawer-footer">
@@ -1497,7 +1502,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.243'; // bump a cada deploy: Beta-0.244, Beta-0.245...
+  const APP_VERSION = 'Beta-0.244'; // bump a cada deploy: Beta-0.245, Beta-0.246...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -3001,87 +3006,18 @@
   }
 
   async function encerrarSessao(sessaoId) {
-    // Sessões avulsas: interceptar para mostrar modal de cobrança
+    // Sessões avulsas: usar configuração do painel (sem modal por sessão)
     if (!_temPacoteAtivo) {
-      await abrirModalEncerrarAvulsa(sessaoId);
+      let cobrar = true, valor = null;
+      try {
+        const cfg = await apiFetch('/configuracoes');
+        cobrar = cfg.cobrar_avulsa !== false;
+        valor  = cfg.valor_sessao_avulsa || null;
+      } catch {}
+      await _executarEncerrarSessao(sessaoId, cobrar, valor);
       return;
     }
     await _executarEncerrarSessao(sessaoId, true, null);
-  }
-
-  async function abrirModalEncerrarAvulsa(sessaoId) {
-    // Busca valor configurado
-    let valorConfigurado = 0;
-    try {
-      const cfg = await apiFetch('/configuracoes');
-      valorConfigurado = cfg.valor_sessao_avulsa || 0;
-    } catch {}
-
-    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
-    const valorFmt = valorConfigurado > 0 ? valorConfigurado.toFixed(2) : '';
-    const hint = valorConfigurado > 0
-      ? `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Valor configurado em Configurações — R$ ${valorFmt.replace('.', ',')}</span>`
-      : `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Sem valor padrão configurado. Deixe em branco para detectar no áudio ou preencha agora.</span>`;
-
-    modal.innerHTML = `
-      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:380px;box-shadow:var(--shadow-lg);">
-        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-1);">Encerrar sessão</h3>
-        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Esta é uma sessão avulsa (sem pacote).</p>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-accent-light);border-radius:var(--radius-md);margin-bottom:var(--space-4);">
-          <label style="font-size:var(--text-sm);font-weight:600;cursor:pointer;" for="enc-cobrar">Cobrar esta sessão?</label>
-          <input type="checkbox" id="enc-cobrar" checked style="width:18px;height:18px;cursor:pointer;accent-color:#1A1A1A;">
-        </div>
-
-        <div id="enc-valor-row" style="margin-bottom:var(--space-5);">
-          <label class="form-label" for="enc-valor">Valor da sessão (R$)</label>
-          <input class="form-input" type="number" id="enc-valor" step="0.01" min="0" value="${valorFmt}" placeholder="0,00">
-          ${hint}
-        </div>
-
-        <div id="enc-feedback" style="font-size:var(--text-sm);color:var(--color-danger);min-height:18px;margin-bottom:var(--space-4);"></div>
-
-        <div style="display:flex;gap:var(--space-3);">
-          <button class="btn btn-secondary" style="flex:1;" id="enc-voltar">Voltar</button>
-          <button class="btn btn-danger" style="flex:2;" id="enc-confirmar">
-            <span id="enc-confirmar-txt">Encerrar sessão</span>
-          </button>
-        </div>
-      </div>`;
-
-    document.body.appendChild(modal);
-
-    const cobrarChk = modal.querySelector('#enc-cobrar');
-    const valorRow  = modal.querySelector('#enc-valor-row');
-    const valorInp  = modal.querySelector('#enc-valor');
-    const feedback  = modal.querySelector('#enc-feedback');
-    const btnConf   = modal.querySelector('#enc-confirmar');
-    const btnTxt    = modal.querySelector('#enc-confirmar-txt');
-
-    cobrarChk.addEventListener('change', () => {
-      valorRow.style.opacity = cobrarChk.checked ? '1' : '0.4';
-      valorInp.disabled = !cobrarChk.checked;
-    });
-
-    modal.querySelector('#enc-voltar').addEventListener('click', () => {
-      modal.remove();
-      // Reabilita botões que possam ter sido desabilitados
-      ['btn-encerrar', 'btn-encerrar-rec'].forEach(id => {
-        const b = document.getElementById(id);
-        if (b) { b.disabled = false; b.textContent = 'Encerrar sessão'; }
-      });
-    });
-
-    btnConf.addEventListener('click', async () => {
-      const cobrar = cobrarChk.checked;
-      const valorStr = valorInp.value.trim();
-      const valor = cobrar && valorStr ? (parseFloat(valorStr) || null) : null;
-      btnConf.disabled = true;
-      btnTxt.textContent = 'Processando IA...';
-      feedback.textContent = '';
-      modal.remove();
-      await _executarEncerrarSessao(sessaoId, cobrar, valor);
-    });
   }
 
   async function _executarEncerrarSessao(sessaoId, cobrar, valor) {
@@ -4768,6 +4704,17 @@
   document.getElementById('drawerOverlay').addEventListener('click', fecharDrawer);
 
   // Configurações — toggle painel e carregar valor salvo
+  const _cfgCobrarChk  = document.getElementById('config-cobrar-avulsa');
+  const _cfgValorRow   = document.getElementById('config-valor-row');
+  const _cfgValorInput = document.getElementById('config-valor-avulsa');
+
+  function _cfgAtualizarValorRow() {
+    const ativo = _cfgCobrarChk.checked;
+    _cfgValorRow.style.opacity  = ativo ? '1' : '0.4';
+    _cfgValorInput.disabled = !ativo;
+  }
+  _cfgCobrarChk.addEventListener('change', _cfgAtualizarValorRow);
+
   document.getElementById('drawer-configuracoes-btn').addEventListener('click', async () => {
     const panel = document.getElementById('drawer-config-panel');
     const aberto = panel.style.display !== 'none';
@@ -4775,23 +4722,25 @@
     if (!aberto) {
       try {
         const cfg = await apiFetch('/configuracoes');
-        const input = document.getElementById('config-valor-avulsa');
-        input.value = cfg.valor_sessao_avulsa != null ? cfg.valor_sessao_avulsa : '';
+        _cfgValorInput.value = cfg.valor_sessao_avulsa != null ? cfg.valor_sessao_avulsa : '';
+        _cfgCobrarChk.checked = cfg.cobrar_avulsa !== false;
+        _cfgAtualizarValorRow();
       } catch (_) {}
     }
   });
 
   document.getElementById('config-salvar-btn').addEventListener('click', async () => {
-    const input = document.getElementById('config-valor-avulsa');
-    const fb = document.getElementById('config-feedback');
-    const valor = input.value !== '' ? parseFloat(input.value) : null;
+    const fb    = document.getElementById('config-feedback');
+    const valor = _cfgValorInput.value !== '' ? parseFloat(_cfgValorInput.value) : null;
+    const cobrar = _cfgCobrarChk.checked;
     try {
       await apiFetch('/configuracoes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ valor_sessao_avulsa: valor }),
+        body: JSON.stringify({ valor_sessao_avulsa: valor, cobrar_avulsa: cobrar }),
       });
       fb.style.display = '';
+      fb.style.color = 'var(--color-success)';
       fb.textContent = 'Salvo!';
       setTimeout(() => { fb.style.display = 'none'; }, 2000);
     } catch (e) {

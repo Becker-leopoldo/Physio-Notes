@@ -88,7 +88,7 @@ async def security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
         "connect-src 'self' https://accounts.google.com; "
@@ -1022,7 +1022,8 @@ async def push_unsubscribe(request: Request):
 # ---------- Configurações do usuário ----------
 
 class ConfigBody(BaseModel):
-    valor_sessao_avulsa: float | None = None
+    valor_sessao_avulsa: float | None = Field(None, ge=0, le=999_999)
+    cobrar_avulsa: bool = True
 
 @app.get("/configuracoes")
 async def get_configuracoes(request: Request):
@@ -1036,7 +1037,7 @@ async def put_configuracoes(body: ConfigBody, request: Request):
     owner = _owner_email(request)
     if not owner:
         raise HTTPException(status_code=401, detail="Não autenticado")
-    db.set_config_usuario(owner, body.valor_sessao_avulsa)
+    db.set_config_usuario(owner, body.valor_sessao_avulsa, body.cobrar_avulsa)
     return db.get_config_usuario(owner)
 
 

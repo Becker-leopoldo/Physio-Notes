@@ -1016,16 +1016,21 @@ VALOR_SESSAO_AVULSA_PADRAO = 280.0
 
 
 def _migrar_config_usuario():
-    """Garante que usuario_google tem a coluna valor_sessao_avulsa."""
+    """Garante que usuario_google tem as colunas de configuração."""
     _init_usuario_table()
     with get_conn() as conn:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(usuario_google)").fetchall()]
         if "valor_sessao_avulsa" not in cols:
             conn.execute("ALTER TABLE usuario_google ADD COLUMN valor_sessao_avulsa REAL")
+        if "cobrar_avulsa" not in cols:
+            conn.execute("ALTER TABLE usuario_google ADD COLUMN cobrar_avulsa INTEGER NOT NULL DEFAULT 1")
         # Preenche padrão para usuários que ainda não configuraram
         conn.execute(
             "UPDATE usuario_google SET valor_sessao_avulsa = ? WHERE valor_sessao_avulsa IS NULL",
             (VALOR_SESSAO_AVULSA_PADRAO,),
+        )
+        conn.execute(
+            "UPDATE usuario_google SET cobrar_avulsa = 1 WHERE cobrar_avulsa IS NULL",
         )
         conn.commit()
 
@@ -1034,18 +1039,19 @@ def get_config_usuario(owner_email: str) -> dict:
     _migrar_config_usuario()
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
+            "SELECT valor_sessao_avulsa, cobrar_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
         ).fetchone()
         valor = (row["valor_sessao_avulsa"] if row else None) or VALOR_SESSAO_AVULSA_PADRAO
-        return {"valor_sessao_avulsa": valor}
+        cobrar = bool(row["cobrar_avulsa"]) if row and row["cobrar_avulsa"] is not None else True
+        return {"valor_sessao_avulsa": valor, "cobrar_avulsa": cobrar}
 
 
-def set_config_usuario(owner_email: str, valor_sessao_avulsa: float | None):
+def set_config_usuario(owner_email: str, valor_sessao_avulsa: float | None, cobrar_avulsa: bool = True):
     _migrar_config_usuario()
     with get_conn() as conn:
         conn.execute(
-            "UPDATE usuario_google SET valor_sessao_avulsa = ? WHERE email = ?",
-            (valor_sessao_avulsa, owner_email),
+            "UPDATE usuario_google SET valor_sessao_avulsa = ?, cobrar_avulsa = ? WHERE email = ?",
+            (valor_sessao_avulsa, 1 if cobrar_avulsa else 0, owner_email),
         )
         conn.commit()
 
