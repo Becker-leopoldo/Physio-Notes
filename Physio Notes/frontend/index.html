@@ -1499,7 +1499,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.223'; // bump a cada deploy: Beta-0.224, Beta-0.225...
+  const APP_VERSION = 'Beta-0.224'; // bump a cada deploy: Beta-0.225, Beta-0.226...
 
   /* ============================================================
      STATE
@@ -1779,7 +1779,11 @@
       return;
     }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || `Erro ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(data.detail || `Erro ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
     return data;
   }
 
@@ -3063,26 +3067,29 @@
   }
 
   function mostrarBannerOffline(el, aindaOffline) {
-    el.innerHTML = aindaOffline
-      ? `<div class="alert alert-warning" style="display:flex;align-items:center;gap:var(--space-2);">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l7 14H1L8 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v4M8 12v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <strong>Ainda sem internet.</strong> O áudio está salvo — será enviado automaticamente ao reconectar.
-        </div>`
-      : `<div class="alert alert-warning" style="display:flex;flex-direction:column;gap:var(--space-2);">
-          <div style="display:flex;align-items:center;gap:var(--space-2);">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l7 14H1L8 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v4M8 12v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-            <strong>Sem internet</strong> — áudio salvo, aguardando reconexão...
-          </div>
-          <button onclick="retrySendPendingAudio()" title="Tentar agora" style="align-self:flex-start;display:inline-flex;align-items:center;gap:5px;font-size:var(--text-xs);font-family:var(--font-body);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:5px 10px;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M14 8A6 6 0 1 1 8 2a6 6 0 0 1 4.24 1.76L14 2v4h-4l1.59-1.59A4 4 0 1 0 12 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Tentar agora</button>
-        </div>`;
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-warning-bg);border:1px solid #e0b060;border-radius:var(--radius-md);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;color:#92600A;">
+          <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--text-sm);font-weight:600;color:#92600A;">${aindaOffline ? 'Ainda sem internet' : 'Sem internet'}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:2px;">Áudio salvo — ${aindaOffline ? 'será enviado ao reconectar' : 'toque em ↻ para reenviar quando voltar a conexão'}</div>
+        </div>
+        ${aindaOffline ? '' : `<button onclick="retrySendPendingAudio()" title="Reenviar áudio" style="flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-full);cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--color-accent-hover)'" onmouseout="this.style.background='var(--color-accent)'">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 3.89 1.61L13.5 2v3.5H10l1.46-1.46A3.5 3.5 0 1 0 11.5 8" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>`}
+      </div>`;
   }
 
   function isNetworkError(e) {
     if (!navigator.onLine) return true;
     const msg = (e?.message || '').toLowerCase();
-    return msg.includes('failed to fetch') || msg.includes('network') ||
-           msg.includes('conexão') || msg.includes('connection') ||
-           msg.includes('sem internet');
+    if (msg.includes('failed to fetch') || msg.includes('network') ||
+        msg.includes('conexão') || msg.includes('connection') ||
+        msg.includes('sem internet')) return true;
+    const status = e?.status || 0;
+    return status === 502 || status === 503 || status === 504; // servidor temporariamente indisponível
   }
 
   // Wrapper genérico: executa fn(), se offline agenda retry automático

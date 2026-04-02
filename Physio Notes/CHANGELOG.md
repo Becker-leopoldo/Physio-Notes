@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.224 — 2026-04-02
+
+### Correções
+- **502/503/504 agora disparam retry**: `apiFetch` agora anexa `err.status` ao erro lançado; `isNetworkError` trata 502/503/504 como erros retryáveis (servidor temporariamente indisponível)
+- **Banner offline redesenhado**: layout com ícone de wifi cortado, texto descritivo e botão circular com ícone ↻ (sem texto) — sem "Tentar agora" escrito; estado "ainda offline" remove o botão e ajusta a mensagem
+
+---
+
 ## Beta-0.223 — 2026-04-02
 
 ### Correções
