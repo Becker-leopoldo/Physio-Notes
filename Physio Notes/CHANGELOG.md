@@ -4,6 +4,32 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.20 — 2026-04-02
+
+### Funcionalidades
+- **Web Push Notifications completo**: push real que funciona com app fechado no celular
+- Subscrição automática do device ao abrir o app (com VAPID)
+- **6 notificações agendadas** (APScheduler, fuso America/Sao_Paulo):
+  - 20h diário — sessão aberta não encerrada no dia
+  - 8h diário — aniversário de paciente hoje 🎂
+  - 9h diário — pacote esgotado há 7+ dias sem renovação
+  - Segunda 8h — resumo semanal (sessões e pacientes da semana)
+  - Segunda 9h — pacientes sem sessão há 30+ dias
+- **Pacote quase acabando**: ao encerrar sessão com ≤ 2 sessões restantes, push imediato
+- Endpoints: `GET /push/vapid-public-key`, `POST /push/subscribe`, `DELETE /push/unsubscribe`
+- Script `generate_vapid_keys.py` para gerar chaves VAPID
+
+### Como ativar no servidor
+```
+python generate_vapid_keys.py   # gera as chaves
+# adicionar ao .env:
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_EMAIL=mailto:seuemail@dominio.com
+```
+
+---
+
 ## Beta-0.19 — 2026-04-02
 
 ### Funcionalidades

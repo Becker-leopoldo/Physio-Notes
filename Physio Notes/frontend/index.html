@@ -1491,7 +1491,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.19'; // bump a cada deploy: Beta-0.20, Beta-0.21...
+  const APP_VERSION = 'Beta-0.20'; // bump a cada deploy: Beta-0.21, Beta-0.22...
 
   /* ============================================================
      STATE
@@ -4288,21 +4288,20 @@
      NOTIFICAÇÕES (permissão + lembrete diário)
   ============================================================ */
   async function solicitarPermissaoNotificacao() {
-    if (!('Notification' in window)) return;
+    if (!('Notification' in window)) return false;
     if (Notification.permission === 'default') {
       await Notification.requestPermission();
     }
+    return Notification.permission === 'granted';
   }
 
   function mostrarLembreteDiario() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const hoje = new Date().toISOString().slice(0, 10);
     const chave = `lembrete_notas_${hoje}`;
-    if (localStorage.getItem(chave)) return; // já mostrou hoje
+    if (localStorage.getItem(chave)) return;
     localStorage.setItem(chave, '1');
-    const hora = new Date().getHours();
-    // Mostra somente a partir das 7h
-    if (hora < 7) return;
+    if (new Date().getHours() < 7) return;
     new Notification('Physio Notes 📋', {
       body: 'Não esqueça de preencher as notas de hoje!',
       icon: '/icon-192.png',
@@ -4311,8 +4310,47 @@
     });
   }
 
-  // Executa ao carregar o app (após login confirmado)
-  solicitarPermissaoNotificacao().then(mostrarLembreteDiario);
+  async function registrarPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      // Busca VAPID public key
+      const resp = await fetch('/push/vapid-public-key');
+      if (!resp.ok) return; // push não configurado no servidor
+      const { vapid_public_key } = await resp.json();
+
+      const reg = await navigator.serviceWorker.ready;
+      // Verifica se já tem subscription ativa
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        // Converte VAPID public key de base64url para Uint8Array
+        const raw = vapid_public_key.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = raw.padEnd(raw.length + (4 - raw.length % 4) % 4, '=');
+        const bin = atob(pad);
+        const key = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) key[i] = bin.charCodeAt(i);
+
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: key,
+        });
+      }
+      // Envia subscription ao backend
+      await apiFetch('/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON() }),
+      });
+    } catch (e) {
+      // Push opcional — não bloqueia o app
+      console.debug('Push subscription:', e.message);
+    }
+  }
+
+  // Executa ao carregar o app
+  solicitarPermissaoNotificacao().then(granted => {
+    mostrarLembreteDiario();
+    if (granted) registrarPushSubscription();
+  });
 
   /* ============================================================
      OFFLINE DETECTION

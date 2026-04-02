@@ -13,6 +13,7 @@ import database as db
 import transcribe
 import ai
 import google_auth
+import notifications
 
 # ---------- WebAuthn session store (in-memory) ----------
 _challenges: dict[str, bytes] = {}   # username -> challenge bytes
@@ -39,7 +40,9 @@ def _webauthn_rp_id(request: Request) -> str:
 async def lifespan(app: FastAPI):
     db.init_db()
     db._migrate()
+    notifications.start_scheduler()
     yield
+    notifications.stop_scheduler()
 
 
 app = FastAPI(title="Physio Notes API", lifespan=lifespan)
@@ -58,6 +61,7 @@ _ROTAS_PUBLICAS = {
     "/auth/config", "/auth/google-login",
     "/auth/register/begin", "/auth/register/complete",
     "/auth/login/begin", "/auth/login/complete", "/auth/status",
+    "/push/vapid-public-key",
 }
 _PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known")
 
@@ -531,6 +535,17 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
     except Exception:
         pass  # detecção de extras é best-effort, não bloqueia o encerramento
 
+    # Notificação: pacote quase acabando (≤ 2 sessões restantes)
+    try:
+        restantes = db.get_sessoes_restantes_paciente(sessao["paciente_id"])
+        if restantes is not None and restantes <= 2 and owner:
+            paciente_info = db.get_paciente(sessao["paciente_id"])
+            notifications.notificar_pacote_quase_acabando(
+                owner, paciente_info["nome"], restantes
+            )
+    except Exception:
+        pass
+
     return {
         "consolidado": consolidado,
         "sessao_id": sessao_id,
@@ -808,6 +823,39 @@ def cancelar_nota_fiscal(nf_id: int):
     if not nf:
         raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
     db.cancelar_nota_fiscal(nf_id)
+
+
+# ---------- Web Push ----------
+
+class PushSubscribeBody(BaseModel):
+    subscription: dict
+
+@app.get("/push/vapid-public-key")
+async def push_vapid_key():
+    if not notifications.VAPID_PUBLIC_KEY:
+        raise HTTPException(status_code=501, detail="Push não configurado no servidor.")
+    return {"vapid_public_key": notifications.VAPID_PUBLIC_KEY}
+
+@app.post("/push/subscribe")
+async def push_subscribe(body: PushSubscribeBody, request: Request):
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    import json
+    db.salvar_subscription(owner, json.dumps(body.subscription))
+    return {"ok": True}
+
+@app.delete("/push/unsubscribe")
+async def push_unsubscribe(request: Request):
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    import json
+    body = await request.json()
+    endpoint = body.get("endpoint", "")
+    if endpoint:
+        db.remover_subscription_por_endpoint(endpoint)
+    return {"ok": True}
 
 
 # ---------- Configurações do usuário ----------

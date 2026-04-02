@@ -904,3 +904,169 @@ def set_config_usuario(owner_email: str, valor_sessao_avulsa: float | None):
             (valor_sessao_avulsa, owner_email),
         )
         conn.commit()
+
+
+# ---------- Push Subscriptions ----------
+
+def _init_push_table():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS push_subscription (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_email      TEXT    NOT NULL,
+                endpoint         TEXT    NOT NULL UNIQUE,
+                subscription_json TEXT   NOT NULL,
+                criado_em        TEXT    NOT NULL
+            )
+        """)
+        conn.commit()
+
+
+def salvar_subscription(owner_email: str, subscription_json: str):
+    """Upsert: cria ou atualiza subscription pelo endpoint."""
+    _init_push_table()
+    import json as _json
+    endpoint = _json.loads(subscription_json).get("endpoint", "")
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO push_subscription (owner_email, endpoint, subscription_json, criado_em)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(endpoint) DO UPDATE SET subscription_json = excluded.subscription_json, owner_email = excluded.owner_email
+        """, (owner_email, endpoint, subscription_json, _now()))
+        conn.commit()
+
+
+def remover_subscription_por_endpoint(endpoint: str):
+    _init_push_table()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM push_subscription WHERE endpoint = ?", (endpoint,))
+        conn.commit()
+
+
+def get_subscriptions_por_owner(owner_email: str) -> list[dict]:
+    _init_push_table()
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM push_subscription WHERE owner_email = ?", (owner_email,)
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+# ---------- Queries para notificações agendadas ----------
+
+def get_sessoes_abertas_por_owner() -> dict[str, list[str]]:
+    """Retorna {owner_email: [nomes dos pacientes com sessão aberta hoje]}."""
+    hoje = date.today().isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT p.owner_email, p.nome
+            FROM sessao s
+            JOIN paciente p ON p.id = s.paciente_id
+            WHERE s.status = 'aberta' AND s.deletado_em IS NULL
+              AND p.deletado_em IS NULL AND p.owner_email IS NOT NULL
+              AND DATE(s.criado_em) = ?
+        """, (hoje,)).fetchall()
+    result: dict[str, list[str]] = {}
+    for r in rows:
+        result.setdefault(r["owner_email"], []).append(r["nome"])
+    return result
+
+
+def get_aniversariantes_hoje_por_owner() -> dict[str, list[str]]:
+    """Retorna {owner_email: [nomes de pacientes que fazem aniversário hoje]}."""
+    hoje = date.today().strftime("%m-%d")
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT owner_email, nome
+            FROM paciente
+            WHERE deletado_em IS NULL AND owner_email IS NOT NULL
+              AND data_nascimento IS NOT NULL
+              AND strftime('%m-%d', data_nascimento) = ?
+        """, (hoje,)).fetchall()
+    result: dict[str, list[str]] = {}
+    for r in rows:
+        result.setdefault(r["owner_email"], []).append(r["nome"])
+    return result
+
+
+def get_pacientes_sem_sessao_recente_por_owner(dias: int = 30) -> dict[str, list[str]]:
+    """Retorna {owner_email: [nomes de pacientes sem sessão há X dias]}."""
+    corte = (date.today() - timedelta(days=dias)).isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT p.owner_email, p.nome
+            FROM paciente p
+            WHERE p.deletado_em IS NULL AND p.owner_email IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM sessao s
+                WHERE s.paciente_id = p.id AND s.deletado_em IS NULL
+                  AND DATE(s.criado_em) >= ?
+              )
+              AND EXISTS (
+                SELECT 1 FROM sessao s2
+                WHERE s2.paciente_id = p.id AND s2.deletado_em IS NULL
+              )
+        """, (corte,)).fetchall()
+    result: dict[str, list[str]] = {}
+    for r in rows:
+        result.setdefault(r["owner_email"], []).append(r["nome"])
+    return result
+
+
+def get_resumo_semana_por_owner() -> dict[str, dict]:
+    """Retorna {owner_email: {sessoes, pacientes}} da semana passada."""
+    fim   = (date.today() - timedelta(days=date.today().weekday() + 1)).isoformat()
+    inicio = (date.today() - timedelta(days=date.today().weekday() + 7)).isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT p.owner_email,
+                   COUNT(s.id) AS sessoes,
+                   COUNT(DISTINCT s.paciente_id) AS pacientes
+            FROM sessao s
+            JOIN paciente p ON p.id = s.paciente_id
+            WHERE s.deletado_em IS NULL AND p.deletado_em IS NULL
+              AND p.owner_email IS NOT NULL
+              AND DATE(s.criado_em) BETWEEN ? AND ?
+              AND s.status = 'encerrada'
+            GROUP BY p.owner_email
+        """, (inicio, fim)).fetchall()
+    return {r["owner_email"]: {"sessoes": r["sessoes"], "pacientes": r["pacientes"]} for r in rows}
+
+
+def get_pacotes_vencidos_sem_renovar_por_owner(dias: int = 7) -> dict[str, list[str]]:
+    """Retorna {owner_email: [nomes de pacientes com pacote esgotado há X dias sem renovar]}."""
+    corte = (date.today() - timedelta(days=dias)).isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT p.owner_email, p.nome
+            FROM paciente p
+            WHERE p.deletado_em IS NULL AND p.owner_email IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM pacote pk
+                WHERE pk.paciente_id = p.id AND pk.deletado_em IS NULL
+                  AND pk.sessoes_usadas >= pk.total_sessoes
+                  AND DATE(pk.criado_em) <= ?
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM pacote pk2
+                WHERE pk2.paciente_id = p.id AND pk2.deletado_em IS NULL
+                  AND pk2.sessoes_usadas < pk2.total_sessoes
+              )
+        """, (corte,)).fetchall()
+    result: dict[str, list[str]] = {}
+    for r in rows:
+        result.setdefault(r["owner_email"], []).append(r["nome"])
+    return result
+
+
+def get_sessoes_restantes_paciente(paciente_id: int) -> int | None:
+    """Retorna sessões restantes do pacote ativo, ou None se não há pacote."""
+    with get_conn() as conn:
+        row = conn.execute("""
+            SELECT (total_sessoes - sessoes_usadas) AS restantes
+            FROM pacote
+            WHERE paciente_id = ? AND deletado_em IS NULL
+              AND sessoes_usadas < total_sessoes
+            ORDER BY criado_em DESC LIMIT 1
+        """, (paciente_id,)).fetchone()
+        return row["restantes"] if row else None
