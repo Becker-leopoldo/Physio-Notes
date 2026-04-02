@@ -4,6 +4,20 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.245 — 2026-04-02
+
+### Funcionalidades
+
+**Checkbox "Cobrar automaticamente" para sessão avulsa**
+- Novo checkbox no painel de Configurações → "Cobrar automaticamente ao encerrar" (padrão: marcado)
+- Se marcado + valor configurado → ao encerrar sessão avulsa, cobrança gerada automaticamente
+- Se marcado + sem valor → IA tenta detectar valor do áudio; se não encontrar, aparece prompt flutuante "Qual o valor da sessão?" com 30s antes de fechar
+- Se desmarcado → sessão encerra sem gerar cobrança
+- Campo de valor fica desabilitado/opaco quando checkbox desmarcado
+- Configuração persistida no banco (`cobrar_avulsa` em `usuario_google`)
+
+---
+
 ## Beta-0.244 — 2026-04-02
 
 ### Funcionalidades

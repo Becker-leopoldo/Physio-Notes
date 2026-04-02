@@ -514,3 +514,32 @@ ANAMNESE DO PACIENTE:
     _registrar("sugerir_conduta", message, owner_email)
 
     return message.content[0].text.strip()
+
+
+async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:
+    """Tenta extrair valor monetário de sessão avulsa da transcrição. Retorna float ou None."""
+    if not transcricao or not transcricao.strip():
+        return None
+    prompt = (
+        "Da transcrição abaixo, o fisioterapeuta mencionou explicitamente um valor em reais "
+        "para cobrar pela sessão (ex: 'cobrei 280', 'valor de 300 reais', 'sessão de R$ 250')?\n"
+        "Responda APENAS com o número decimal (ex: 280.00) ou com a palavra null.\n\n"
+        f"Transcrição:\n{transcricao[:2000]}"
+    )
+    try:
+        message = await client.messages.create(
+            model=MODEL,
+            max_tokens=16,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        _registrar("extrair_valor_sessao", message, owner_email)
+        texto = message.content[0].text.strip().lower()
+        if texto == "null" or not texto:
+            return None
+        match = re.search(r"[\d]+(?:[.,][\d]+)?", texto)
+        if match:
+            return float(match.group(0).replace(",", "."))
+    except Exception:
+        pass
+    return None
+

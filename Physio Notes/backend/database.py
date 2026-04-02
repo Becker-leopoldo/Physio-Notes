@@ -358,9 +358,9 @@ def _usar_sessao_pacote(conn, paciente_id: int) -> bool:
     return False
 
 
-def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
-    """Encerra sessão. Se não há pacote ativo e owner tem valor_sessao_avulsa configurado,
-    cria procedimento_extra automático. Retorna {teve_pacote, sessao_avulsa_valor}."""
+def encerrar_sessao(sessao_id: int, owner_email: str | None = None, cobrar: bool = True, valor_override: float | None = None) -> dict:
+    """Encerra sessão. Se não há pacote ativo e cobrar=True, cria procedimento_extra.
+    valor_override tem prioridade sobre o valor configurado. Retorna {teve_pacote, sessao_avulsa_valor, cobrar}."""
     from datetime import date
     with get_conn() as conn:
         sessao = conn.execute("SELECT paciente_id, data FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
@@ -369,15 +369,17 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
             (sessao_id,)
         )
         if cur.rowcount == 0:
-            return {"teve_pacote": True, "sessao_avulsa_valor": None, "_ja_encerrada": True}
+            return {"teve_pacote": True, "sessao_avulsa_valor": None, "_ja_encerrada": True, "cobrar": cobrar}
         sessao_avulsa_valor = None
         if sessao:
             teve_pacote = _usar_sessao_pacote(conn, sessao["paciente_id"])
-            if not teve_pacote and owner_email:
-                row_cfg = conn.execute(
-                    "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
-                ).fetchone()
-                valor = row_cfg["valor_sessao_avulsa"] if row_cfg else None
+            if not teve_pacote and owner_email and cobrar:
+                valor = valor_override
+                if not valor:
+                    row_cfg = conn.execute(
+                        "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
+                    ).fetchone()
+                    valor = row_cfg["valor_sessao_avulsa"] if row_cfg else None
                 if valor and valor > 0:
                     data_sessao = sessao["data"] or date.today().isoformat()
                     conn.execute(
@@ -386,7 +388,7 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
                     )
                     sessao_avulsa_valor = valor
         conn.commit()
-        return {"teve_pacote": teve_pacote if sessao else True, "sessao_avulsa_valor": sessao_avulsa_valor}
+        return {"teve_pacote": teve_pacote if sessao else True, "sessao_avulsa_valor": sessao_avulsa_valor, "cobrar": cobrar}
 
 
 def cancelar_sessao(sessao_id: int):
@@ -999,13 +1001,14 @@ VALOR_SESSAO_AVULSA_PADRAO = 280.0
 
 
 def _migrar_config_usuario():
-    """Garante que usuario_google tem a coluna valor_sessao_avulsa."""
+    """Garante que usuario_google tem as colunas de configuração."""
     _init_usuario_table()
     with get_conn() as conn:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(usuario_google)").fetchall()]
         if "valor_sessao_avulsa" not in cols:
             conn.execute("ALTER TABLE usuario_google ADD COLUMN valor_sessao_avulsa REAL")
-        # Preenche padrão para usuários que ainda não configuraram
+        if "cobrar_avulsa" not in cols:
+            conn.execute("ALTER TABLE usuario_google ADD COLUMN cobrar_avulsa INTEGER NOT NULL DEFAULT 1")
         conn.execute(
             "UPDATE usuario_google SET valor_sessao_avulsa = ? WHERE valor_sessao_avulsa IS NULL",
             (VALOR_SESSAO_AVULSA_PADRAO,),
@@ -1017,18 +1020,19 @@ def get_config_usuario(owner_email: str) -> dict:
     _migrar_config_usuario()
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
+            "SELECT valor_sessao_avulsa, cobrar_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
         ).fetchone()
         valor = (row["valor_sessao_avulsa"] if row else None) or VALOR_SESSAO_AVULSA_PADRAO
-        return {"valor_sessao_avulsa": valor}
+        cobrar = bool(row["cobrar_avulsa"]) if row and row["cobrar_avulsa"] is not None else True
+        return {"valor_sessao_avulsa": valor, "cobrar_avulsa": cobrar}
 
 
-def set_config_usuario(owner_email: str, valor_sessao_avulsa: float | None):
+def set_config_usuario(owner_email: str, valor_sessao_avulsa: float | None, cobrar_avulsa: bool = True):
     _migrar_config_usuario()
     with get_conn() as conn:
         conn.execute(
-            "UPDATE usuario_google SET valor_sessao_avulsa = ? WHERE email = ?",
-            (valor_sessao_avulsa, owner_email),
+            "UPDATE usuario_google SET valor_sessao_avulsa = ?, cobrar_avulsa = ? WHERE email = ?",
+            (valor_sessao_avulsa, 1 if cobrar_avulsa else 0, owner_email),
         )
         conn.commit()
 

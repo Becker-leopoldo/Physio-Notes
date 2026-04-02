@@ -561,9 +561,16 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
     return {"chunk": chunk, "transcricao": transcricao}
 
 
+class EncerrarBody(BaseModel):
+    cobrar: bool = True
+    valor: float | None = None
+
+
 @app.post("/sessoes/{sessao_id}/encerrar")
 @limiter.limit("10/minute")
-async def encerrar_sessao(sessao_id: int, request: Request):
+async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Request = None):
+    if body is None:
+        body = EncerrarBody()
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
@@ -579,15 +586,25 @@ async def encerrar_sessao(sessao_id: int, request: Request):
         )
 
     transcricoes = [c["transcricao"] for c in chunks]
+    owner = _owner_email(request)
 
     try:
-        dados_consolidados = await ai.consolidar_sessao(transcricoes, _owner_email(request))
+        dados_consolidados = await ai.consolidar_sessao(transcricoes, owner)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao consolidar com IA: {str(e)}")
 
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
-    owner = _owner_email(request)
-    resultado_encerramento = db.encerrar_sessao(sessao_id, owner)
+
+    # Para sessão avulsa com cobrança: tenta extrair valor do áudio se não veio explícito
+    valor_override = body.valor
+    if body.cobrar and not valor_override:
+        try:
+            transcricao_completa = "\n".join(transcricoes)
+            valor_override = await ai.extrair_valor_sessao(transcricao_completa, owner)
+        except Exception:
+            pass
+
+    resultado_encerramento = db.encerrar_sessao(sessao_id, owner, cobrar=body.cobrar, valor_override=valor_override)
 
     if resultado_encerramento.get("_ja_encerrada"):
         raise HTTPException(status_code=409, detail="Sessão já foi encerrada.")
@@ -621,6 +638,7 @@ async def encerrar_sessao(sessao_id: int, request: Request):
         "sessao_id": sessao_id,
         "status": "encerrada",
         "sessao_avulsa_valor": resultado_encerramento.get("sessao_avulsa_valor"),
+        "cobrar": body.cobrar,
     }
 
 
@@ -937,6 +955,7 @@ async def push_unsubscribe(request: Request):
 
 class ConfigBody(BaseModel):
     valor_sessao_avulsa: float | None = None
+    cobrar_avulsa: bool = True
 
 @app.get("/configuracoes")
 async def get_configuracoes(request: Request):
@@ -950,7 +969,7 @@ async def put_configuracoes(body: ConfigBody, request: Request):
     owner = _owner_email(request)
     if not owner:
         raise HTTPException(status_code=401, detail="Não autenticado")
-    db.set_config_usuario(owner, body.valor_sessao_avulsa)
+    db.set_config_usuario(owner, body.valor_sessao_avulsa, body.cobrar_avulsa)
     return db.get_config_usuario(owner)
 
 
