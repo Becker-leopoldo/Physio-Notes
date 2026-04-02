@@ -1,5 +1,6 @@
 import os
 import secrets
+import sqlite3
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
@@ -178,7 +179,10 @@ def _verificar_dono(paciente: dict, owner: str | None):
 @app.post("/pacientes", status_code=201)
 def criar_paciente(body: PacienteCreate, request: Request):
     owner = _owner_email(request)
-    paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
+    try:
+        paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
     return paciente
 
 
@@ -202,6 +206,7 @@ class PacienteUpdate(BaseModel):
     anamnese: str | None = None
     cpf: str | None = None
     endereco: str | None = None
+    conduta_tratamento: str | None = None
 
 
 @app.delete("/pacientes/{paciente_id}", status_code=204)
@@ -219,7 +224,7 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     _verificar_dono(paciente, _owner_email(request))
-    return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco)
+    return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
 
 
 @app.post("/pacientes/{paciente_id}/complementar-anamnese")
@@ -230,14 +235,30 @@ async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody
     _verificar_dono(paciente, _owner_email(request))
     anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), _owner_email(request))
     paciente_atualizado = db.atualizar_paciente(
-        paciente_id,
-        paciente["nome"],
-        paciente.get("data_nascimento"),
-        anamnese_atualizada,
-        paciente.get("cpf"),
-        paciente.get("endereco"),
+        paciente_id, paciente["nome"], paciente.get("data_nascimento"),
+        anamnese_atualizada, paciente.get("cpf"), paciente.get("endereco"),
+        paciente.get("conduta_tratamento"),
     )
     return {"anamnese": paciente_atualizado["anamnese"]}
+
+
+class ComplementarCondutaBody(BaseModel):
+    transcricao: str
+
+
+@app.post("/pacientes/{paciente_id}/complementar-conduta")
+async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
+    conduta_atualizada = await ai.complementar_conduta(body.transcricao, paciente.get("conduta_tratamento"), _owner_email(request))
+    paciente_atualizado = db.atualizar_paciente(
+        paciente_id, paciente["nome"], paciente.get("data_nascimento"),
+        paciente.get("anamnese"), paciente.get("cpf"), paciente.get("endereco"),
+        conduta_atualizada,
+    )
+    return {"conduta_tratamento": paciente_atualizado["conduta_tratamento"]}
 
 
 @app.post("/transcrever")
@@ -494,13 +515,14 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
         raise HTTPException(status_code=502, detail=f"Erro ao consolidar com IA: {str(e)}")
 
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
-    db.encerrar_sessao(sessao_id)
+    owner = _owner_email(request)
+    resultado_encerramento = db.encerrar_sessao(sessao_id, owner)
 
     # Detecção automática de procedimentos extras na transcrição
     transcricao_completa = "\n".join(transcricoes)
     nota = dados_consolidados.get("nota") or dados_consolidados.get("conduta")
     try:
-        extras = await ai.detectar_procedimentos_extras(transcricao_completa, nota, _owner_email(request))
+        extras = await ai.detectar_procedimentos_extras(transcricao_completa, nota, owner)
         for item in extras:
             db.adicionar_procedimento(
                 sessao_id, sessao["paciente_id"],
@@ -509,7 +531,12 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
     except Exception:
         pass  # detecção de extras é best-effort, não bloqueia o encerramento
 
-    return {"consolidado": consolidado, "sessao_id": sessao_id, "status": "encerrada"}
+    return {
+        "consolidado": consolidado,
+        "sessao_id": sessao_id,
+        "status": "encerrada",
+        "sessao_avulsa_valor": resultado_encerramento.get("sessao_avulsa_valor"),
+    }
 
 
 @app.get("/pacientes/{paciente_id}/sessoes")
@@ -781,6 +808,27 @@ def cancelar_nota_fiscal(nf_id: int):
     if not nf:
         raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
     db.cancelar_nota_fiscal(nf_id)
+
+
+# ---------- Configurações do usuário ----------
+
+class ConfigBody(BaseModel):
+    valor_sessao_avulsa: float | None = None
+
+@app.get("/configuracoes")
+async def get_configuracoes(request: Request):
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    return db.get_config_usuario(owner)
+
+@app.put("/configuracoes")
+async def put_configuracoes(body: ConfigBody, request: Request):
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    db.set_config_usuario(owner, body.valor_sessao_avulsa)
+    return db.get_config_usuario(owner)
 
 
 # ---------- Auth Google SSO ----------

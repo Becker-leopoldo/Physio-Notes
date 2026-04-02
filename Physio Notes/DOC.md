@@ -38,7 +38,7 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 |--------------------|-----------|
 | `main.py`          | Aplicação FastAPI. Define todos os endpoints REST (ver seção Endpoints abaixo). Monta o frontend como `StaticFiles` ao final — deve ficar por último para não interceptar as rotas da API. |
 | `database.py`      | Camada de acesso ao SQLite. Gerencia 7 tabelas: `paciente`, `sessao`, `audio_chunk`, `sessao_consolidada`, `api_uso`, `documento` e `pacote`. Inclui `init_db()` para criação inicial e `_migrate()` para adicionar colunas/tabelas sem quebrar bancos existentes. O caminho do banco é configurável via `DB_PATH`. Inclui `get_faturamento_pacientes()` com filtros por mês de competência e paciente. |
-| `ai.py`            | Integração com a API Anthropic. Funções: `consolidar_sessao` (gera nota clínica profissional a partir da transcrição bruta), `resumir_historico` (gera resumo narrativo do paciente para CREFITO), `extrair_dados_paciente` (extrai nome/data/anamnese do áudio de cadastro), `extrair_dados_pacote` (extrai total de sessões, valor, data e descrição do pacote a partir de áudio), `responder_pergunta` (responde perguntas sobre o histórico), `resumir_documento` (resume PDFs clínicos). Registra uso de tokens e custo em `api_uso` após cada chamada. |
+| `ai.py`            | Integração com a API Anthropic. Funções: `consolidar_sessao` (gera nota clínica profissional a partir da transcrição bruta), `resumir_historico` (gera resumo narrativo do paciente para CREFITO), `extrair_dados_paciente` (extrai apenas nome/CPF/endereço/data do áudio de cadastro — anamnese e conduta são registradas separadamente), `extrair_dados_pacote` (extrai total de sessões, valor, data e descrição do pacote a partir de áudio), `responder_pergunta` (responde perguntas sobre o histórico), `resumir_documento` (resume PDFs clínicos), `complementar_anamnese` (integra nova transcrição à anamnese existente), `complementar_conduta` (integra nova transcrição à conduta de tratamento existente). Registra uso de tokens e custo em `api_uso` após cada chamada. |
 | `transcribe.py`    | Integração com Groq Whisper via SDK OpenAI (compatível). Recebe bytes de áudio e retorna transcrição em português. |
 | `requirements.txt` | Dependências: `fastapi`, `uvicorn[standard]`, `python-multipart`, `openai`, `anthropic`, `python-dotenv`, `aiofiles`, `pypdf`. |
 | `start.bat`        | Script Windows para desenvolvimento local. Instala dependências e inicia o servidor em `localhost:8000` com hot-reload. |
@@ -61,9 +61,15 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 ## Funcionalidades do Frontend
 
 ### Cadastro de paciente
-- Fluxo por voz: fisioterapeuta fala o nome, data de nascimento e anamnese
-- IA extrai os campos e apresenta confirmação com leitura em voz alta (Web Speech API, voz Microsoft Maria pt-BR)
+- Fluxo por voz: fisioterapeuta fala o nome, data de nascimento, CPF e endereço
+- IA extrai os campos e apresenta confirmação; anamnese e conduta de tratamento são registradas separadamente no perfil do paciente
 - Alternativa: formulário manual ("Prefiro digitar")
+
+### Anamnese e Conduta de Tratamento
+- Seções independentes no perfil do paciente, acessíveis após o cadastro
+- Cada seção possui accordion expansível com preview do conteúdo
+- Complementação via voz: IA integra nova transcrição com o conteúdo existente
+- Edição manual disponível como alternativa
 
 ### Sessão de atendimento
 - Botão "+ Nova sessão" cria sessão e inicia o timer automaticamente
@@ -135,8 +141,10 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 | `GET` | `/pacientes` | Lista pacientes ativos com `sessoes_restantes` do pacote ativo |
 | `POST` | `/pacientes` | Cria paciente |
 | `GET` | `/pacientes/{id}` | Busca paciente por ID |
-| `PUT` | `/pacientes/{id}` | Atualiza nome, data nascimento e anamnese |
+| `PUT` | `/pacientes/{id}` | Atualiza nome, data nascimento, anamnese e conduta de tratamento |
 | `DELETE` | `/pacientes/{id}` | Soft delete do paciente e suas sessões |
+| `POST` | `/pacientes/{id}/complementar-anamnese` | Integra nova transcrição à anamnese existente via IA |
+| `POST` | `/pacientes/{id}/complementar-conduta` | Integra nova transcrição à conduta de tratamento existente via IA |
 
 ### Sessões
 | Método | Rota | Descrição |

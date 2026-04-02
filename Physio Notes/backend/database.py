@@ -69,6 +69,16 @@ def _migrate():
         cols_pac = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
         if "owner_email" not in cols_pac:
             conn.execute("ALTER TABLE paciente ADD COLUMN owner_email TEXT")
+        if "conduta_tratamento" not in cols_pac:
+            conn.execute("ALTER TABLE paciente ADD COLUMN conduta_tratamento TEXT")
+
+        # Unicidade CPF por fisio: mesmo CPF não pode ser cadastrado duas vezes pela mesma owner_email
+        # Pacientes deletados ficam fora da restrição (partial index)
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_cpf_owner
+            ON paciente(cpf, owner_email)
+            WHERE cpf IS NOT NULL AND deletado_em IS NULL
+        """)
         conn.commit()
 
         conn.execute("""
@@ -194,21 +204,21 @@ def _row_to_dict(row) -> dict:
 
 # ---------- Paciente ----------
 
-def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None, owner_email: str | None = None) -> dict:
+def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None, owner_email: str | None = None, conduta_tratamento: str | None = None) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, _now()),
+            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, conduta_tratamento, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, conduta_tratamento, _now()),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (cur.lastrowid,)).fetchone())
 
 
-def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None) -> dict:
+def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None) -> dict:
     with get_conn() as conn:
         conn.execute(
-            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, endereco = ? WHERE id = ?",
-            (nome, data_nascimento, anamnese, cpf, endereco, paciente_id),
+            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, endereco = ?, conduta_tratamento = ? WHERE id = ?",
+            (nome, data_nascimento, anamnese, cpf, endereco, conduta_tratamento, paciente_id),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone())
@@ -297,8 +307,8 @@ def sessao_aberta_do_paciente(paciente_id: int) -> dict | None:
         return _row_to_dict(row)
 
 
-def _usar_sessao_pacote(conn, paciente_id: int):
-    """Abate 1 sessão do pacote ativo do paciente, se houver."""
+def _usar_sessao_pacote(conn, paciente_id: int) -> bool:
+    """Abate 1 sessão do pacote ativo do paciente. Retorna True se havia pacote."""
     row = conn.execute(
         """SELECT id FROM pacote WHERE paciente_id = ? AND deletado_em IS NULL
            AND sessoes_usadas < total_sessoes ORDER BY criado_em DESC LIMIT 1""",
@@ -306,15 +316,34 @@ def _usar_sessao_pacote(conn, paciente_id: int):
     ).fetchone()
     if row:
         conn.execute("UPDATE pacote SET sessoes_usadas = sessoes_usadas + 1 WHERE id = ?", (row["id"],))
+        return True
+    return False
 
 
-def encerrar_sessao(sessao_id: int):
+def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
+    """Encerra sessão. Se não há pacote ativo e owner tem valor_sessao_avulsa configurado,
+    cria procedimento_extra automático. Retorna {teve_pacote, sessao_avulsa_valor}."""
+    from datetime import date
     with get_conn() as conn:
-        sessao = conn.execute("SELECT paciente_id FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
+        sessao = conn.execute("SELECT paciente_id, data FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
         conn.execute("UPDATE sessao SET status = 'encerrada' WHERE id = ?", (sessao_id,))
+        sessao_avulsa_valor = None
         if sessao:
-            _usar_sessao_pacote(conn, sessao["paciente_id"])
+            teve_pacote = _usar_sessao_pacote(conn, sessao["paciente_id"])
+            if not teve_pacote and owner_email:
+                row_cfg = conn.execute(
+                    "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
+                ).fetchone()
+                valor = row_cfg["valor_sessao_avulsa"] if row_cfg else None
+                if valor and valor > 0:
+                    data_sessao = sessao["data"] or date.today().isoformat()
+                    conn.execute(
+                        "INSERT INTO procedimento_extra (sessao_id, paciente_id, descricao, valor, data, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+                        (sessao_id, sessao["paciente_id"], "Sessão avulsa", valor, data_sessao, _now()),
+                    )
+                    sessao_avulsa_valor = valor
         conn.commit()
+        return {"teve_pacote": teve_pacote if sessao else True, "sessao_avulsa_valor": sessao_avulsa_valor}
 
 
 def cancelar_sessao(sessao_id: int):
@@ -843,4 +872,35 @@ def revogar_usuario(email: str):
     _init_usuario_table()
     with get_conn() as conn:
         conn.execute("UPDATE usuario_google SET ativo = 0 WHERE email = ?", (email,))
+        conn.commit()
+
+
+# ---------- Configurações do usuário ----------
+
+def _migrar_config_usuario():
+    """Garante que usuario_google tem a coluna valor_sessao_avulsa."""
+    _init_usuario_table()
+    with get_conn() as conn:
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(usuario_google)").fetchall()]
+        if "valor_sessao_avulsa" not in cols:
+            conn.execute("ALTER TABLE usuario_google ADD COLUMN valor_sessao_avulsa REAL")
+        conn.commit()
+
+
+def get_config_usuario(owner_email: str) -> dict:
+    _migrar_config_usuario()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
+        ).fetchone()
+        return {"valor_sessao_avulsa": row["valor_sessao_avulsa"] if row else None}
+
+
+def set_config_usuario(owner_email: str, valor_sessao_avulsa: float | None):
+    _migrar_config_usuario()
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE usuario_google SET valor_sessao_avulsa = ? WHERE email = ?",
+            (valor_sessao_avulsa, owner_email),
+        )
         conn.commit()

@@ -4,6 +4,47 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.19 — 2026-04-02
+
+### Funcionalidades
+- **Notificação de nova versão**: ao detectar atualização do PWA, banner com countdown "atualizando em 5s" + botão "Agora" e notificação nativa do sistema
+- **Lembrete diário**: ao abrir o app (a partir das 7h), notificação nativa "Não esqueça de preencher as notas de hoje!" — exibida uma vez por dia por usuário
+- **Permissão de notificação**: solicitada automaticamente no primeiro acesso ao app
+- Service worker preparado para Web Push (backend) com handler de `push` e `notificationclick`
+
+---
+
+## Beta-0.18 — 2026-04-02
+
+### Correções
+- CPF único por fisioterapeuta: não é possível cadastrar o mesmo CPF duas vezes na mesma conta — erro claro "Paciente com este CPF já cadastrado na sua conta."
+- Fisios diferentes podem atender o mesmo paciente (mesmo CPF) em contas separadas
+
+---
+
+## Beta-0.17 — 2026-04-02
+
+### Funcionalidades
+- **Sessão avulsa**: quando o paciente não tem pacote ativo, o encerramento da sessão registra automaticamente um `procedimento_extra` "Sessão avulsa" no faturamento
+- **Configurações no drawer**: campo para definir o valor padrão da sessão avulsa (R$) — salvo por usuário
+- Banner de confirmação ao encerrar sessão avulsa: "Sessão avulsa registrada no faturamento — R$ XX,XX"
+- Endpoints `GET /configuracoes` e `PUT /configuracoes` para persistir preferências do usuário
+
+---
+
+## Beta-0.16 — 2026-04-02
+
+### Funcionalidades
+- **Anamnese desvinculada do cadastro**: criação de paciente captura apenas nome, CPF e endereço — anamnese é registrada separadamente no perfil do paciente
+- **Conduta de Tratamento**: nova seção independente no perfil do paciente, com complementação via voz (IA integra com o que já existe) e edição manual
+- Endpoint `/pacientes/{id}/complementar-conduta` para integração com IA
+
+### Melhorias
+- Modal de novo paciente (voz e manual) sem campos de anamnese — fluxo de cadastro simplificado
+- Modal de edição de paciente sem campo de anamnese — foco em dados cadastrais
+
+---
+
 ## Beta-0.15 — 2026-04-01
 
 ### Correções
