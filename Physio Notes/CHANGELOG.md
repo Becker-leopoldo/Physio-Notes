@@ -4,6 +4,19 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.246 — 2026-04-02
+
+### Correções
+
+**Prompt de valor avulsa sempre aparece quando checkbox desmarcado**
+- Checkbox desmarcado → sessão encerra sem auto-cobrar, mas prompt flutuante sempre abre para o fisio digitar o valor manualmente
+- Checkbox marcado + valor configurado → cobra automaticamente, sem prompt
+- Checkbox marcado + sem valor → prompt abre com valor detectado pela IA pré-preenchido (se houver)
+- Backend retorna `valor_ai_detectado` sempre (mesmo quando não cobrou) para pré-preencher o prompt
+- Prompt exibe dica "IA detectou R$ X no áudio" quando detectou valor
+
+---
+
 ## Beta-0.245 — 2026-04-02
 
 ### Funcionalidades

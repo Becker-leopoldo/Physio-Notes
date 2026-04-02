@@ -595,12 +595,15 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
 
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
 
-    # Para sessão avulsa com cobrança: tenta extrair valor do áudio se não veio explícito
+    # Tenta extrair valor do áudio (sempre — útil para pré-preencher prompt no frontend)
+    transcricao_completa = "\n".join(transcricoes)
     valor_override = body.valor
-    if body.cobrar and not valor_override:
+    valor_ai_detectado = None
+    if not valor_override:
         try:
-            transcricao_completa = "\n".join(transcricoes)
-            valor_override = await ai.extrair_valor_sessao(transcricao_completa, owner)
+            valor_ai_detectado = await ai.extrair_valor_sessao(transcricao_completa, owner)
+            if body.cobrar:
+                valor_override = valor_ai_detectado
         except Exception:
             pass
 
@@ -610,7 +613,6 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
         raise HTTPException(status_code=409, detail="Sessão já foi encerrada.")
 
     # Detecção automática de procedimentos extras na transcrição
-    transcricao_completa = "\n".join(transcricoes)
     nota = dados_consolidados.get("nota") or dados_consolidados.get("conduta")
     try:
         extras = await ai.detectar_procedimentos_extras(transcricao_completa, nota, owner)
@@ -638,6 +640,7 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
         "sessao_id": sessao_id,
         "status": "encerrada",
         "sessao_avulsa_valor": resultado_encerramento.get("sessao_avulsa_valor"),
+        "valor_ai_detectado": valor_ai_detectado,
         "cobrar": body.cobrar,
     }
 

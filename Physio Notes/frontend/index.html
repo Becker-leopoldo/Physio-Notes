@@ -1501,7 +1501,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.245'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.246'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -3012,15 +3012,20 @@
     });
     let sucesso = false;
     let avulsaValor = null;
-    let cobrou = true;
+    let valorAiDetectado = null;
     try {
       // Para sessão avulsa (sem pacote ativo), lê configuração de cobrança
       let encerrarBody = {};
       if (!_temPacoteAtivo) {
         try {
           const cfg = await apiFetch('/configuracoes');
-          cobrou = cfg.cobrar_avulsa !== false;
-          encerrarBody = { cobrar: cobrou, valor: cfg.valor_sessao_avulsa || null };
+          if (cfg.cobrar_avulsa !== false) {
+            // Auto-cobrar: backend usa valor configurado ou detecta da IA
+            encerrarBody = { cobrar: true, valor: cfg.valor_sessao_avulsa || null };
+          } else {
+            // Não auto-cobrar: encerra sem criar cobrança, prompt será aberto depois
+            encerrarBody = { cobrar: false };
+          }
         } catch (_) {}
       }
       const res = await apiFetch(`/sessoes/${sessaoId}/encerrar`, {
@@ -3029,6 +3034,7 @@
         body: JSON.stringify(encerrarBody),
       });
       avulsaValor = res.sessao_avulsa_valor || null;
+      valorAiDetectado = res.valor_ai_detectado || null;
       sucesso = true;
     } catch (e) {
       const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
@@ -3037,11 +3043,12 @@
       if (sucesso) {
         await openPaciente(currentPacienteId);
         if (avulsaValor) {
+          // Cobrado automaticamente com sucesso
           const fb = document.getElementById('banner-feedback');
           if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replace('.', ',')}</div>`;
-        } else if (!_temPacoteAtivo && cobrou) {
-          // AI não detectou valor — pede manualmente
-          _abrirPromptValorAvulsa(sessaoId);
+        } else if (!_temPacoteAtivo) {
+          // Sem valor auto-detectado (checkbox desmarcado ou sem valor configurado) → pede manualmente
+          _abrirPromptValorAvulsa(sessaoId, valorAiDetectado);
         }
         // Detectar e salvar procedimentos extras automaticamente
         try {
@@ -3066,20 +3073,23 @@
     }
   }
 
-  function _abrirPromptValorAvulsa(sessaoId) {
+  function _abrirPromptValorAvulsa(sessaoId, valorSugerido) {
     const existente = document.getElementById('prompt-valor-avulsa');
     if (existente) existente.remove();
     const el = document.createElement('div');
     el.id = 'prompt-valor-avulsa';
     el.style.cssText = 'position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);z-index:1100;background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-4) var(--space-5);display:flex;align-items:center;gap:var(--space-3);max-width:360px;width:calc(100% - 2rem);';
+    const hint = valorSugerido ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:3px;">IA detectou R$ ${valorSugerido.toFixed(2).replace('.', ',')} no áudio</div>` : '';
     el.innerHTML = `
       <div style="flex:1;min-width:0;">
         <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-1);">Qual o valor da sessão?</div>
         <div style="display:flex;align-items:center;gap:var(--space-2);">
           <span style="font-size:var(--text-sm);color:var(--color-text-secondary);">R$</span>
           <input id="prompt-valor-inp" type="number" min="0" step="0.01" placeholder="0,00"
+            value="${valorSugerido || ''}"
             style="flex:1;padding:5px 8px;border:var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);outline:none;">
         </div>
+        ${hint}
       </div>
       <div style="display:flex;flex-direction:column;gap:var(--space-1);flex-shrink:0;">
         <button id="prompt-valor-ok" style="padding:6px 14px;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);cursor:pointer;font-weight:500;">OK</button>
