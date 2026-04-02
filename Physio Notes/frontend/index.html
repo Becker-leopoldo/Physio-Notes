@@ -1497,7 +1497,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.242'; // bump a cada deploy: Beta-0.243, Beta-0.244...
+  const APP_VERSION = 'Beta-0.243'; // bump a cada deploy: Beta-0.244, Beta-0.245...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -3001,16 +3001,103 @@
   }
 
   async function encerrarSessao(sessaoId) {
+    // Sessões avulsas: interceptar para mostrar modal de cobrança
+    if (!_temPacoteAtivo) {
+      await abrirModalEncerrarAvulsa(sessaoId);
+      return;
+    }
+    await _executarEncerrarSessao(sessaoId, true, null);
+  }
+
+  async function abrirModalEncerrarAvulsa(sessaoId) {
+    // Busca valor configurado
+    let valorConfigurado = 0;
+    try {
+      const cfg = await apiFetch('/configuracoes');
+      valorConfigurado = cfg.valor_sessao_avulsa || 0;
+    } catch {}
+
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    const valorFmt = valorConfigurado > 0 ? valorConfigurado.toFixed(2) : '';
+    const hint = valorConfigurado > 0
+      ? `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Valor configurado em Configurações — R$ ${valorFmt.replace('.', ',')}</span>`
+      : `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Sem valor padrão configurado. Deixe em branco para detectar no áudio ou preencha agora.</span>`;
+
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:380px;box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-1);">Encerrar sessão</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Esta é uma sessão avulsa (sem pacote).</p>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-accent-light);border-radius:var(--radius-md);margin-bottom:var(--space-4);">
+          <label style="font-size:var(--text-sm);font-weight:600;cursor:pointer;" for="enc-cobrar">Cobrar esta sessão?</label>
+          <input type="checkbox" id="enc-cobrar" checked style="width:18px;height:18px;cursor:pointer;accent-color:#1A1A1A;">
+        </div>
+
+        <div id="enc-valor-row" style="margin-bottom:var(--space-5);">
+          <label class="form-label" for="enc-valor">Valor da sessão (R$)</label>
+          <input class="form-input" type="number" id="enc-valor" step="0.01" min="0" value="${valorFmt}" placeholder="0,00">
+          ${hint}
+        </div>
+
+        <div id="enc-feedback" style="font-size:var(--text-sm);color:var(--color-danger);min-height:18px;margin-bottom:var(--space-4);"></div>
+
+        <div style="display:flex;gap:var(--space-3);">
+          <button class="btn btn-secondary" style="flex:1;" id="enc-voltar">Voltar</button>
+          <button class="btn btn-danger" style="flex:2;" id="enc-confirmar">
+            <span id="enc-confirmar-txt">Encerrar sessão</span>
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    const cobrarChk = modal.querySelector('#enc-cobrar');
+    const valorRow  = modal.querySelector('#enc-valor-row');
+    const valorInp  = modal.querySelector('#enc-valor');
+    const feedback  = modal.querySelector('#enc-feedback');
+    const btnConf   = modal.querySelector('#enc-confirmar');
+    const btnTxt    = modal.querySelector('#enc-confirmar-txt');
+
+    cobrarChk.addEventListener('change', () => {
+      valorRow.style.opacity = cobrarChk.checked ? '1' : '0.4';
+      valorInp.disabled = !cobrarChk.checked;
+    });
+
+    modal.querySelector('#enc-voltar').addEventListener('click', () => {
+      modal.remove();
+      // Reabilita botões que possam ter sido desabilitados
+      ['btn-encerrar', 'btn-encerrar-rec'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) { b.disabled = false; b.textContent = 'Encerrar sessão'; }
+      });
+    });
+
+    btnConf.addEventListener('click', async () => {
+      const cobrar = cobrarChk.checked;
+      const valorStr = valorInp.value.trim();
+      const valor = cobrar && valorStr ? (parseFloat(valorStr) || null) : null;
+      btnConf.disabled = true;
+      btnTxt.textContent = 'Processando IA...';
+      feedback.textContent = '';
+      modal.remove();
+      await _executarEncerrarSessao(sessaoId, cobrar, valor);
+    });
+  }
+
+  async function _executarEncerrarSessao(sessaoId, cobrar, valor) {
     clearAutoCloseTimer(sessaoId);
     ['btn-encerrar', 'btn-encerrar-rec'].forEach(id => {
       const b = document.getElementById(id);
       if (b) { b.disabled = true; b.textContent = 'Processando IA...'; }
     });
     let sucesso = false;
-    let avulsaValor = null;
+    let res = null;
     try {
-      const res = await apiFetch(`/sessoes/${sessaoId}/encerrar`, { method: 'POST' });
-      avulsaValor = res.sessao_avulsa_valor || null;
+      res = await apiFetch(`/sessoes/${sessaoId}/encerrar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cobrar, valor }),
+      });
       sucesso = true;
     } catch (e) {
       const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
@@ -3018,9 +3105,13 @@
     } finally {
       if (sucesso) {
         await openPaciente(currentPacienteId);
+        const avulsaValor = res?.sessao_avulsa_valor;
         if (avulsaValor) {
           const fb = document.getElementById('banner-feedback');
           if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replace('.', ',')}</div>`;
+        } else if (cobrar && res && !res.teve_pacote) {
+          // Cobrar solicitado mas nenhum valor foi detectado → prompt manual
+          _abrirPromptValorAvulsa(sessaoId);
         }
         // Detectar e salvar procedimentos extras automaticamente
         try {
@@ -3043,6 +3134,41 @@
         });
       }
     }
+  }
+
+  function _abrirPromptValorAvulsa(sessaoId) {
+    const snack = el('div', {
+      style: 'position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-4) var(--space-5);z-index:300;display:flex;align-items:center;gap:var(--space-3);max-width:360px;width:calc(100% - 2rem);',
+    });
+    snack.innerHTML = `
+      <div style="flex:1;">
+        <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-1);">Qual foi o valor desta sessão?</div>
+        <div style="display:flex;gap:var(--space-2);align-items:center;">
+          <input class="form-input" type="number" id="prompt-valor-avulsa" step="0.01" min="0" placeholder="R$ 0,00" style="max-width:120px;margin:0;">
+          <button class="btn btn-primary btn-sm" id="prompt-valor-salvar">Registrar</button>
+          <button class="btn btn-ghost btn-sm" id="prompt-valor-pular" style="color:var(--color-text-muted);">Pular</button>
+        </div>
+      </div>`;
+    document.body.appendChild(snack);
+
+    snack.querySelector('#prompt-valor-pular').addEventListener('click', () => snack.remove());
+    snack.querySelector('#prompt-valor-salvar').addEventListener('click', async () => {
+      const val = parseFloat(snack.querySelector('#prompt-valor-avulsa').value) || 0;
+      if (val <= 0) { snack.querySelector('#prompt-valor-avulsa').focus(); return; }
+      try {
+        await apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ descricao: 'Sessão avulsa', valor: val, data: null }),
+        });
+        snack.remove();
+        _showSnack(`Cobrança de R$ ${val.toFixed(2).replace('.', ',')} registrada`);
+      } catch (e) {
+        snack.querySelector('#prompt-valor-avulsa').style.borderColor = 'var(--color-danger)';
+      }
+    });
+
+    // Auto-remove após 30s se o fisio não interagir
+    setTimeout(() => { if (document.body.contains(snack)) snack.remove(); }, 30000);
   }
 
   /* ============================================================

@@ -358,9 +358,15 @@ def _usar_sessao_pacote(conn, paciente_id: int) -> bool:
     return False
 
 
-def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
-    """Encerra sessão. Se não há pacote ativo e owner tem valor_sessao_avulsa configurado,
-    cria procedimento_extra automático. Retorna {teve_pacote, sessao_avulsa_valor}."""
+def encerrar_sessao(
+    sessao_id: int,
+    owner_email: str | None = None,
+    cobrar: bool = True,
+    valor_override: float | None = None,
+) -> dict:
+    """Encerra sessão. Se não há pacote ativo e cobrar=True, cria procedimento_extra.
+    Prioridade do valor: valor_override > AI (passado pelo caller) > valor_sessao_avulsa configurado.
+    Retorna {teve_pacote, sessao_avulsa_valor}."""
     from datetime import date
     with get_conn() as conn:
         sessao = conn.execute("SELECT paciente_id, data FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
@@ -371,13 +377,17 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
         if cur.rowcount == 0:
             return {"teve_pacote": True, "sessao_avulsa_valor": None, "_ja_encerrada": True}
         sessao_avulsa_valor = None
+        teve_pacote = True
         if sessao:
             teve_pacote = _usar_sessao_pacote(conn, sessao["paciente_id"])
-            if not teve_pacote and owner_email:
-                row_cfg = conn.execute(
-                    "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
-                ).fetchone()
-                valor = row_cfg["valor_sessao_avulsa"] if row_cfg else None
+            if not teve_pacote and cobrar:
+                # Determina o valor: override > configurado
+                valor = valor_override if (valor_override and valor_override > 0) else None
+                if not valor and owner_email:
+                    row_cfg = conn.execute(
+                        "SELECT valor_sessao_avulsa FROM usuario_google WHERE email = ?", (owner_email,)
+                    ).fetchone()
+                    valor = row_cfg["valor_sessao_avulsa"] if row_cfg else None
                 if valor and valor > 0:
                     data_sessao = sessao["data"] or date.today().isoformat()
                     conn.execute(
@@ -386,7 +396,7 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
                     )
                     sessao_avulsa_valor = valor
         conn.commit()
-        return {"teve_pacote": teve_pacote if sessao else True, "sessao_avulsa_valor": sessao_avulsa_valor}
+        return {"teve_pacote": teve_pacote, "sessao_avulsa_valor": sessao_avulsa_valor, "cobrar": cobrar}
 
 
 def cancelar_sessao(sessao_id: int):

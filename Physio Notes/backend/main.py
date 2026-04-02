@@ -536,6 +536,11 @@ async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: R
     return {"chunk": chunk, "transcricao": transcricao}
 
 
+class EncerrarBody(BaseModel):
+    cobrar: bool = True
+    valor: float | None = Field(None, ge=0, le=999_999)
+
+
 class CancelamentoBody(BaseModel):
     cobrar: bool = True
     valor: float | None = None
@@ -605,7 +610,9 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
 
 @app.post("/sessoes/{sessao_id}/encerrar")
 @limiter.limit("10/minute")
-async def encerrar_sessao(sessao_id: int, request: Request):
+async def encerrar_sessao(sessao_id: int, request: Request, body: EncerrarBody = None):
+    if body is None:
+        body = EncerrarBody()
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
@@ -630,7 +637,22 @@ async def encerrar_sessao(sessao_id: int, request: Request):
 
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
     owner = _owner_email(request)
-    resultado_encerramento = db.encerrar_sessao(sessao_id, owner)
+
+    # Para sessões avulsas com cobrança: se valor não foi informado explicitamente,
+    # tenta extrair da transcrição (o fisio pode ter mencionado o valor no áudio)
+    valor_avulsa = body.valor if (body.valor and body.valor > 0) else None
+    if body.cobrar and not valor_avulsa:
+        try:
+            transcricao_para_valor = "\n".join(transcricoes)
+            valor_avulsa = await ai.extrair_valor_sessao(transcricao_para_valor, owner)
+            if valor_avulsa:
+                logger.info("extrair_valor_sessao sessao_id=%s: R$ %.2f detectado na transcrição", sessao_id, valor_avulsa)
+        except Exception as e:
+            logger.warning("encerrar_sessao: falha ao extrair valor avulsa sessao_id=%s: %s", sessao_id, e)
+
+    resultado_encerramento = db.encerrar_sessao(
+        sessao_id, owner, cobrar=body.cobrar, valor_override=valor_avulsa
+    )
 
     if resultado_encerramento.get("_ja_encerrada"):
         raise HTTPException(status_code=409, detail="Sessão já foi encerrada.")
@@ -664,6 +686,8 @@ async def encerrar_sessao(sessao_id: int, request: Request):
         "sessao_id": sessao_id,
         "status": "encerrada",
         "sessao_avulsa_valor": resultado_encerramento.get("sessao_avulsa_valor"),
+        "teve_pacote": resultado_encerramento.get("teve_pacote", True),
+        "cobrar": body.cobrar,
     }
 
 

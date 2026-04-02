@@ -488,6 +488,43 @@ NOVA INFORMAÇÃO GRAVADA (transcrição):
     return message.content[0].text.strip()
 
 
+async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:
+    """
+    Tenta identificar na transcrição se o fisioterapeuta mencionou explicitamente
+    o valor desta sessão avulsa. Retorna o valor como float ou None se não encontrado.
+    """
+    prompt = f"""Analise a transcrição abaixo de uma sessão de fisioterapia.
+O fisioterapeuta pode ter mencionado o valor cobrado pela sessão, por exemplo:
+- "cobrei 120 reais de sessão"
+- "sessão avulsa de 80"
+- "valor da sessão foi 150"
+- "consulta de 90 reais"
+
+Se um valor EXPLÍCITO para a própria sessão foi mencionado, retorne APENAS o número decimal (ex: 120.00).
+Se NÃO foi mencionado nenhum valor de sessão, retorne: null
+
+Retorne SOMENTE o número ou a palavra null, sem texto adicional.
+
+TRANSCRIÇÃO:
+{transcricao}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=32,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("extrair_valor_sessao", message, owner_email)
+
+    raw = message.content[0].text.strip().lower()
+    if raw == "null" or not raw:
+        return None
+    try:
+        val = float(raw.replace(",", "."))
+        return val if val > 0 else None
+    except ValueError:
+        return None
+
+
 async def sugerir_conduta(anamnese: str, owner_email: str | None = None) -> str:
     """
     Lê a anamnese do paciente e sugere uma conduta de tratamento fisioterapêutica.

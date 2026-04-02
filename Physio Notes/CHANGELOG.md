@@ -4,6 +4,28 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.243 — 2026-04-02
+
+### Funcionalidades
+
+**Cobrança de sessão avulsa com controle do fisio**
+
+Ao encerrar uma sessão sem pacote, o app agora exibe um modal antes de processar:
+- **Checkbox "Cobrar esta sessão?"** — marcado por padrão
+- **Campo de valor** pré-preenchido com o valor configurado em Configurações (editável)
+- Se o fisio deixou o valor em branco, a **IA tenta detectar o valor na transcrição** (ex: "cobrei 120 reais de sessão")
+- Se nenhum valor foi encontrado e a cobrança está ativa, exibe **prompt flutuante pós-fechamento** ("Qual foi o valor desta sessão?") com 30s para responder
+- Se checkbox desmarcado: sessão encerra normalmente sem cobrança
+- O fluxo de sessões **com pacote não é alterado**
+
+Mudanças técnicas:
+- `ai.py`: nova função `extrair_valor_sessao()` — extração leve (max_tokens=32) de valor monetário na transcrição
+- `database.py`: `encerrar_sessao()` aceita `cobrar: bool` e `valor_override: float | None`
+- `main.py`: `EncerrarBody` model; endpoint encerrar aceita body JSON; AI extraction antes de chamar o banco
+- `frontend`: `encerrarSessao()` intercepta avulsas → `abrirModalEncerrarAvulsa()` → `_executarEncerrarSessao()` → `_abrirPromptValorAvulsa()` (se necessário)
+
+---
+
 ## Beta-0.242 — 2026-04-02
 
 ### Segurança — Q.A completo (9 correções)
