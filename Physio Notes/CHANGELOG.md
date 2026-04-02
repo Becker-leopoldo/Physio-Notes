@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.211 — 2026-04-02
+
+### Melhorias
+- Botão "Nova sessão" renomeado para "+ Evolução Diária"
+
+---
+
 ## Beta-0.210 — 2026-04-02
 
 ### Correções

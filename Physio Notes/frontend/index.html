@@ -1500,7 +1500,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.210'; // bump a cada deploy: Beta-0.211, Beta-0.212...
+  const APP_VERSION = 'Beta-0.211'; // bump a cada deploy: Beta-0.212, Beta-0.213...
 
   /* ============================================================
      STATE
@@ -2559,7 +2559,7 @@
     if (!sessao) {
       currentSessaoId = null;
       const wrap = el('div', { style: 'padding: var(--space-4) var(--space-5) 0;' });
-      const btn = el('button', { className: 'btn btn-primary btn-full', textContent: '+ Nova sessão' });
+      const btn = el('button', { className: 'btn btn-primary btn-full', textContent: '+ Evolução Diária' });
       btn.addEventListener('click', () => iniciarNovaSessao());
       wrap.appendChild(btn);
       area.appendChild(wrap);
