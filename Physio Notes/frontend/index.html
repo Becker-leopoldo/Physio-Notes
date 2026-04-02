@@ -1500,7 +1500,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.213'; // bump a cada deploy: Beta-0.214, Beta-0.215...
+  const APP_VERSION = 'Beta-0.214'; // bump a cada deploy: Beta-0.215, Beta-0.216...
 
   /* ============================================================
      STATE
@@ -2377,17 +2377,17 @@
             <div style="padding:var(--space-4);">
               <div id="conduta-texto" style="font-size:var(--text-sm);color:${temConduta ? 'var(--color-text)' : 'var(--color-text-muted)'};line-height:1.7;font-style:${temConduta ? 'normal' : 'italic'};">${temConduta ? anamneseToHtml(paciente.conduta_tratamento) : 'Nenhuma conduta registrada.'}</div>
             </div>
-            <div style="padding:var(--space-3) var(--space-4);border-top:var(--border);background:var(--color-bg);display:flex;align-items:center;gap:var(--space-2);">
-              <button id="btn-complementar-conduta" style="display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);font-family:var(--font-body);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);padding:7px 14px;cursor:pointer;font-weight:500;">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="9" rx="3" fill="white"/><path d="M3 8a5 5 0 0010 0" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M8 13v2" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>
-                Complementar via voz
+            <div style="padding:var(--space-3) var(--space-4);border-top:var(--border);background:var(--color-bg);display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
+              <button id="btn-complementar-conduta" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-sm);font-family:var(--font-body);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);padding:8px 14px;cursor:pointer;font-weight:500;white-space:nowrap;line-height:1;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><rect x="5" y="1" width="6" height="9" rx="3" fill="white"/><path d="M3 8a5 5 0 0010 0" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M8 13v2" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>
+                Complementar por voz
               </button>
-              <button id="btn-sugerir-conduta" style="display:inline-flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);font-family:var(--font-body);background:none;border:var(--border);border-radius:var(--radius-md);padding:7px 12px;cursor:pointer;color:var(--color-text-secondary);">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 10.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zm0-7C6.67 4.5 5.5 5.67 5.5 7h1.25C6.75 6.36 7.31 5.75 8 5.75S9.25 6.36 9.25 7c0 .55-.31.9-.78 1.28C7.93 8.7 7.25 9.3 7.25 10.5h1.5c0-.7.43-1.1.97-1.53C10.27 8.5 10.75 7.84 10.75 7 10.75 5.67 9.58 4.5 8 4.5z" fill="currentColor"/></svg>
+              <button id="btn-sugerir-conduta" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-sm);font-family:var(--font-body);background:none;border:var(--border);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer;color:var(--color-text-secondary);white-space:nowrap;line-height:1;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M8 1l1.5 3.5L13 6l-3.5 1.5L8 11l-1.5-3.5L3 6l3.5-1.5L8 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M13 10l.75 1.75L15.5 12.5l-1.75.75L13 15l-.75-1.75L10.5 12.5l1.75-.75L13 10z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
                 Sugestão IA
               </button>
-              <button id="btn-editar-conduta-manual" style="display:inline-flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);font-family:var(--font-body);background:none;border:var(--border);border-radius:var(--radius-md);padding:7px 12px;cursor:pointer;color:var(--color-text-secondary);">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-9 9H2v-3L11 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+              <button id="btn-editar-conduta-manual" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-sm);font-family:var(--font-body);background:none;border:var(--border);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer;color:var(--color-text-secondary);white-space:nowrap;line-height:1;">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M11 2l3 3-9 9H2v-3L11 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
                 Editar
               </button>
             </div>

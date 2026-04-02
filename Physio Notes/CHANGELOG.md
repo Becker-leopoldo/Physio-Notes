@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.214 — 2026-04-02
+
+### Melhorias
+- **Botões da seção Conduta**: layout refinado com ícones SVG, `white-space:nowrap`, `padding` uniforme e `flex-wrap` — sem quebra de linha no label "Complementar por voz", ícone de sparkle correto no "Sugestão IA"
+
+---
+
 ## Beta-0.213 — 2026-04-02
 
 ### Correções
