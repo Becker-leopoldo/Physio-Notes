@@ -1499,7 +1499,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.221'; // bump a cada deploy: Beta-0.222, Beta-0.223...
+  const APP_VERSION = 'Beta-0.222'; // bump a cada deploy: Beta-0.223, Beta-0.224...
 
   /* ============================================================
      STATE
@@ -3073,6 +3073,14 @@
       </div>`;
   }
 
+  function isNetworkError(e) {
+    if (!navigator.onLine) return true;
+    const msg = (e?.message || '').toLowerCase();
+    return msg.includes('failed to fetch') || msg.includes('network') ||
+           msg.includes('conexão') || msg.includes('connection') ||
+           msg.includes('sem internet');
+  }
+
   // Wrapper genérico: executa fn(), se offline agenda retry automático
   async function enviarComRetry(feedbackEl, fn) {
     if (!navigator.onLine) {
@@ -3083,7 +3091,7 @@
     try {
       await fn();
     } catch (e) {
-      if (!navigator.onLine) {
+      if (isNetworkError(e)) {
         pendingRetries.push({ feedbackEl, fn });
         mostrarBannerOffline(feedbackEl);
       } else {

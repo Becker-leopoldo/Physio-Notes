@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.222 — 2026-04-02
+
+### Correções
+- **Race condition no retry de áudio**: `enviarComRetry` agora detecta erros de rede pela mensagem (`failed to fetch`, `conexão`, etc.) além de `navigator.onLine` — resolve o caso em que o browser ainda não atualizou `onLine=false` quando o fetch já falhou, mostrando o banner correto em vez do erro genérico
+
+---
+
 ## Beta-0.221 — 2026-04-02
 
 ### Correções
