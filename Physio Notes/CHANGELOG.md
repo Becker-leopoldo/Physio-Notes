@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.221 — 2026-04-02
+
+### Correções
+- **Gravação bloqueada quando offline**: todos os 7 botões de microfone agora exibem aviso leve ("Sem internet — grave normalmente. O áudio será enviado ao reconectar.") e iniciam a gravação normalmente sem depender de rede — a conexão só é necessária no momento de envio
+
+---
+
 ## Beta-0.220 — 2026-04-02
 
 ### Correções
