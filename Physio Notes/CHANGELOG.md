@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.218 — 2026-04-02
+
+### Melhorias
+- **Áudio pendente por falta de internet**: se a conexão cair durante ou antes do envio, o áudio gravado é preservado em memória com aviso "Sem internet — áudio salvo, aguardando reconexão..."; ao reconectar, o envio é retentado automaticamente (ou manualmente via botão "Tentar agora")
+
+---
+
 ## Beta-0.217 — 2026-04-02
 
 ### Correções
