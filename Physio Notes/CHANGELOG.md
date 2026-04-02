@@ -4,6 +4,17 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.247 — 2026-04-02
+
+### Melhorias
+
+**Faturamento: horário e ordenação por criação**
+- Cada item do faturamento exibe data + horário (HH:MM) de criação — ex: "02/04 · 14:30"
+- Itens dentro de cada grupo ordenados por `criado_em` (mais recente primeiro)
+- Sem mudanças no backend — `criado_em` já era retornado, apenas passou a ser usado no frontend
+
+---
+
 ## Beta-0.246 — 2026-04-02
 
 ### Correções

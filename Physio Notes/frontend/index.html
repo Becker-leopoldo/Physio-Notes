@@ -1501,7 +1501,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.246'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.247'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5263,21 +5263,33 @@
       return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1] + '/' + y;
     };
 
+    // Extrai HH:MM de criado_em (formato ISO: "2026-04-02T14:30:00" ou "2026-04-02 14:30:00")
+    const fmtHora = (criado_em) => {
+      if (!criado_em) return null;
+      const match = criado_em.match(/[T ](\d{2}:\d{2})/);
+      return match ? match[1] : null;
+    };
+
     // Agrupa por paciente + mês
     const grupos = {};
     pacotes.forEach(p => {
       const mes = p.data_pagamento ? p.data_pagamento.substring(0, 7) : '';
       const key = `${p.paciente_nome}||${mes}`;
       if (!grupos[key]) grupos[key] = { paciente: p.paciente_nome, mes, itens: [], total: 0 };
-      grupos[key].itens.push({ tipo: 'pacote', desc: `Pacote · ${p.sessoes_usadas}/${p.total_sessoes} sessões${p.descricao ? ' · ' + p.descricao : ''}`, valor: p.valor_pago, badge: p.status === 'ativo' ? 'Ativo' : 'Esgotado', badgeClass: p.status === 'ativo' ? 'badge-success' : 'badge-neutral', data: p.data_pagamento });
+      grupos[key].itens.push({ tipo: 'pacote', desc: `Pacote · ${p.sessoes_usadas}/${p.total_sessoes} sessões${p.descricao ? ' · ' + p.descricao : ''}`, valor: p.valor_pago, badge: p.status === 'ativo' ? 'Ativo' : 'Esgotado', badgeClass: p.status === 'ativo' ? 'badge-success' : 'badge-neutral', data: p.data_pagamento, hora: fmtHora(p.criado_em), criado_em: p.criado_em || '' });
       grupos[key].total += p.valor_pago || 0;
     });
     procedimentos.forEach(p => {
       const mes = p.data ? p.data.substring(0, 7) : '';
       const key = `${p.paciente_nome}||${mes}`;
       if (!grupos[key]) grupos[key] = { paciente: p.paciente_nome, mes, itens: [], total: 0 };
-      grupos[key].itens.push({ tipo: 'proc', desc: p.descricao, valor: p.valor, data: p.data });
+      grupos[key].itens.push({ tipo: 'proc', desc: p.descricao, valor: p.valor, data: p.data, hora: fmtHora(p.criado_em), criado_em: p.criado_em || '' });
       grupos[key].total += p.valor || 0;
+    });
+
+    // Ordena itens dentro de cada grupo por criado_em (mais recente primeiro)
+    Object.values(grupos).forEach(g => {
+      g.itens.sort((a, b) => (b.criado_em || '').localeCompare(a.criado_em || ''));
     });
 
     const gruposOrdenados = Object.values(grupos).sort((a, b) =>
@@ -5292,7 +5304,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-top:var(--border);gap:var(--space-3);">
               <div style="flex:1;min-width:0;">
                 <div style="font-size:var(--text-sm);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.desc}</div>
-                ${i.data ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${fmtData(i.data)}</div>` : ''}
+                ${i.data || i.hora ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${[i.data ? fmtData(i.data) : null, i.hora ? i.hora : null].filter(Boolean).join(' · ')}</div>` : ''}
               </div>
               <div style="display:flex;align-items:center;gap:var(--space-2);flex-shrink:0;">
                 ${i.badge ? `<span class="badge ${i.badgeClass}">${i.badge}</span>` : ''}
