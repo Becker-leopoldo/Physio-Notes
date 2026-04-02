@@ -138,22 +138,22 @@ O relatório deve cobrir (apenas com base nos dados disponíveis):
 
 async def extrair_dados_paciente(transcricao: str, owner_email: str | None = None) -> dict:
     """
-    Extrai dados estruturados do paciente a partir de uma transcrição de áudio.
-    Retorna dict com: nome, data_nascimento (formato YYYY-MM-DD ou None), anamnese.
+    Extrai dados cadastrais do paciente a partir de uma transcrição de áudio.
+    Retorna dict com: nome, data_nascimento, cpf, endereco.
+    Anamnese e conduta são registradas separadamente após o cadastro.
     """
-    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio dos jargões, abreviações e terminologia técnica da fisioterapia brasileira. A fisioterapeuta gravou um áudio introduzindo um novo paciente.
+    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio cadastrando um novo paciente.
 
-Extraia as seguintes informações da transcrição e retorne APENAS um JSON válido com estas chaves:
+Extraia APENAS os dados cadastrais e retorne um JSON válido com estas chaves:
 
 {{
-  "nome": "Nome completo do paciente",
+  "nome": "Nome completo do paciente (ou null se não mencionado)",
   "data_nascimento": "Data de nascimento no formato YYYY-MM-DD (ou null se não mencionada)",
-  "cpf": "CPF do paciente contendo apenas os 11 dígitos numéricos, sem pontuação (ou null se não mencionado)",
-  "endereco": "Endereço completo do paciente — rua, número, bairro, cidade (ou null se não mencionado)",
-  "anamnese": "Queixa principal, histórico clínico e qualquer outra informação clínica relevante mencionada"
+  "cpf": "CPF contendo apenas os 11 dígitos numéricos, sem pontuação (ou null se não mencionado)",
+  "endereco": "Endereço completo — rua, número, bairro, cidade (ou null se não mencionado)"
 }}
 
-Se o nome não for mencionado, use null. Se a data não for clara, use null. Se o CPF não for mencionado, use null. Se o endereço não for mencionado, use null. Capture tudo de clínico relevante em anamnese.
+Não extraia informações clínicas — anamnese e conduta de tratamento serão registradas separadamente.
 Responda APENAS com o JSON, sem texto adicional.
 
 Transcrição:
@@ -161,7 +161,7 @@ Transcrição:
 
     message = await client.messages.create(
         model=MODEL,
-        max_tokens=512,
+        max_tokens=256,
         messages=[{"role": "user", "content": prompt}],
     )
     _registrar("extrair_dados_paciente", message, owner_email)
@@ -174,9 +174,9 @@ Transcrição:
     try:
         result = json.loads(raw_text)
     except json.JSONDecodeError:
-        result = {"nome": None, "data_nascimento": None, "anamnese": raw_text}
+        result = {"nome": None, "data_nascimento": None, "cpf": None, "endereco": None}
 
-    for chave in ("nome", "data_nascimento", "cpf", "endereco", "anamnese"):
+    for chave in ("nome", "data_nascimento", "cpf", "endereco"):
         result.setdefault(chave, None)
 
     return result
@@ -427,5 +427,67 @@ NOVA INFORMAÇÃO GRAVADA (transcrição):
         messages=[{"role": "user", "content": prompt}],
     )
     _registrar("complementar_anamnese", message, owner_email)
+
+    return message.content[0].text.strip()
+
+
+async def complementar_conduta(transcricao: str, conduta_atual: str | None, owner_email: str | None = None) -> str:
+    """
+    Recebe uma transcrição de áudio com informações de conduta de tratamento e a conduta
+    atual do paciente. Retorna a conduta completa e atualizada em linguagem clínica.
+    """
+    bloco_atual = f"\n\nCONDUTA DE TRATAMENTO ATUAL:\n{conduta_atual}" if conduta_atual else "\n\n(Paciente ainda não possui conduta de tratamento registrada.)"
+
+    prompt = f"""Você é um fisioterapeuta clínico experiente. A profissional gravou um áudio descrevendo a conduta de tratamento de um paciente.
+
+Sua tarefa é integrar as novas informações com a conduta existente e retornar a conduta de tratamento COMPLETA e ATUALIZADA em linguagem clínica técnica.
+
+Regras:
+- Mantenha todas as informações anteriores relevantes
+- Incorpore as novas informações de forma coerente
+- Use linguagem clínica objetiva (fisioterapia)
+- Organize por tópicos usando **NOME DO TÓPICO:** em negrito (objetivos, técnicas, frequência, evolução esperada, etc.)
+- NÃO inclua título geral com # — o título já é exibido pela interface
+- Use listas com "- " para enumerações dentro dos tópicos
+- Não repita informações redundantes
+- Retorne APENAS o texto da conduta atualizada, sem introduções ou explicações{bloco_atual}
+
+NOVA INFORMAÇÃO GRAVADA (transcrição):
+{transcricao}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("complementar_conduta", message, owner_email)
+
+    return message.content[0].text.strip()
+
+
+async def sugerir_conduta(anamnese: str, owner_email: str | None = None) -> str:
+    """
+    Lê a anamnese do paciente e sugere uma conduta de tratamento fisioterapêutica.
+    É uma sugestão — a fisioterapeuta decide se aceita ou modifica.
+    """
+    prompt = f"""Você é um fisioterapeuta clínico experiente. Com base na anamnese abaixo, elabore uma sugestão de conduta de tratamento fisioterapêutico.
+
+Regras:
+- Baseie-se ESTRITAMENTE nas informações da anamnese — não invente dados
+- Use linguagem clínica técnica (fisioterapia)
+- Organize por tópicos usando **NOME DO TÓPICO:** em negrito (ex: **Objetivos terapêuticos:**, **Técnicas propostas:**, **Frequência sugerida:**, **Evolução esperada:**)
+- Use listas com "- " para enumerações dentro dos tópicos
+- NÃO inclua título geral com # — o título já é exibido pela interface
+- Retorne APENAS o texto da conduta sugerida, sem introduções ou explicações
+
+ANAMNESE DO PACIENTE:
+{anamnese}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("sugerir_conduta", message, owner_email)
 
     return message.content[0].text.strip()

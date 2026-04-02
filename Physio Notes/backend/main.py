@@ -265,6 +265,18 @@ async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, 
     return {"conduta_tratamento": paciente_atualizado["conduta_tratamento"]}
 
 
+@app.post("/pacientes/{paciente_id}/sugerir-conduta")
+async def sugerir_conduta(paciente_id: int, request: Request):
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
+    if not paciente.get("anamnese"):
+        raise HTTPException(status_code=400, detail="Paciente não possui anamnese registrada. Registre a anamnese primeiro.")
+    sugestao = await ai.sugerir_conduta(paciente["anamnese"], _owner_email(request))
+    return {"sugestao": sugestao}
+
+
 @app.post("/transcrever")
 async def transcrever_audio_avulso(audio: UploadFile = File(...)):
     audio_bytes = await audio.read()

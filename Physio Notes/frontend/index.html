@@ -1500,7 +1500,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.212'; // bump a cada deploy: Beta-0.213, Beta-0.214...
+  const APP_VERSION = 'Beta-0.213'; // bump a cada deploy: Beta-0.214, Beta-0.215...
 
   /* ============================================================
      STATE
@@ -1677,6 +1677,12 @@
 
   function anamnesePreviewText(text) {
     if (!text) return 'Nenhuma anamnese registrada.';
+    const stripped = text.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
+    return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
+  }
+
+  function condutaPreviewText(text) {
+    if (!text) return 'Nenhuma conduta registrada.';
     const stripped = text.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
     return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
   }
@@ -1865,8 +1871,6 @@
     document.getElementById('input-cpf-hint').style.display = 'none';
     document.getElementById('input-cpf').style.borderColor = '';
     document.getElementById('input-endereco').value = '';
-    const hoje = new Date().toISOString().slice(0, 10);
-    document.getElementById('input-data-atendimento').value = hoje;
     showError('modal-paciente-error', '');
     bindCpfInput('input-cpf', 'input-cpf-hint');
     document.getElementById('modal-novo-paciente').classList.add('open');
@@ -1949,8 +1953,6 @@
     document.getElementById('input-dob').value = dados.data_nascimento || '';
     document.getElementById('input-cpf').value = dados.cpf ? cpfMascara(dados.cpf) : '';
     document.getElementById('input-endereco').value = dados.endereco || '';
-    const hoje = new Date().toISOString().slice(0, 10);
-    document.getElementById('input-data-atendimento').value = hoje;
     showError('modal-paciente-error', '');
   }
 
@@ -2115,7 +2117,7 @@
         body: JSON.stringify({
           nome,
           data_nascimento: document.getElementById('input-dob').value || null,
-          data_atendimento: document.getElementById('input-data-atendimento').value || null,
+          data_atendimento: new Date().toISOString().slice(0, 10),
           cpf: cpfRaw || null,
           endereco: endereco || null,
         }),
@@ -2364,7 +2366,7 @@
             <div style="flex:1;min-width:0;">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);">Conduta de Tratamento</div>
               <div id="conduta-preview" style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                ${anamnesePreviewText(paciente.conduta_tratamento)}
+                ${condutaPreviewText(paciente.conduta_tratamento)}
               </div>
             </div>
             <div id="conduta-caret" style="color:var(--color-text-muted);flex-shrink:0;transition:transform .2s;">
@@ -2379,6 +2381,10 @@
               <button id="btn-complementar-conduta" style="display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);font-family:var(--font-body);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);padding:7px 14px;cursor:pointer;font-weight:500;">
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="9" rx="3" fill="white"/><path d="M3 8a5 5 0 0010 0" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M8 13v2" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>
                 Complementar via voz
+              </button>
+              <button id="btn-sugerir-conduta" style="display:inline-flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);font-family:var(--font-body);background:none;border:var(--border);border-radius:var(--radius-md);padding:7px 12px;cursor:pointer;color:var(--color-text-secondary);">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 10.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zm0-7C6.67 4.5 5.5 5.67 5.5 7h1.25C6.75 6.36 7.31 5.75 8 5.75S9.25 6.36 9.25 7c0 .55-.31.9-.78 1.28C7.93 8.7 7.25 9.3 7.25 10.5h1.5c0-.7.43-1.1.97-1.53C10.27 8.5 10.75 7.84 10.75 7 10.75 5.67 9.58 4.5 8 4.5z" fill="currentColor"/></svg>
+                Sugestão IA
               </button>
               <button id="btn-editar-conduta-manual" style="display:inline-flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);font-family:var(--font-body);background:none;border:var(--border);border-radius:var(--radius-md);padding:7px 12px;cursor:pointer;color:var(--color-text-secondary);">
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-9 9H2v-3L11 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
@@ -2440,6 +2446,37 @@
       });
       document.getElementById('btn-cancelar-conduta-voz').addEventListener('click', fecharGravacaoConduta);
 
+      document.getElementById('btn-sugerir-conduta').addEventListener('click', async () => {
+        const btn = document.getElementById('btn-sugerir-conduta');
+        btn.disabled = true;
+        btn.textContent = 'Gerando sugestão...';
+        try {
+          const res = await apiFetch(`/pacientes/${pacienteId}/sugerir-conduta`, { method: 'POST' });
+          const sugestao = res.sugestao;
+          // Abre o editor manual com a sugestão preenchida para a fisio revisar
+          document.getElementById('conduta-gravacao').style.display = 'none';
+          document.getElementById('conduta-textarea-manual').value = sugestao;
+          document.getElementById('conduta-edicao-manual').style.display = '';
+          document.getElementById('btn-editar-conduta-manual').style.display = 'none';
+          // Insere aviso de sugestão acima do textarea
+          const hint = document.createElement('div');
+          hint.style.cssText = 'font-size:var(--text-xs);color:var(--color-warning);background:var(--color-warning-bg);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);margin-bottom:var(--space-2);';
+          hint.textContent = '⚠️ Sugestão gerada pela IA com base na anamnese. Revise e adapte antes de salvar.';
+          const textarea = document.getElementById('conduta-textarea-manual');
+          textarea.parentNode.insertBefore(hint, textarea);
+          // Abre o accordion se estiver fechado
+          if (condutaBodyEl.style.display === 'none') {
+            condutaBodyEl.style.display = 'block';
+            condutaCaret.style.transform = 'rotate(180deg)';
+          }
+        } catch (e) {
+          alert(e.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 10.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zm0-7C6.67 4.5 5.5 5.67 5.5 7h1.25C6.75 6.36 7.31 5.75 8 5.75S9.25 6.36 9.25 7c0 .55-.31.9-.78 1.28C7.93 8.7 7.25 9.3 7.25 10.5h1.5c0-.7.43-1.1.97-1.53C10.27 8.5 10.75 7.84 10.75 7 10.75 5.67 9.58 4.5 8 4.5z" fill="currentColor"/></svg> Sugestão IA';
+        }
+      });
+
       document.getElementById('btn-mic-conduta').addEventListener('click', async () => {
         const micBtn = document.getElementById('btn-mic-conduta');
         const micIcon = document.getElementById('mic-icon-conduta');
@@ -2473,7 +2510,7 @@
                 document.getElementById('conduta-texto').innerHTML = anamneseToHtml(novaConduta);
                 document.getElementById('conduta-texto').style.color = 'var(--color-text)';
                 document.getElementById('conduta-texto').style.fontStyle = 'normal';
-                document.getElementById('conduta-preview').textContent = anamnesePreviewText(novaConduta);
+                document.getElementById('conduta-preview').textContent = condutaPreviewText(novaConduta);
                 document.getElementById('conduta-textarea-manual').value = novaConduta;
                 fecharGravacaoConduta();
               } catch (err) {
@@ -2525,7 +2562,7 @@
           elTxt.innerHTML = texto ? anamneseToHtml(texto) : 'Nenhuma conduta registrada.';
           elTxt.style.color = texto ? 'var(--color-text)' : 'var(--color-text-muted)';
           elTxt.style.fontStyle = texto ? 'normal' : 'italic';
-          document.getElementById('conduta-preview').textContent = anamnesePreviewText(texto);
+          document.getElementById('conduta-preview').textContent = condutaPreviewText(texto);
           document.getElementById('conduta-edicao-manual').style.display = 'none';
           document.getElementById('btn-editar-conduta-manual').style.display = '';
         } catch (e) {

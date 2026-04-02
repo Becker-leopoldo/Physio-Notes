@@ -4,6 +4,18 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.213 — 2026-04-02
+
+### Correções
+- **Bug crítico: botão "+ Paciente" não abria o modal** — referência a `input-data-atendimento` removido causava TypeError silencioso antes de abrir o modal
+- **"Nenhuma anamnese registrada." no card de Conduta** — corrigido para "Nenhuma conduta registrada." usando função `condutaPreviewText` separada
+
+### Funcionalidades
+- **Sugestão de Conduta por IA**: botão "Sugestão IA" no card de Conduta lê a anamnese e gera uma proposta de conduta — fisioterapeuta revisa e decide se aceita antes de salvar
+- Aviso visual destacado ("⚠️ Sugestão gerada pela IA...") para deixar claro que é uma proposta, não um registro final
+
+---
+
 ## Beta-0.212 — 2026-04-02
 
 ### Funcionalidades
