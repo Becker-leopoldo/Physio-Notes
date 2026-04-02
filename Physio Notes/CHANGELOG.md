@@ -4,6 +4,17 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.223 — 2026-04-02
+
+### Correções
+- **Botão "Tentar agora" não funcionava**: `retrySendPendingAudio` não era acessível via `onclick` HTML por estar fora do escopo global — movida para `window.retrySendPendingAudio`
+- **Feedback ao clicar offline**: se clicar em "Tentar agora" ainda sem internet, exibe "Ainda sem internet. O áudio está salvo — será enviado automaticamente ao reconectar." em vez de não fazer nada
+
+### Melhorias
+- Botão de retry com ícone de refresh
+
+---
+
 ## Beta-0.222 — 2026-04-02
 
 ### Correções
