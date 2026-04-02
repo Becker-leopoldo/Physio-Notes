@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.225 — 2026-04-02
+
+### Melhorias
+- **Botão ↻ com animação de spin**: ao clicar, o ícone gira por 1,5s (feedback visual de "tentando") — se ainda offline, após a animação mostra "Ainda sem internet"; se online, dispara o envio
+
+---
+
 ## Beta-0.224 — 2026-04-02
 
 ### Correções
