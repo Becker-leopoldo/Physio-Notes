@@ -79,10 +79,12 @@ async def resumir_historico(
     paciente: dict | None = None,
     documentos: list[dict] | None = None,
     owner_email: str | None = None,
+    tipo: str = "completo",
 ) -> str:
     """
     Recebe lista de sessões consolidadas, dados do paciente e documentos (PDFs).
-    Retorna relatório clínico formal baseado EXCLUSIVAMENTE nos dados fornecidos.
+    tipo='resumido' → resumo clínico rápido (máx ~20 linhas)
+    tipo='completo' → relatório clínico formal e detalhado
     """
     anamnese_bloco = _bloco_anamnese(paciente)
     if not historico and not anamnese_bloco and not documentos:
@@ -107,7 +109,27 @@ async def resumir_historico(
         if docs_partes:
             docs_bloco = "DOCUMENTOS CLÍNICOS ANEXADOS (laudos, exames, prontuários):\n" + "\n\n---\n\n".join(docs_partes) + "\n\n"
 
-    prompt = f"""Você é um fisioterapeuta clínico elaborando um relatório formal para o CREFITO.
+    if tipo == "resumido":
+        prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação musculoesquelética, neurológica e respiratória, e dos jargões técnicos da fisioterapia brasileira. Elabore um RESUMO CLÍNICO RÁPIDO e OBJETIVO deste paciente — máximo 20 linhas no total.
+
+REGRAS:
+- Baseie-se EXCLUSIVAMENTE nas informações fornecidas
+- Não invente nem infira nada além do que está nos dados
+- Linguagem técnica direta, pode usar tópicos curtos
+- Máximo 20 linhas. Seja objetivo — este texto é para um profissional de saúde ter uma visão rápida do quadro clínico
+
+Estrutura sugerida (adapte conforme os dados disponíveis):
+• Queixa principal / motivo do atendimento
+• Histórico relevante (se houver)
+• Técnicas e condutas aplicadas
+• Evolução observada
+• Situação atual
+
+{anamnese_bloco}{docs_bloco}NOTAS DE SESSÕES:
+{historico_formatado}"""
+        max_tokens = 512
+    else:
+        prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação musculoesquelética, neurológica e respiratória, e dos jargões técnicos da fisioterapia brasileira, elaborando um relatório clínico detalhado.
 
 REGRAS INVIOLÁVEIS:
 - Baseie-se EXCLUSIVAMENTE nas informações fornecidas abaixo
@@ -125,10 +147,11 @@ O relatório deve cobrir (apenas com base nos dados disponíveis):
 
 {anamnese_bloco}{docs_bloco}NOTAS DE SESSÕES:
 {historico_formatado}"""
+        max_tokens = 2048
 
     message = await client.messages.create(
         model=MODEL,
-        max_tokens=2048,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
     _registrar("resumir_historico", message, owner_email)
@@ -142,7 +165,7 @@ async def extrair_dados_paciente(transcricao: str, owner_email: str | None = Non
     Retorna dict com: nome, data_nascimento, cpf, endereco.
     Anamnese e conduta são registradas separadamente após o cadastro.
     """
-    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio cadastrando um novo paciente.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio dos procedimentos, técnicas e terminologia da fisioterapia brasileira. A fisioterapeuta gravou um áudio cadastrando um novo paciente.
 
 Extraia APENAS os dados cadastrais e retorne um JSON válido com estas chaves:
 
@@ -189,7 +212,7 @@ async def extrair_dados_pacote(transcricao: str, owner_email: str | None = None)
     data_pagamento (str YYYY-MM-DD|None), descricao (str|None).
     """
     hoje = __import__("datetime").date.today().isoformat()
-    prompt = f"""Você é um assistente de fisioterapia. A fisioterapeuta gravou um áudio registrando um novo pacote de sessões para um paciente.
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio dos procedimentos, técnicas e terminologia da fisioterapia brasileira. A fisioterapeuta gravou um áudio registrando um novo pacote de sessões para um paciente.
 
 Extraia as seguintes informações da transcrição e retorne APENAS um JSON válido com estas chaves:
 

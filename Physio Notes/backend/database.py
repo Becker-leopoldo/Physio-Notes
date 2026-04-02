@@ -191,6 +191,16 @@ def _migrate():
             )
         """)
 
+        conn.executescript("""
+            CREATE INDEX IF NOT EXISTS idx_sessao_paciente_id ON sessao(paciente_id);
+            CREATE INDEX IF NOT EXISTS idx_sessao_criado_em ON sessao(criado_em);
+            CREATE INDEX IF NOT EXISTS idx_audio_chunk_sessao_id ON audio_chunk(sessao_id);
+            CREATE INDEX IF NOT EXISTS idx_pacote_paciente_id ON pacote(paciente_id);
+            CREATE INDEX IF NOT EXISTS idx_paciente_owner_email ON paciente(owner_email);
+            CREATE INDEX IF NOT EXISTS idx_api_uso_criado_em ON api_uso(criado_em);
+            CREATE INDEX IF NOT EXISTS idx_api_uso_owner_email ON api_uso(owner_email);
+            CREATE INDEX IF NOT EXISTS idx_documento_paciente_id ON documento(paciente_id);
+        """)
         conn.commit()
 
 
@@ -298,6 +308,34 @@ def get_sessoes_paciente(paciente_id: int) -> list[dict]:
         return [_row_to_dict(r) for r in rows]
 
 
+def get_sessoes_com_consolidado(paciente_id: int) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT s.*,
+                   sc.id AS cons_id,
+                   sc.nota AS cons_nota,
+                   sc.queixa AS cons_queixa,
+                   sc.evolucao AS cons_evolucao,
+                   sc.conduta AS cons_conduta,
+                   sc.observacoes AS cons_observacoes,
+                   sc.proximos_passos AS cons_proximos_passos,
+                   sc.criado_em AS cons_criado_em
+            FROM sessao s
+            LEFT JOIN sessao_consolidada sc ON sc.sessao_id = s.id
+            WHERE s.paciente_id = ? AND s.deletado_em IS NULL
+            ORDER BY s.criado_em DESC
+        """, (paciente_id,)).fetchall()
+        result = []
+        for r in rows:
+            d = _row_to_dict(r)
+            cons = {k[5:]: v for k, v in d.items() if k.startswith("cons_") and v is not None}
+            for k in [k for k in d if k.startswith("cons_")]:
+                del d[k]
+            d["consolidado"] = cons if cons else None
+            result.append(d)
+        return result
+
+
 def sessao_aberta_do_paciente(paciente_id: int) -> dict | None:
     with get_conn() as conn:
         row = conn.execute(
@@ -326,7 +364,12 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None) -> dict:
     from datetime import date
     with get_conn() as conn:
         sessao = conn.execute("SELECT paciente_id, data FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
-        conn.execute("UPDATE sessao SET status = 'encerrada' WHERE id = ?", (sessao_id,))
+        cur = conn.execute(
+            "UPDATE sessao SET status = 'encerrada' WHERE id = ? AND status = 'aberta'",
+            (sessao_id,)
+        )
+        if cur.rowcount == 0:
+            return {"teve_pacote": True, "sessao_avulsa_valor": None, "_ja_encerrada": True}
         sessao_avulsa_valor = None
         if sessao:
             teve_pacote = _usar_sessao_pacote(conn, sessao["paciente_id"])
@@ -350,6 +393,51 @@ def cancelar_sessao(sessao_id: int):
     """Remove sessão aberta sem áudio (criada por engano)."""
     with get_conn() as conn:
         conn.execute("DELETE FROM sessao WHERE id = ? AND status = 'aberta'", (sessao_id,))
+        conn.commit()
+
+
+def registrar_cancelamento(
+    sessao_id: int,
+    cobrar: bool,
+    valor: float | None,
+    complemento: str | None,
+    owner_email: str | None = None,
+) -> None:
+    """Marca sessão como cancelada, registra nota e opcionalmente gera cobrança de cancelamento."""
+    from datetime import date as _date
+    with get_conn() as conn:
+        sessao = conn.execute("SELECT paciente_id, data FROM sessao WHERE id = ?", (sessao_id,)).fetchone()
+        if not sessao:
+            return
+        conn.execute(
+            "UPDATE sessao SET status = 'cancelada' WHERE id = ? AND status = 'aberta'",
+            (sessao_id,),
+        )
+        # Nota automática de cancelamento
+        nota = "Sessão cancelada pelo paciente."
+        if complemento and complemento.strip():
+            nota += f" {complemento.strip()}"
+        # Insere ou atualiza consolidado
+        existe = conn.execute(
+            "SELECT id FROM sessao_consolidada WHERE sessao_id = ?", (sessao_id,)
+        ).fetchone()
+        if existe:
+            conn.execute(
+                "UPDATE sessao_consolidada SET nota = ? WHERE sessao_id = ?",
+                (nota, sessao_id),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO sessao_consolidada (sessao_id, nota, criado_em) VALUES (?, ?, ?)",
+                (sessao_id, nota, _now()),
+            )
+        # Cobrança de cancelamento
+        if cobrar and valor and valor > 0:
+            data_sessao = sessao["data"] or _date.today().isoformat()
+            conn.execute(
+                "INSERT INTO procedimento_extra (sessao_id, paciente_id, descricao, valor, data, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+                (sessao_id, sessao["paciente_id"], "Taxa de cancelamento", valor, data_sessao, _now()),
+            )
         conn.commit()
 
 
@@ -614,6 +702,15 @@ def get_procedimentos_sessao(sessao_id: int) -> list[dict]:
             (sessao_id,),
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
+
+
+def atualizar_procedimento(proc_id: int, descricao: str, valor):
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE procedimento_extra SET descricao = ?, valor = ? WHERE id = ? AND deletado_em IS NULL",
+            (descricao, valor, proc_id),
+        )
+        conn.commit()
 
 
 def deletar_procedimento(proc_id: int):

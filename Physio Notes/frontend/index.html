@@ -7,6 +7,24 @@
     if (!localStorage.getItem('physio_token')) {
       window.location.replace('/login.html');
     }
+    // Verificação de recursos necessários — exibe tela de atualização se ausentes
+    (function() {
+      var ok = typeof MediaRecorder !== 'undefined'
+        && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function'
+        && typeof fetch === 'function'
+        && typeof Promise !== 'undefined';
+      if (!ok) {
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.style.cssText = 'margin:0;font-family:system-ui,sans-serif;background:#F9F8F6;display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:24px;';
+          document.body.innerHTML = '<div style="max-width:360px;text-align:center;">'
+            + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="color:#92600A;margin-bottom:16px;" xmlns="http://www.w3.org/2000/svg"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+            + '<div style="font-size:18px;font-weight:600;margin-bottom:8px;">Atualize seu navegador</div>'
+            + '<div style="font-size:14px;color:#6B6860;line-height:1.6;margin-bottom:24px;">O Physio Notes usa recursos de gravação de áudio que não estão disponíveis neste navegador.<br><br>Use uma versão atualizada de <strong>Chrome</strong>, <strong>Safari</strong> ou <strong>Firefox</strong>.</div>'
+            + '<div style="font-size:12px;color:#A09D97;">Chrome 90+ · Safari 14.5+ · Firefox 85+</div>'
+            + '</div>';
+        });
+      }
+    })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Physio Notes</title>
@@ -685,11 +703,11 @@
     .pacote-progress-fill {
       height: 100%;
       border-radius: var(--radius-full);
-      background: var(--color-accent);
-      transition: width 0.4s ease;
+      background: var(--color-success);
+      transition: width 0.4s ease, background 0.4s ease;
     }
-    .pacote-progress-fill.warning { background: var(--color-warning); }
-    .pacote-progress-fill.danger { background: var(--color-danger); }
+    .pacote-progress-fill.warning { background: var(--color-info); }
+    .pacote-progress-fill.danger  { background: var(--color-danger);  }
     .pacote-alerta {
       margin-top: var(--space-2);
       padding: var(--space-2) var(--space-3);
@@ -865,23 +883,6 @@
     .dados-resumo-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); }
     .dados-resumo-value { color: var(--color-text); line-height: 1.5; }
 
-    /* ---- Relatório / Print ---- */
-    .relatorio-paciente-check {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      padding: var(--space-3) var(--space-4);
-      border: var(--border);
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .relatorio-paciente-check:hover { background: var(--color-accent-light); }
-    .relatorio-paciente-check input[type="checkbox"] {
-      width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;
-      accent-color: var(--color-accent);
-    }
-    .relatorio-paciente-check label { cursor: pointer; flex: 1; font-size: var(--text-sm); }
 
     /* ---- Anamnese rendered content ---- */
     #anamnese-texto strong { font-weight: 600; color: var(--color-text); }
@@ -1023,6 +1024,26 @@
       /* Chips de pergunta: ocupam largura disponível */
       .ask-chip { white-space: normal; }
     }
+
+    /* ============================================================
+       RELATÓRIO CLÍNICO — visualização in-app
+    ============================================================ */
+    .relatorio-doc { background:var(--color-surface);margin:var(--space-4);border-radius:var(--radius-xl);border:var(--border);overflow:hidden;box-shadow:var(--shadow-md); }
+    .relatorio-doc-header { background:var(--color-accent);color:#fff;padding:var(--space-4) var(--space-5);display:flex;justify-content:space-between;align-items:center; }
+    .relatorio-doc-brand { display:flex;align-items:center;gap:var(--space-3); }
+    .relatorio-doc-monogram { width:34px;height:34px;background:rgba(255,255,255,0.15);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;letter-spacing:-0.5px;flex-shrink:0; }
+    .relatorio-doc-brand-name { font-size:var(--text-sm);font-weight:600;line-height:1.2; }
+    .relatorio-doc-brand-sub { font-size:10px;opacity:0.7;margin-top:1px; }
+    .relatorio-doc-date { font-size:var(--text-xs);opacity:0.65;text-align:right;line-height:1.4; }
+    .relatorio-doc-pac { padding:var(--space-5);border-bottom:var(--border);background:var(--color-bg); }
+    .relatorio-doc-pac-nome { font-family:var(--font-display);font-size:var(--text-2xl);margin-bottom:var(--space-2);line-height:1.2; }
+    .relatorio-doc-pac-meta { font-size:var(--text-sm);color:var(--color-text-secondary);line-height:1.6; }
+    .relatorio-doc-pac-fisio { font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-3);padding-top:var(--space-3);border-top:var(--border); }
+    .relatorio-doc-sec { padding:var(--space-5);border-bottom:var(--border); }
+    .relatorio-doc-sec-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--color-text-muted);margin-bottom:var(--space-3); }
+    .relatorio-sessao-card { border:var(--border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-3); }
+    .relatorio-sintese-box { background:var(--color-bg);border-radius:var(--radius-lg);padding:var(--space-4); }
+    .relatorio-doc-footer-bar { padding:var(--space-4) var(--space-5);font-size:var(--text-xs);color:var(--color-text-muted);text-align:center;border-top:var(--border);background:var(--color-bg); }
   </style>
 </head>
 <body>
@@ -1066,11 +1087,6 @@
     <button class="drawer-item" id="drawer-billing">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14M4 10h3M10 10h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Billing IA
-    </button>
-    <div class="drawer-nav-label" style="margin-top:var(--space-2);">Relatórios</div>
-    <button class="drawer-item" id="drawer-relatorio">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9H4V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M6 7h4M6 10h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      Relatório CREFITO
     </button>
     <div class="drawer-nav-label" style="margin-top:var(--space-2);">Conta</div>
     <a id="drawer-admin-link" href="/admin.html" class="drawer-item" style="display:none;text-decoration:none;">
@@ -1163,7 +1179,7 @@
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <span class="top-bar-title" id="paciente-top-name">Paciente</span>
-      <button class="top-bar-action" id="btn-resumo-paciente">Resumo IA</button>
+      <button class="top-bar-action" id="btn-resumo-paciente">Relatório</button>
     </div>
 
     <div id="sec-paciente-body" style="flex:1; overflow-y:auto; display:flex; flex-direction:column;">
@@ -1303,7 +1319,7 @@
       <button class="top-bar-back" id="back-paciente-from-resumo" title="Voltar">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <span class="top-bar-title">Resumo do paciente</span>
+      <span class="top-bar-title">Relatório Clínico</span>
     </div>
     <div class="section-body" id="resumo-body">
     </div>
@@ -1474,38 +1490,26 @@
   </div>
 </div>
 
-<!-- MODAL: RELATÓRIO CREFITO -->
-<div class="modal-overlay" id="modal-relatorio">
-  <div class="modal">
-    <div class="modal-drag-handle"></div>
-    <h2 class="modal-title">Relatório CREFITO</h2>
-    <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Selecione os pacientes para incluir no relatório</p>
-    <div id="relatorio-pacientes-list" style="display:flex;flex-direction:column;gap:var(--space-2);max-height:300px;overflow-y:auto;margin-bottom:var(--space-5);"></div>
-    <div id="relatorio-error" style="margin-bottom:var(--space-3);"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" id="btn-cancelar-relatorio">Cancelar</button>
-      <button type="button" class="btn btn-primary btn-full" id="btn-gerar-relatorio">Gerar relatório</button>
-    </div>
-  </div>
-</div>
-
-<!-- PRINT VIEW: RELATÓRIO CREFITO -->
-<div id="print-view" style="display:none;">
-  <div id="print-content"></div>
-</div>
+<div id="print-view" style="display:none;"></div>
 
 <script>
   /* ============================================================
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.225'; // bump a cada deploy: Beta-0.226, Beta-0.227...
+  const APP_VERSION = 'Beta-0.241'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
 
   /* ============================================================
      STATE
   ============================================================ */
   let currentPacienteId = null;
   let currentSessaoId   = null;   // sessão aberta ativa
+  let _temPacoteAtivo   = false;  // se o paciente atual tem pacote ativo
   let mediaRecorder     = null;
   let audioChunks       = [];
   let recordTimerInterval = null;
@@ -1626,8 +1630,10 @@
   function friendlyError(err) {
     const msg = (err?.message || '').toLowerCase();
     const status = err?.status || 0;
-    if (!navigator.onLine || msg.includes('failed to fetch') || msg.includes('network') || msg.includes('connection')) {
-      return 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
+    if (err?._network || msg.includes('failed to fetch') || msg.includes('network error') || msg.includes('conectar ao servidor')) {
+      return !navigator.onLine
+        ? 'Sem internet — o áudio foi salvo e será enviado ao reconectar.'
+        : 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
     }
     if (msg.includes('transcri') || msg.includes('áudio') || msg.includes('audio')) {
       return 'Não foi possível processar o áudio. Verifique sua conexão e tente gravar novamente.';
@@ -1770,7 +1776,10 @@
     try {
       res = await fetch(API_BASE + path, opts);
     } catch (e) {
-      throw new Error('Sem conexão com a internet.');
+      // fetch() lança apenas em falha de rede (não em respostas 4xx/5xx)
+      const err = new Error('Não foi possível conectar ao servidor. Verifique sua internet.');
+      err._network = true;
+      throw err;
     }
     if (res.status === 401) {
       localStorage.removeItem('physio_token');
@@ -1829,9 +1838,9 @@
     filtrados.forEach(p => {
         const item = el('div', { className: 'list-item' });
         item.innerHTML = `
-          <div class="list-item-avatar">${initials(p.nome)}</div>
+          <div class="list-item-avatar">${initials(escHtml(p.nome))}</div>
           <div class="list-item-content">
-            <div class="list-item-title">${p.nome}</div>
+            <div class="list-item-title">${escHtml(p.nome)}</div>
             <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
               <div class="list-item-subtitle">${p.data_nascimento ? 'Nasc. ' + formatDate(p.data_nascimento) : 'Data de nascimento não informada'}</div>
               ${p.sessoes_restantes != null ? `<span class="badge ${p.sessoes_restantes <= 2 ? 'badge-warning' : 'badge-info'}" style="font-size:10px;">${p.sessoes_restantes} sess${p.sessoes_restantes === 1 ? 'ão' : 'ões'} restante${p.sessoes_restantes === 1 ? '' : 's'}</span>` : ''}
@@ -1998,9 +2007,8 @@
     }
 
     const fb = document.getElementById('modal-rec-feedback');
-    // Aviso leve se offline — mas a gravação é local e continua normalmente
     if (!navigator.onLine) {
-      fb.innerHTML = '<div class="alert alert-warning" style="margin-bottom:var(--space-2);">Sem internet — grave normalmente. O áudio será enviado quando a conexão voltar.</div>';
+      fb.innerHTML = '<div class="alert alert-warning" style="margin-bottom:var(--space-2);">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</div>';
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -2173,11 +2181,11 @@
       headerArea.innerHTML = '';
       const hdr = el('div', { className: 'patient-header' });
       hdr.innerHTML = `
-        <div class="patient-avatar-lg">${initials(paciente.nome)}</div>
+        <div class="patient-avatar-lg">${initials(escHtml(paciente.nome))}</div>
         <div style="flex:1;">
-          <div class="patient-name">${paciente.nome}</div>
+          <div class="patient-name">${escHtml(paciente.nome)}</div>
           <div class="patient-dob">${paciente.data_nascimento ? 'Nasc. ' + formatDate(paciente.data_nascimento) : ''}</div>
-          ${paciente.observacoes ? `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:var(--space-1);">${paciente.observacoes}</div>` : ''}
+          ${paciente.observacoes ? `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:var(--space-1);">${escHtml(paciente.observacoes)}</div>` : ''}
         </div>
         <button class="btn btn-ghost btn-sm" id="btn-editar-paciente" style="align-self:flex-start;flex-shrink:0;">Editar</button>`;
       headerArea.appendChild(hdr);
@@ -2262,7 +2270,7 @@
       let anamneseRecorder = null, anamneseChunks = [], anamneseRecording = false;
 
       function fecharGravacaoAnamnese() {
-        if (anamneseRecording && anamneseRecorder) { anamneseRecorder.stop(); anamneseRecording = false; }
+        if (anamneseRecording && anamneseRecorder) { try { anamneseRecorder.stop(); } catch {} anamneseRecording = false; }
         document.getElementById('anamnese-gravacao').style.display = 'none';
         document.getElementById('btn-complementar-anamnese').style.display = '';
         document.getElementById('mic-fb-anamnese').textContent = '';
@@ -2286,12 +2294,15 @@
         const micLabel = document.getElementById('mic-label-anamnese');
         const micFb = document.getElementById('mic-fb-anamnese');
         if (!anamneseRecording) {
-          if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Sem internet — grave normalmente. O áudio será enviado ao reconectar.</span>';
+          if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</span>';
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/ogg;codecs=opus';
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+              : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+              : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
             anamneseChunks = [];
-            anamneseRecorder = new MediaRecorder(stream, { mimeType });
+            try { anamneseRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
+            catch { stream.getTracks().forEach(t => t.stop()); throw new Error('Formato de áudio não suportado neste navegador.'); }
             anamneseRecorder.ondataavailable = e => { if (e.data.size > 0) anamneseChunks.push(e.data); };
             anamneseRecorder.onstop = async () => {
               stream.getTracks().forEach(t => t.stop());
@@ -2445,7 +2456,7 @@
       let condutaRecorder = null, condutaChunks = [], condutaRecording = false;
 
       function fecharGravacaoConduta() {
-        if (condutaRecording && condutaRecorder) { condutaRecorder.stop(); condutaRecording = false; }
+        if (condutaRecording && condutaRecorder) { try { condutaRecorder.stop(); } catch {} condutaRecording = false; }
         document.getElementById('conduta-gravacao').style.display = 'none';
         document.getElementById('btn-complementar-conduta').style.display = '';
         document.getElementById('mic-fb-conduta').textContent = '';
@@ -2500,12 +2511,15 @@
         const micLabel = document.getElementById('mic-label-conduta');
         const micFb = document.getElementById('mic-fb-conduta');
         if (!condutaRecording) {
-          if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Sem internet — grave normalmente. O áudio será enviado ao reconectar.</span>';
+          if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</span>';
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/ogg;codecs=opus';
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+              : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+              : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
             condutaChunks = [];
-            condutaRecorder = new MediaRecorder(stream, { mimeType });
+            try { condutaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
+            catch { stream.getTracks().forEach(t => t.stop()); throw new Error('Formato de áudio não suportado neste navegador.'); }
             condutaRecorder.ondataavailable = e => { if (e.data.size > 0) condutaChunks.push(e.data); };
             condutaRecorder.onstop = async () => {
               stream.getTracks().forEach(t => t.stop());
@@ -2589,15 +2603,16 @@
         }
       });
 
-      // Pacotes
-      loadPacotes(pacienteId);
+      // Pacotes (aguarda para saber se há pacote ativo antes de montar o banner)
+      const pacoteAtivo = await loadPacotes(pacienteId);
+      _temPacoteAtivo = !!pacoteAtivo;
 
       // Open session
       const sessaoAberta = sessoes.find(s => s.status === 'aberta');
-      renderOpenSessionBanner(sessaoAberta);
+      renderOpenSessionBanner(sessaoAberta, _temPacoteAtivo);
 
-      // Sessões encerradas
-      renderSessoesList(sessoes.filter(s => s.status === 'encerrada'));
+      // Sessões encerradas e canceladas
+      renderSessoesList(sessoes.filter(s => s.status === 'encerrada' || s.status === 'cancelada'));
 
       // Documentos
       loadDocumentos(pacienteId);
@@ -2607,7 +2622,7 @@
     }
   }
 
-  function renderOpenSessionBanner(sessao) {
+  function renderOpenSessionBanner(sessao, temPacote) {
     const area = document.getElementById('open-session-area');
     area.innerHTML = '';
     if (!sessao) {
@@ -2626,6 +2641,7 @@
       <div class="open-session-actions" style="align-items:center;">
         <button class="btn btn-primary btn-sm" id="btn-gravar">Gravar áudio</button>
         <button class="btn btn-danger btn-sm" id="btn-encerrar">Encerrar sessão</button>
+        ${!temPacote ? `<button class="btn btn-ghost btn-sm" id="btn-cancelar" style="color:var(--color-danger);font-size:var(--text-xs);padding:var(--space-1) var(--space-2);">Cancelar sessão</button>` : ''}
         <div class="ac-indicator" style="display:none;">
           <div class="ac-pill" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-accent-light);border-radius:var(--radius-full);padding:4px 10px 4px 7px;transition:background 0.4s,color 0.4s;">
             <svg width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;">
@@ -2644,34 +2660,47 @@
 
     document.getElementById('btn-gravar').addEventListener('click', () => openGravacao(sessao.id));
     document.getElementById('btn-encerrar').addEventListener('click', () => encerrarSessao(sessao.id));
+    document.getElementById('btn-cancelar')?.addEventListener('click', () => abrirModalCancelamento(sessao.id));
 
     resumeAutoCloseTimer(sessao.id);
   }
 
   function renderSessoesList(sessoes, fromCache) {
-    if (!fromCache) _sessCache = sessoes;
+    if (!fromCache) { _sessCache = sessoes; _sessPage = 0; }
     const list = document.getElementById('sessoes-list');
     list.innerHTML = '';
     if (sessoes.length === 0) {
       list.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-muted);text-align:center;padding:var(--space-8);">Nenhuma sessão encerrada ainda.</div>`;
       return;
     }
-    sessoes.forEach(s => {
+
+    const totalPaginas = Math.ceil(sessoes.length / _SESS_PAGE_SIZE);
+    if (_sessPage >= totalPaginas) _sessPage = totalPaginas - 1;
+    const inicio = _sessPage * _SESS_PAGE_SIZE;
+    const pagina = sessoes.slice(inicio, inicio + _SESS_PAGE_SIZE);
+
+    const hoje = new Date().toISOString().slice(0, 10);
+    pagina.forEach(s => {
       const card = el('div', { className: 'session-card', style: 'margin-bottom: var(--space-3);' });
       const c = s.consolidado;
-      const preview = c?.nota || c?.conduta || c?.queixa || 'Sem nota registrada';
+      const isCancelada = s.status === 'cancelada';
+      const preview = isCancelada
+        ? (c?.nota || 'Sessão cancelada')
+        : (c?.nota || c?.conduta || c?.queixa || 'Sem nota registrada');
       const previewTrunc = preview.length > 120 ? preview.slice(0, 120) + '…' : preview;
-      const isHoje = s.data === new Date().toISOString().slice(0, 10);
+      const isHoje = s.data === hoje;
       card.innerHTML = `
         <div class="session-card-header" style="display:flex;align-items:center;gap:var(--space-2);">
           <span class="session-card-date">${formatDate(s.data)}</span>
-          <span class="badge badge-neutral">Encerrada</span>
-          ${isHoje ? `<button class="btn btn-ghost btn-sm btn-add-nota" data-sessao-id="${s.id}" style="font-size:11px;padding:2px 8px;">+ Nota</button>` : ''}
+          ${isCancelada
+            ? '<span class="badge badge-danger">Cancelada</span>'
+            : '<span class="badge badge-neutral">Encerrada</span>'}
+          ${!isCancelada && isHoje ? `<button class="btn btn-ghost btn-sm btn-add-nota" data-sessao-id="${s.id}" style="font-size:11px;padding:2px 8px;">+ Nota</button>` : ''}
           <button class="btn-delete-inline" data-sessao-id="${s.id}" title="Remover sessão" style="margin-left:auto;background:none;border:none;cursor:pointer;padding:var(--space-1) var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
-        <div class="session-card-queixa">${previewTrunc}</div>`;
+        <div class="session-card-queixa">${escHtml(previewTrunc)}</div>`;
       card.addEventListener('click', (e) => {
         if (e.target.closest('.btn-delete-inline')) return;
         openSessaoDetalhe(s.id);
@@ -2686,17 +2715,39 @@
           }
         );
       });
-
       card.querySelector('.btn-add-nota')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        abrirGravacaoNotaExtra(s.id);
+        abrirGravacaoNotaExtra(s.id, () => openPaciente(currentPacienteId));
       });
-
       list.appendChild(card);
     });
+
+    // Paginação
+    if (totalPaginas > 1) {
+      const pag = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;margin-top:var(--space-2);border-top:var(--border);' });
+      pag.innerHTML = `
+        <button id="_sess_prev" class="btn btn-ghost btn-sm" ${_sessPage === 0 ? 'disabled' : ''} style="display:flex;align-items:center;gap:4px;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8 2L3 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Anterior
+        </button>
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${_sessPage + 1} / ${totalPaginas}</span>
+        <button id="_sess_next" class="btn btn-ghost btn-sm" ${_sessPage >= totalPaginas - 1 ? 'disabled' : ''} style="display:flex;align-items:center;gap:4px;">
+          Próximas
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M6 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>`;
+      pag.querySelector('#_sess_prev').addEventListener('click', () => {
+        _sessPage--; renderSessoesList(sessoes, true);
+        list.closest('[style*="overflow-y"]')?.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      pag.querySelector('#_sess_next').addEventListener('click', () => {
+        _sessPage++; renderSessoesList(sessoes, true);
+        list.closest('[style*="overflow-y"]')?.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      list.appendChild(pag);
+    }
   }
 
-  function abrirGravacaoNotaExtra(sessaoId) {
+  function abrirGravacaoNotaExtra(sessaoId, onDone) {
     const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
     let recorder = null, chunks = [], recording = false;
     modal.innerHTML = `
@@ -2724,25 +2775,45 @@
         recorder.stop();
         return;
       }
-      if (!navigator.onLine) feedback.innerHTML = '<span style="color:var(--color-warning);">Sem internet — grave normalmente. O áudio será enviado ao reconectar.</span>';
+      if (!navigator.onLine) feedback.innerHTML = '<span style="color:var(--color-warning);">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</span>';
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        recorder = new MediaRecorder(stream);
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+        try { recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
+        catch { stream.getTracks().forEach(t => t.stop()); throw new Error('Formato de áudio não suportado.'); }
         chunks = [];
-        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
         recorder.onstop = async () => {
           stream.getTracks().forEach(t => t.stop());
           recording = false;
           micBtn.style.background = 'var(--color-accent)';
           feedback.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;"></span> Processando...';
           micBtn.disabled = true;
-          const blob = new Blob(chunks, { type: 'audio/webm' });
+          const blob = new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
           await enviarComRetry(feedback, async () => {
             const form = new FormData();
             form.append('audio', blob, 'nota.webm');
             await apiFetch(`/sessoes/${sessaoId}/adicionar-audio`, { method: 'POST', body: form });
             modal.remove();
-            openPaciente(currentPacienteId);
+            const callback = onDone || (() => openPaciente(currentPacienteId));
+            // Detectar e salvar procedimentos extras automaticamente
+            try {
+              const det = await apiFetch(`/sessoes/${sessaoId}/detectar-procedimentos`, { method: 'POST' });
+              if (det.sugestoes?.length > 0) {
+                await Promise.all(det.sugestoes.map(s =>
+                  apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(s),
+                  }).catch(() => {})
+                ));
+                await callback();
+                _showSnack(`${det.sugestoes.length} procedimento(s) detectado(s) e adicionado(s) automaticamente`);
+                return;
+              }
+            } catch {}
+            await callback();
           }).catch(e => {
             feedback.textContent = friendlyError(e);
             micBtn.disabled = false;
@@ -2759,6 +2830,142 @@
   }
 
   /* ============================================================
+     CANCELAR SESSÃO (SEM PACOTE)
+  ============================================================ */
+  async function abrirModalCancelamento(sessaoId) {
+    let valorSugerido = 0;
+    try {
+      const cfg = await apiFetch('/configuracoes');
+      valorSugerido = cfg.valor_sessao_avulsa ? cfg.valor_sessao_avulsa / 2 : 0;
+    } catch {}
+
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    let recorder = null, chunks = [], recording = false, audioBlob = null;
+
+    const valorFmt = valorSugerido > 0 ? valorSugerido.toFixed(2) : '0.00';
+    const valorHint = valorSugerido > 0
+      ? `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Sugestão: 50% da sessão avulsa — R$ ${valorFmt.replace('.', ',')}</span>`
+      : '';
+
+    modal.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:400px;box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-1);">Cancelar sessão</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">A sessão será registrada como cancelada. Você pode cobrar uma taxa de cancelamento.</p>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-accent-light);border-radius:var(--radius-md);margin-bottom:var(--space-4);">
+          <label style="font-size:var(--text-sm);font-weight:600;cursor:pointer;" for="canc-cobrar">Cobrar taxa de cancelamento?</label>
+          <input type="checkbox" id="canc-cobrar" checked style="width:18px;height:18px;cursor:pointer;accent-color:#1A1A1A;">
+        </div>
+
+        <div id="canc-valor-row" style="margin-bottom:var(--space-4);">
+          <label class="form-label" for="canc-valor">Valor (R$)</label>
+          <input class="form-input" type="number" id="canc-valor" step="0.01" min="0" value="${valorFmt}" placeholder="0,00">
+          ${valorHint}
+        </div>
+
+        <div style="margin-bottom:var(--space-4);">
+          <label class="form-label">Complemento (opcional)</label>
+          <textarea class="form-textarea" id="canc-complemento" rows="3" placeholder="Motivo do cancelamento, observações..."></textarea>
+        </div>
+
+        <div style="text-align:center;margin-bottom:var(--space-4);">
+          <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-2);">Ou grave um áudio complementar:</p>
+          <button id="canc-btn-mic" style="width:52px;height:52px;border-radius:var(--radius-full);background:var(--color-accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-2);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <div id="canc-mic-feedback" style="font-size:var(--text-xs);color:var(--color-text-muted);">Toque para gravar</div>
+        </div>
+
+        <div id="canc-feedback" style="font-size:var(--text-sm);color:var(--color-danger);min-height:20px;margin-bottom:var(--space-4);"></div>
+
+        <div style="display:flex;gap:var(--space-3);">
+          <button class="btn btn-secondary" style="flex:1;" id="canc-fechar">Voltar</button>
+          <button class="btn btn-danger" style="flex:1;" id="canc-confirmar">Confirmar</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    const cobrarChk = modal.querySelector('#canc-cobrar');
+    const valorRow  = modal.querySelector('#canc-valor-row');
+    const valorInp  = modal.querySelector('#canc-valor');
+    const micBtn    = modal.querySelector('#canc-btn-mic');
+    const micFb     = modal.querySelector('#canc-mic-feedback');
+    const feedback  = modal.querySelector('#canc-feedback');
+
+    cobrarChk.addEventListener('change', () => {
+      valorRow.style.opacity = cobrarChk.checked ? '1' : '0.4';
+      valorInp.disabled = !cobrarChk.checked;
+    });
+
+    modal.querySelector('#canc-fechar').addEventListener('click', () => {
+      if (recorder?.state === 'recording') try { recorder.stop(); } catch {}
+      modal.remove();
+    });
+
+    micBtn.addEventListener('click', async () => {
+      if (recording) { try { recorder.stop(); } catch {} return; }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+        try { recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
+        catch { stream.getTracks().forEach(t => t.stop()); throw new Error('Formato não suportado.'); }
+        chunks = [];
+        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        recorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          recording = false;
+          micBtn.style.background = 'var(--color-accent)';
+          audioBlob = new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
+          micFb.innerHTML = '<span style="color:var(--color-success);">✓ Áudio gravado</span>';
+        };
+        recorder.start();
+        recording = true;
+        micBtn.style.background = 'var(--color-danger)';
+        micFb.textContent = 'Gravando... toque para parar';
+      } catch {
+        micFb.textContent = 'Não foi possível acessar o microfone.';
+      }
+    });
+
+    modal.querySelector('#canc-confirmar').addEventListener('click', async () => {
+      const cobrar = cobrarChk.checked;
+      const valor  = cobrar ? (parseFloat(valorInp.value) || 0) : 0;
+      const btn    = modal.querySelector('#canc-confirmar');
+      btn.disabled = true; btn.textContent = 'Processando...';
+      feedback.textContent = '';
+
+      try {
+        let complemento = modal.querySelector('#canc-complemento').value.trim();
+        if (audioBlob) {
+          try {
+            const form = new FormData();
+            form.append('audio', audioBlob, 'cancelamento.webm');
+            const tr = await apiFetch('/transcrever', { method: 'POST', body: form });
+            if (tr.texto) complemento = complemento ? `${complemento} ${tr.texto}` : tr.texto;
+          } catch {}
+        }
+
+        await apiFetch(`/sessoes/${sessaoId}/cancelar-com-cobranca`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cobrar, valor: cobrar ? valor : null, complemento: complemento || null }),
+        });
+
+        modal.remove();
+        _temPacoteAtivo = false;
+        await openPaciente(currentPacienteId);
+        _showSnack('Sessão cancelada' + (cobrar && valor > 0 ? ` — cobrança de R$ ${valor.toFixed(2).replace('.', ',')} registrada` : ''));
+      } catch (e) {
+        feedback.textContent = friendlyError(e);
+        btn.disabled = false; btn.textContent = 'Confirmar';
+      }
+    });
+  }
+
+  /* ============================================================
      NOVA SESSÃO
   ============================================================ */
   async function iniciarNovaSessao() {
@@ -2769,7 +2976,7 @@
         body: JSON.stringify({ paciente_id: currentPacienteId }),
       });
       currentSessaoId = sessao.id;
-      renderOpenSessionBanner(sessao);
+      renderOpenSessionBanner(sessao, _temPacoteAtivo);
       startAutoCloseTimer(); // inicia imediatamente ao criar sessão
     } catch (e) {
       alert(e.message);
@@ -2815,6 +3022,20 @@
           const fb = document.getElementById('banner-feedback');
           if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replace('.', ',')}</div>`;
         }
+        // Detectar e salvar procedimentos extras automaticamente
+        try {
+          const det = await apiFetch(`/sessoes/${sessaoId}/detectar-procedimentos`, { method: 'POST' });
+          if (det.sugestoes?.length > 0) {
+            await Promise.all(det.sugestoes.map(s =>
+              apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(s),
+              }).catch(() => {})
+            ));
+            await openPaciente(currentPacienteId);
+            _showSnack(`${det.sugestoes.length} procedimento(s) detectado(s) e adicionado(s) automaticamente`);
+          }
+        } catch {}
       } else {
         ['btn-encerrar', 'btn-encerrar-rec'].forEach(id => {
           const b = document.getElementById(id);
@@ -2883,7 +3104,7 @@
 
     chunks.forEach(c => {
       const item = el('div', { className: 'chunk-item' });
-      item.innerHTML = `<div class="chunk-item-time">${formatDate(c.timestamp)}</div><div class="chunk-item-text">${c.transcricao}</div>`;
+      item.innerHTML = `<div class="chunk-item-time">${formatDate(c.timestamp)}</div><div class="chunk-item-text">${escHtml(c.transcricao)}</div>`;
       list.appendChild(item);
     });
   }
@@ -3004,7 +3225,7 @@
 
     if (!navigator.onLine) {
       const fb = document.getElementById('rec-feedback');
-      fb.innerHTML = '<div class="alert alert-warning">Sem internet — grave normalmente. O áudio será enviado ao reconectar.</div>';
+      fb.innerHTML = '<div class="alert alert-warning">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</div>';
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -3083,28 +3304,25 @@
   }
 
   function isNetworkError(e) {
-    if (!navigator.onLine) return true;
+    // Usa a flag explícita do apiFetch (mais confiável que navigator.onLine)
+    if (e?._network) return true;
     const msg = (e?.message || '').toLowerCase();
-    if (msg.includes('failed to fetch') || msg.includes('network') ||
-        msg.includes('conexão') || msg.includes('connection') ||
-        msg.includes('sem internet')) return true;
+    if (msg.includes('failed to fetch') || msg.includes('network error') ||
+        msg.includes('conectar ao servidor') || msg.includes('sem internet')) return true;
     const status = e?.status || 0;
-    return status === 502 || status === 503 || status === 504; // servidor temporariamente indisponível
+    // 502/503/504 = servidor temporariamente indisponível (pode valer retry)
+    return status === 502 || status === 503 || status === 504;
   }
 
-  // Wrapper genérico: executa fn(), se offline agenda retry automático
+  // Wrapper genérico: sempre tenta enviar; só agenda retry se falhar por rede.
+  // Não bloqueia em navigator.onLine pois ele é não-confiável (falsos negativos em troca WiFi→4G).
   async function enviarComRetry(feedbackEl, fn) {
-    if (!navigator.onLine) {
-      pendingRetries.push({ feedbackEl, fn });
-      mostrarBannerOffline(feedbackEl);
-      return;
-    }
     try {
       await fn();
     } catch (e) {
       if (isNetworkError(e)) {
         pendingRetries.push({ feedbackEl, fn });
-        mostrarBannerOffline(feedbackEl);
+        mostrarBannerOffline(feedbackEl, false);
       } else {
         throw e;
       }
@@ -3127,23 +3345,30 @@
       document.getElementById('sessao-top-date').textContent = 'Sessão de ' + formatDate(data.data);
       body.innerHTML = '';
 
+      const isHoje = data.data === new Date().toISOString().split('T')[0];
       const c = data.consolidado;
       if (c) {
         const nota = c.nota || c.conduta || null;
         const group = el('div', { className: 'field-group' });
         group.innerHTML = `
-          <div class="field-label" style="display:flex;align-items:center;gap:var(--space-2);">
-            Nota clínica
-            <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--color-accent-light);color:var(--color-text-secondary);padding:1px 6px;border-radius:var(--radius-full);">IA</span>
+          <div class="field-label" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);">
+            <div style="display:flex;align-items:center;gap:var(--space-2);">
+              Nota clínica
+              <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--color-accent-light);color:var(--color-text-secondary);padding:1px 6px;border-radius:var(--radius-full);">IA</span>
+            </div>
+            ${isHoje && data.status === 'encerrada' ? `<button class="btn btn-ghost btn-sm" id="btn-add-nota-detalhe" style="font-size:11px;padding:2px 8px;">+ Nota</button>` : ''}
           </div>
           ${nota
-            ? `<div class="field-value" style="white-space:pre-wrap;line-height:1.65;">${nota}</div>`
+            ? `<div class="field-value" style="white-space:pre-wrap;line-height:1.65;">${escHtml(nota)}</div>`
             : `<div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--color-bg);border-radius:var(--radius-md);border:var(--border);">
                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5M8 10.5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
                  <span style="font-size:var(--text-sm);color:var(--color-text-muted);">Nota clínica não gerada — esta sessão foi encerrada sem consolidação por IA.</span>
                </div>`
           }`;
         body.appendChild(group);
+        group.querySelector('#btn-add-nota-detalhe')?.addEventListener('click', () => {
+          abrirGravacaoNotaExtra(sessaoId, () => openSessaoDetalhe(sessaoId));
+        });
       } else {
         const info = el('div', { style: 'margin:var(--space-5);display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);background:var(--color-bg);border-radius:var(--radius-md);border:var(--border);' });
         info.innerHTML = `<svg width="20" height="20" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5M8 10.5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span style="font-size:var(--text-sm);color:var(--color-text-muted);">Sessão sem nota clínica — encerre a sessão para gerar a nota automaticamente.</span>`;
@@ -3174,16 +3399,31 @@
           lista.forEach(p => {
             const row = el('div', { style: 'display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:var(--border);gap:var(--space-3);' });
             row.innerHTML = `
-              <div>
-                <div style="font-size:var(--text-sm);font-weight:500;">${p.descricao}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:var(--text-sm);font-weight:500;">${escHtml(_descricaoProc(p.descricao))}</div>
                 ${p.valor ? `<div style="font-size:var(--text-xs);color:var(--color-text-secondary);">${fmtR(p.valor)}</div>` : '<div style="font-size:var(--text-xs);color:var(--color-text-muted);">Sem cobrança</div>'}
               </div>
-              <button class="btn btn-ghost btn-sm btn-del-proc" data-id="${p.id}" style="color:var(--color-danger);flex-shrink:0;">Remover</button>`;
+              <div style="display:flex;gap:var(--space-1);flex-shrink:0;">
+                <button class="btn btn-ghost btn-sm btn-edit-proc" data-id="${p.id}" data-desc="${escHtml(_descricaoProc(p.descricao))}" data-valor="${p.valor ?? ''}">Editar</button>
+                <button class="btn btn-ghost btn-sm btn-del-proc" data-id="${p.id}" style="color:var(--color-danger);">Remover</button>
+              </div>`;
             procSection.appendChild(row);
           });
         }
 
         procSection.querySelector('#btn-add-proc').addEventListener('click', () => abrirModalProcedimento(sessaoId, lista, renderProcs));
+
+        procSection.querySelectorAll('.btn-edit-proc').forEach(btn => {
+          btn.addEventListener('click', () => {
+            abrirModalEditarProcedimento(
+              { id: btn.dataset.id, descricao: btn.dataset.desc, valor: btn.dataset.valor },
+              async () => {
+                const updated = await apiFetch(`/sessoes/${sessaoId}/procedimentos`);
+                renderProcs(updated);
+              }
+            );
+          });
+        });
 
         procSection.querySelectorAll('.btn-del-proc').forEach(btn => {
           btn.addEventListener('click', async () => {
@@ -3204,7 +3444,7 @@
         body.appendChild(chunksTitle);
         const list = el('div', { className: 'chunk-list', style: 'padding:0 var(--space-5) var(--space-5);' });
         data.chunks.forEach(ch => {
-          list.innerHTML += `<div class="chunk-item"><div class="chunk-item-time">${formatDate(ch.timestamp)}</div><div class="chunk-item-text">${ch.transcricao}</div></div>`;
+          list.innerHTML += `<div class="chunk-item"><div class="chunk-item-time">${formatDate(ch.timestamp)}</div><div class="chunk-item-text">${escHtml(ch.transcricao)}</div></div>`;
         });
         body.appendChild(list);
       }
@@ -3212,6 +3452,31 @@
     } catch (e) {
       body.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
     }
+  }
+
+  // Exibe uma notificação flutuante temporária na parte inferior da tela
+  function _showSnack(msg, duration = 3500) {
+    const s = el('div', { style: 'position:fixed;bottom:var(--space-8);left:50%;transform:translateX(-50%);background:var(--color-accent);color:#fff;padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:500;z-index:9999;box-shadow:var(--shadow-lg);white-space:nowrap;pointer-events:none;opacity:1;transition:opacity 0.4s;' });
+    s.textContent = msg;
+    document.body.appendChild(s);
+    setTimeout(() => { s.style.opacity = '0'; setTimeout(() => s.remove(), 400); }, duration);
+  }
+
+  // Sanitiza descrição de procedimento — converte JSON acidental em texto legível
+  function _descricaoProc(s) {
+    if (!s) return '';
+    const t = s.trim();
+    if (!t.startsWith('{') && !t.startsWith('[')) return s;
+    try {
+      const parsed = JSON.parse(t.startsWith('[') ? t : `[${t}]`);
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      const nomes = arr.map(x => x.descricao).filter(Boolean);
+      if (nomes.length) return nomes.join(', ');
+    } catch {
+      const matches = [...t.matchAll(/"descricao"\s*:\s*"([^"]+)"/g)];
+      if (matches.length) return matches.map(m => m[1]).join(', ');
+    }
+    return s;
   }
 
   function abrirModalRevisaoProcs(sessaoId, sugestoes, onSave) {
@@ -3243,7 +3508,7 @@
     modal.querySelector('#proc-rev-cancelar').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 
-    modal.querySelector('#proc-rev-confirmar').addEventListener('click', async () => {
+    modal.querySelector('#proc-rev-confirmar').addEventListener('click', async function() {
       const selecionados = [];
       sugestoes.forEach((_, i) => {
         const chk = modal.querySelector(`#proc-chk-${i}`);
@@ -3260,6 +3525,9 @@
         return;
       }
 
+      this.disabled = true;
+      this.textContent = 'Salvando...';
+
       try {
         await Promise.all(selecionados.map(s =>
           apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
@@ -3273,6 +3541,54 @@
       } catch (e) {
         const err = modal.querySelector('#proc-rev-error');
         err.textContent = e.message; err.style.display = '';
+      }
+    });
+  }
+
+  function abrirModalEditarProcedimento(proc, onSave) {
+    const overlay = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;' });
+    overlay.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;max-width:480px;padding:var(--space-6);box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-5);">Editar procedimento</h3>
+        <div class="form-group" style="margin-bottom:var(--space-4);">
+          <label class="form-label">Descrição</label>
+          <input class="form-input" type="text" id="_ep_desc" value="${escHtml(proc.descricao)}">
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-5);">
+          <label class="form-label">Valor (R$) — opcional</label>
+          <input class="form-input" type="number" step="0.01" id="_ep_valor" placeholder="Ex: 50.00" value="${proc.valor ?? ''}">
+        </div>
+        <div id="_ep_error" style="color:var(--color-danger);font-size:var(--text-sm);margin-bottom:var(--space-3);display:none;"></div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <button class="btn btn-primary btn-full" id="_ep_salvar">Salvar</button>
+          <button class="btn btn-secondary btn-full" id="_ep_cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_ep_cancelar').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#_ep_salvar').addEventListener('click', async () => {
+      const desc = overlay.querySelector('#_ep_desc').value.trim();
+      const valor = parseFloat(overlay.querySelector('#_ep_valor').value) || null;
+      if (!desc) {
+        const err = overlay.querySelector('#_ep_error');
+        err.textContent = 'Informe a descrição.'; err.style.display = '';
+        return;
+      }
+      const btn = overlay.querySelector('#_ep_salvar');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+      try {
+        await apiFetch(`/procedimentos/${proc.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ descricao: desc, valor }),
+        });
+        overlay.remove();
+        await onSave();
+      } catch (e) {
+        const err = overlay.querySelector('#_ep_error');
+        err.textContent = e.message; err.style.display = '';
+        btn.disabled = false; btn.textContent = 'Salvar';
       }
     });
   }
@@ -3319,7 +3635,7 @@
 
     micBtn.addEventListener('click', async () => {
       if (!recording) {
-        if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Sem internet — grave normalmente. O áudio será enviado ao reconectar.</span>';
+        if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</span>';
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           chunks = [];
@@ -3396,6 +3712,9 @@
   let _pacCache = [];
   let _docsCache = [];
   let _sessCache = [];
+  let _sessPage = 0;
+  const _SESS_PAGE_SIZE = 10;
+  let _relatorioData = null;
 
   document.querySelectorAll('.pac-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -3429,12 +3748,14 @@
   document.getElementById('filtro-hist').addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
     document.getElementById('btn-limpar-filtro-hist').style.display = q ? 'flex' : 'none';
+    _sessPage = 0;
     _renderSessoesFiltrado(_sessCache, q);
   });
   document.getElementById('btn-limpar-filtro-hist').addEventListener('click', () => {
     const inp = document.getElementById('filtro-hist');
     inp.value = '';
     document.getElementById('btn-limpar-filtro-hist').style.display = 'none';
+    _sessPage = 0;
     _renderSessoesFiltrado(_sessCache, '');
     inp.focus();
   });
@@ -3455,26 +3776,392 @@
     renderSessoesList(filtrados, true);
   }
 
-  document.getElementById('btn-resumo-paciente').addEventListener('click', () => openResumo());
+  document.getElementById('btn-resumo-paciente').addEventListener('click', () => {
+    const overlay = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;' });
+    overlay.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;max-width:480px;padding:var(--space-6);box-shadow:var(--shadow-lg);">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-2);">Tipo de relatório</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Escolha o formato do relatório para este paciente.</p>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-4);">
+          <button id="_rel_resumido" style="text-align:left;padding:var(--space-4);border-radius:var(--radius-lg);border:var(--border-strong);background:transparent;cursor:pointer;font-family:var(--font-body);">
+            <div style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Resumido</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary);">Síntese gerada por IA com os pontos clínicos mais relevantes</div>
+          </button>
+          <button id="_rel_completo" style="text-align:left;padding:var(--space-4);border-radius:var(--radius-lg);border:var(--border-strong);background:transparent;cursor:pointer;font-family:var(--font-body);">
+            <div style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Completo</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary);">Histórico completo com todas as sessões, notas e procedimentos</div>
+          </button>
+        </div>
+        <button class="btn btn-secondary btn-full" id="_rel_cancelar">Cancelar</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_rel_cancelar').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#_rel_resumido').addEventListener('click', () => { overlay.remove(); openResumo('resumido'); });
+    overlay.querySelector('#_rel_completo').addEventListener('click', () => { overlay.remove(); openResumo('completo'); });
+  });
 
-  async function openResumo() {
+  function _calcularIdade(dataNascimento) {
+    if (!dataNascimento) return null;
+    const hoje = new Date();
+    const nasc = new Date(dataNascimento);
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    return idade;
+  }
+
+  async function openResumo(tipo = 'resumido') {
     showSection('sec-resumo');
     const body = document.getElementById('resumo-body');
-    body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Gerando resumo com IA...</div>';
+    body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Gerando relatório...</div>';
+
     try {
-      const data = await apiFetch(`/pacientes/${currentPacienteId}/resumo`);
+      const u = JSON.parse(localStorage.getItem('physio_user') || '{}');
+      const nomeFisio = u.nome || '';
+      const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+      const fmtR = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      const [paciente, sessoes] = await Promise.all([
+        apiFetch(`/pacientes/${currentPacienteId}`),
+        apiFetch(`/pacientes/${currentPacienteId}/sessoes`),
+      ]);
+
+      const idade = _calcularIdade(paciente.data_nascimento);
+      const idadeStr = idade !== null ? `${idade} anos` : null;
+
+      let sintese = '';
+      let procedimentosPorSessao = [];
+
+      if (tipo === 'resumido') {
+        const data = await apiFetch(`/pacientes/${currentPacienteId}/resumo?tipo=resumido`);
+        sintese = data.resumo || '';
+      } else {
+        procedimentosPorSessao = sessoes.length
+          ? await Promise.all(sessoes.map(s => apiFetch(`/sessoes/${s.id}/procedimentos`).catch(() => [])))
+          : [];
+      }
+
+      _relatorioData = { tipo, paciente, idadeStr, hoje, sessoes, procedimentosPorSessao, sintese, fmtR, nomeFisio };
+
       body.innerHTML = '';
-      const title = el('h2', {
-        style: 'font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-2);',
-        textContent: data.paciente?.nome || '',
-      });
-      body.appendChild(title);
-      const narrative = el('div', { className: 'narrative' });
-      narrative.innerHTML = anamneseToHtml(data.resumo);
-      body.appendChild(narrative);
+      body.appendChild(_relatorioAcoes());
+      body.insertAdjacentHTML('beforeend', _renderRelatorioPreview(_relatorioData));
+
+      // Para completo: busca síntese IA de forma assíncrona e atualiza o placeholder
+      if (tipo === 'completo') {
+        const sinteseEl = document.getElementById('_rel_sintese_placeholder');
+        if (sinteseEl) {
+          try {
+            const dataSum = await apiFetch(`/pacientes/${currentPacienteId}/resumo`);
+            sintese = dataSum.resumo || '';
+            _relatorioData.sintese = sintese;
+            sinteseEl.innerHTML = `<div style="font-size:var(--text-sm);line-height:1.75;">${anamneseToHtml(sintese || 'Sem histórico suficiente.')}</div>`;
+          } catch {
+            sinteseEl.innerHTML = '<div style="font-size:var(--text-sm);color:var(--color-text-muted);">Não foi possível gerar a síntese.</div>';
+          }
+        }
+      }
+
     } catch (e) {
-      body.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      body.innerHTML = `<div class="alert alert-error" style="margin:var(--space-5);">${e.message}</div>`;
     }
+  }
+
+  function _renderRelatorioPreview(data) {
+    const { tipo, paciente, idadeStr, hoje, sessoes, procedimentosPorSessao, sintese, fmtR, nomeFisio } = data;
+
+    const metaLinhas = [];
+    if (idadeStr) metaLinhas.push(`${idadeStr}${paciente.data_nascimento ? ' · Nasc. ' + formatDate(paciente.data_nascimento) : ''}`);
+    if (paciente.cpf) metaLinhas.push('CPF: ' + cpfMascara(paciente.cpf));
+    if (tipo === 'completo' && paciente.endereco) metaLinhas.push(escHtml(paciente.endereco));
+
+    let sessoesHtml = '';
+    if (tipo === 'completo') {
+      if (sessoes.length === 0) {
+        sessoesHtml = `<div style="font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic;">Nenhuma sessão registrada.</div>`;
+      } else {
+        sessoesHtml = sessoes.map((s, i) => {
+          const nota = s.consolidado?.nota || s.consolidado?.conduta || null;
+          const procs = procedimentosPorSessao[i] || [];
+          const isEnc = s.status === 'encerrada';
+          return `
+            <div class="relatorio-sessao-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
+                <div>
+                  <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted);margin-bottom:2px;">Sessão ${i + 1}</div>
+                  <div style="font-size:var(--text-sm);font-weight:600;">${formatDate(s.data)}</div>
+                </div>
+                <span class="badge ${isEnc ? 'badge-success' : 'badge-warning'}">${isEnc ? 'Encerrada' : 'Aberta'}</span>
+              </div>
+              ${nota
+                ? `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);white-space:pre-wrap;line-height:1.65;">${escHtml(nota)}</div>`
+                : `<div style="font-size:var(--text-sm);color:var(--color-text-muted);font-style:italic;">Sem nota clínica.</div>`}
+              ${procs.length ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2);padding-top:var(--space-2);border-top:var(--border);">Procedimentos: ${procs.map(p => escHtml(p.descricao) + (p.valor ? ' (' + fmtR(p.valor) + ')' : '')).join(' · ')}</div>` : ''}
+            </div>`;
+        }).join('');
+      }
+    }
+
+    return `
+    <div class="relatorio-doc">
+      <div class="relatorio-doc-header">
+        <div class="relatorio-doc-brand">
+          <div class="relatorio-doc-monogram">PN</div>
+          <div>
+            <div class="relatorio-doc-brand-name">PhysioNotes</div>
+            <div class="relatorio-doc-brand-sub">Relatório Clínico · ${tipo === 'resumido' ? 'Resumido' : 'Completo'}</div>
+          </div>
+        </div>
+        <div class="relatorio-doc-date">Gerado em<br>${hoje}</div>
+      </div>
+
+      <div class="relatorio-doc-pac">
+        <div class="relatorio-doc-pac-nome">${escHtml(paciente.nome)}</div>
+        ${metaLinhas.map(l => `<div class="relatorio-doc-pac-meta">${l}</div>`).join('')}
+        ${nomeFisio ? `<div class="relatorio-doc-pac-fisio">Fisioterapeuta responsável: <strong>${escHtml(nomeFisio)}</strong></div>` : ''}
+      </div>
+
+      ${tipo === 'resumido' ? `
+      <div class="relatorio-doc-sec">
+        <div class="relatorio-doc-sec-label">Resumo Clínico</div>
+        <div style="font-size:var(--text-sm);line-height:1.75;">${anamneseToHtml(sintese || 'Sem histórico suficiente para gerar resumo.')}</div>
+      </div>
+      ` : `
+      ${paciente.anamnese ? `
+      <div class="relatorio-doc-sec">
+        <div class="relatorio-doc-sec-label">Anamnese</div>
+        <div style="font-size:var(--text-sm);line-height:1.75;">${anamneseToHtml(paciente.anamnese)}</div>
+      </div>` : ''}
+      ${paciente.conduta_tratamento ? `
+      <div class="relatorio-doc-sec">
+        <div class="relatorio-doc-sec-label">Conduta de Tratamento</div>
+        <div style="font-size:var(--text-sm);line-height:1.75;">${anamneseToHtml(paciente.conduta_tratamento)}</div>
+      </div>` : ''}
+      <div class="relatorio-doc-sec">
+        <div class="relatorio-doc-sec-label">Histórico de Sessões (${sessoes.length})</div>
+        ${sessoesHtml}
+      </div>
+      <div class="relatorio-doc-sec">
+        <div class="relatorio-doc-sec-label">Síntese Clínica (IA)</div>
+        <div class="relatorio-sintese-box" id="_rel_sintese_placeholder">
+          <div class="loading-message" style="margin:0;"><span class="spinner"></span> Gerando síntese...</div>
+        </div>
+      </div>
+      `}
+
+      <div class="relatorio-doc-footer-bar">powered by <strong>up it</strong></div>
+    </div>`;
+  }
+
+  function _relatorioAcoes() {
+    const bar = el('div', { style: 'display:flex;gap:var(--space-3);padding:var(--space-4) var(--space-5);border-bottom:var(--border);flex-wrap:wrap;' });
+    bar.innerHTML = `
+      <button class="btn btn-primary btn-sm _rel-pdf-btn" style="display:flex;align-items:center;gap:var(--space-2);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 5V2h8v3M4 11H2V6h12v5h-2M4 9h8v5H4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        Baixar PDF
+      </button>
+      <button class="btn btn-secondary btn-sm _rel-share-btn" style="display:flex;align-items:center;gap:var(--space-2);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="3" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="3" cy="8" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.9L4.5 7.1M4.5 8.9l6 3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Compartilhar
+      </button>`;
+
+    bar.querySelector('._rel-pdf-btn').addEventListener('click', function() {
+      if (!_relatorioData) return;
+      _abrirJanelaRelatorio(_gerarHtmlPdf(_relatorioData));
+    });
+
+    bar.querySelector('._rel-share-btn').addEventListener('click', async function() {
+      if (!_relatorioData) return;
+      const { paciente } = _relatorioData;
+      const titulo = `Relatório Clínico — ${paciente.nome}`;
+      const htmlStr = _gerarHtmlPdf(_relatorioData);
+      const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+      const file = new File([blob], `relatorio-${paciente.nome.toLowerCase().replace(/\s+/g, '-')}.html`, { type: 'text/html' });
+      if (navigator.share) {
+        try {
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ title: titulo, files: [file] });
+            return;
+          }
+          const texto = document.getElementById('resumo-body').innerText;
+          await navigator.share({ title: titulo, text: texto });
+          return;
+        } catch (e) { if (e.name === 'AbortError') return; }
+      }
+      // Fallback: clipboard
+      await navigator.clipboard.writeText(document.getElementById('resumo-body').innerText).catch(() => {});
+      const orig = this.innerHTML;
+      this.textContent = 'Copiado!';
+      setTimeout(() => { this.innerHTML = orig; }, 2000);
+    });
+
+    return bar;
+  }
+
+  function _abrirJanelaRelatorio(htmlStr) {
+    const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  }
+
+  function _gerarHtmlPdf(data) {
+    const { tipo, paciente, idadeStr, hoje, sessoes, procedimentosPorSessao, sintese, fmtR, nomeFisio } = data;
+
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function mdHtml(text) {
+      if (!text) return '';
+      const escT = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      const lines = escT(text).split('\n');
+      const out = []; let inList = false;
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) { if (inList) { out.push('</ul>'); inList = false; } out.push('<div style="height:5px"></div>'); continue; }
+        if (/^## /.test(line)) { if (inList) { out.push('</ul>'); inList = false; } out.push(`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8A8784;margin:10px 0 4px;">${bold(line.slice(3))}</div>`); continue; }
+        if (/^# /.test(line)) { if (inList) { out.push('</ul>'); inList = false; } out.push(`<div style="font-weight:600;margin:8px 0 4px;border-bottom:1px solid #E0DDD8;padding-bottom:3px;">${bold(line.slice(2))}</div>`); continue; }
+        if (line.startsWith('- ') || line.startsWith('• ')) {
+          if (!inList) { out.push('<ul style="padding-left:16px;margin:4px 0;">'); inList = true; }
+          out.push(`<li style="margin-bottom:3px;">${bold(line.slice(2))}</li>`);
+        } else { if (inList) { out.push('</ul>'); inList = false; } out.push(`<p style="margin:0 0 5px;">${bold(line)}</p>`); }
+      }
+      if (inList) out.push('</ul>');
+      return out.join('');
+    }
+
+    const metaLinhas = [];
+    if (idadeStr) metaLinhas.push(`${idadeStr}${paciente.data_nascimento ? ' · Nasc. ' + formatDate(paciente.data_nascimento) : ''}`);
+    if (paciente.cpf) metaLinhas.push('CPF: ' + cpfMascara(paciente.cpf));
+    if (paciente.endereco) metaLinhas.push(esc(paciente.endereco));
+
+    let secoes = '';
+
+    if (tipo === 'resumido') {
+      secoes = `
+        <div style="margin-bottom:28px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8A8784;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #E0DDD8;">Resumo Clínico</div>
+          <div style="font-size:11px;line-height:1.8;color:#2A2A2A;">${mdHtml(sintese || 'Sem histórico suficiente para gerar resumo.')}</div>
+        </div>`;
+    } else {
+      if (paciente.anamnese) {
+        secoes += `
+          <div style="margin-bottom:28px;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8A8784;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #E0DDD8;">Anamnese</div>
+            <div style="font-size:11px;line-height:1.8;color:#2A2A2A;">${mdHtml(paciente.anamnese)}</div>
+          </div>`;
+      }
+      if (paciente.conduta_tratamento) {
+        secoes += `
+          <div style="margin-bottom:28px;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8A8784;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #E0DDD8;">Conduta de Tratamento</div>
+            <div style="font-size:11px;line-height:1.8;color:#2A2A2A;">${mdHtml(paciente.conduta_tratamento)}</div>
+          </div>`;
+      }
+      const sessoesItens = sessoes.length === 0
+        ? `<div style="font-size:11px;color:#A09D97;font-style:italic;">Nenhuma sessão registrada.</div>`
+        : sessoes.map((s, i) => {
+            const nota = s.consolidado?.nota || s.consolidado?.conduta || null;
+            const procs = procedimentosPorSessao[i] || [];
+            const isEnc = s.status === 'encerrada';
+            return `
+              <div style="border:1px solid #E0DDD8;border-radius:8px;padding:12px 15px;margin-bottom:9px;page-break-inside:avoid;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#8A8784;font-weight:700;margin-bottom:2px;">Sessão ${i + 1}</div>
+                    <div style="font-size:11.5px;font-weight:600;">${formatDate(s.data)}</div>
+                  </div>
+                  <span style="font-size:8.5px;padding:2px 8px;border-radius:999px;font-weight:700;${isEnc ? 'background:#EDF7F2;color:#2D6A4F;' : 'background:#FEF7EC;color:#92600A;'}">${isEnc ? 'Encerrada' : 'Aberta'}</span>
+                </div>
+                ${nota
+                  ? `<div style="font-size:10.5px;line-height:1.65;color:#2A2A2A;white-space:pre-wrap;">${esc(nota)}</div>`
+                  : `<div style="font-size:10.5px;color:#A09D97;font-style:italic;">Sem nota clínica.</div>`}
+                ${procs.length ? `<div style="font-size:9px;color:#6B6860;border-top:1px solid #F0EFED;padding-top:5px;margin-top:6px;">Procedimentos extras: ${procs.map(p => esc(p.descricao) + (p.valor ? ' (' + fmtR(p.valor) + ')' : '')).join(' · ')}</div>` : ''}
+              </div>`;
+          }).join('');
+
+      secoes += `
+        <div style="margin-bottom:28px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8A8784;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #E0DDD8;">Histórico de Sessões (${sessoes.length})</div>
+          ${sessoesItens}
+        </div>`;
+
+      if (sintese) {
+        secoes += `
+          <div style="background:#F7F6F4;border-radius:10px;padding:18px 22px;margin-bottom:28px;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#8A8784;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #DDD9D4;">Síntese Clínica (IA)</div>
+            <div style="font-size:11px;line-height:1.8;color:#2A2A2A;">${mdHtml(sintese)}</div>
+          </div>`;
+      }
+    }
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR"><head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Relatório Clínico — ${esc(paciente.nome)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:#fff;color:#1A1A1A;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .actions-bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #E0DDD8;padding:12px 48px;display:flex;gap:10px;z-index:100;}
+    .btn-p{background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500;}
+    .btn-p:hover{background:#333;}
+    .btn-s{background:none;border:1px solid #D0CEC9;border-radius:8px;padding:8px 20px;font-size:13px;font-family:inherit;cursor:pointer;color:#1A1A1A;}
+    .btn-s:hover{background:#F0EFED;}
+    .page{max-width:740px;margin:0 auto;padding:48px 52px;}
+    .doc-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #1A1A1A;margin-bottom:32px;}
+    .brand{display:flex;align-items:center;gap:11px;}
+    .brand-mono{width:40px;height:40px;background:#1A1A1A;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;letter-spacing:-0.5px;flex-shrink:0;}
+    .brand-name{font-size:16px;font-weight:600;}
+    .brand-sub{font-size:10px;color:#8A8784;margin-top:2px;}
+    .header-right{text-align:right;}
+    .doc-tipo{font-size:13px;font-weight:600;}
+    .doc-data{font-size:10px;color:#8A8784;margin-top:3px;}
+    .pac-block{background:#F7F6F4;border-radius:12px;padding:22px 26px;margin-bottom:32px;}
+    .pac-nome{font-family:'DM Serif Display',Georgia,serif;font-size:26px;margin-bottom:10px;line-height:1.2;}
+    .pac-meta{font-size:11px;color:#4A4845;margin-bottom:4px;line-height:1.5;}
+    .pac-fisio{font-size:10px;color:#6B6860;margin-top:12px;padding-top:10px;border-top:1px solid #E0DDD8;}
+    .doc-footer{border-top:1px solid #E0DDD8;padding-top:14px;margin-top:44px;display:flex;justify-content:space-between;align-items:center;}
+    .footer-txt{font-size:9px;color:#A09D97;}
+    @media print{
+      @page{margin:18mm 16mm;size:A4;}
+      body{font-size:10pt;}
+      .page{max-width:100%;padding:0;}
+      .actions-bar{display:none!important;}
+    }
+  </style>
+</head><body>
+  <div class="actions-bar">
+    <button class="btn-p" onclick="window.print()">Imprimir / Salvar PDF</button>
+    <button class="btn-s" onclick="window.close()">Fechar</button>
+  </div>
+  <div class="page">
+    <div class="doc-header">
+      <div class="brand">
+        <div class="brand-mono">PN</div>
+        <div>
+          <div class="brand-name">PhysioNotes</div>
+          <div class="brand-sub">Plataforma de Gestão em Fisioterapia</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="doc-tipo">Relatório Clínico · ${tipo === 'resumido' ? 'Resumido' : 'Completo'}</div>
+        <div class="doc-data">Gerado em ${hoje}</div>
+      </div>
+    </div>
+    <div class="pac-block">
+      <div class="pac-nome">${esc(paciente.nome)}</div>
+      ${metaLinhas.map(l => `<div class="pac-meta">${l}</div>`).join('')}
+      ${nomeFisio ? `<div class="pac-fisio">Fisioterapeuta responsável: <strong>${esc(nomeFisio)}</strong></div>` : ''}
+    </div>
+    ${secoes}
+    <div class="doc-footer">
+      <div class="footer-txt">powered by <strong>up it</strong></div>
+      <div class="footer-txt">PhysioNotes · ${hoje}</div>
+    </div>
+  </div>
+</body></html>`;
   }
 
   /* ============================================================
@@ -3559,8 +4246,9 @@
     try {
       const pacotes = await apiFetch(`/pacientes/${pacienteId}/pacotes`);
       renderPacotes(pacotes, pacienteId);
+      return pacotes.find(p => p.sessoes_usadas < p.total_sessoes) || null;
     } catch {
-      // silently fail
+      return null;
     }
   }
 
@@ -3572,8 +4260,9 @@
 
     if (ativo) {
       const restantes = ativo.total_sessoes - ativo.sessoes_usadas;
-      const pct = Math.round((ativo.sessoes_usadas / ativo.total_sessoes) * 100);
-      const fillClass = restantes <= 1 ? 'danger' : restantes <= 2 ? 'warning' : '';
+      const pctRestante = ativo.total_sessoes > 0 ? Math.round((restantes / ativo.total_sessoes) * 100) : 0;
+      const pct = pctRestante; // barra representa sessões restantes (depleta à direita)
+      const fillClass = pctRestante <= 20 ? 'danger' : pctRestante <= 75 ? 'warning' : '';
       const alertaHtml = restantes <= 2
         ? `<div class="pacote-alerta">⚠️ Apenas ${restantes} sessão${restantes === 1 ? '' : 'ões'} restante${restantes === 1 ? '' : 's'} — avise o paciente para renovar o pacote.</div>`
         : '';
@@ -3666,7 +4355,7 @@
 
     micBtn.addEventListener('click', async () => {
       if (!mpRecording) {
-        if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Sem internet — grave normalmente. O áudio será enviado ao reconectar.</span>';
+        if (!navigator.onLine) micFb.innerHTML = '<span style="color:var(--color-warning);">Conexão instável — grave normalmente. O áudio será enviado automaticamente.</span>';
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           mpChunks = [];
@@ -4005,13 +4694,6 @@
     openBilling();
   });
 
-  document.getElementById('drawer-relatorio').addEventListener('click', () => {
-    fecharDrawer();
-    setDrawerActive('drawer-pacientes');
-    showSection('sec-home');
-    loadPacientes();
-    setTimeout(abrirModalRelatorio, 80);
-  });
 
   /* ============================================================
      BILLING
@@ -4263,111 +4945,6 @@
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
-  /* ============================================================
-     RELATÓRIO CREFITO
-  ============================================================ */
-
-  document.getElementById('btn-cancelar-relatorio').addEventListener('click', fecharModalRelatorio);
-  document.getElementById('modal-relatorio').addEventListener('click', function(e) {
-    if (e.target === this) fecharModalRelatorio();
-  });
-
-  async function abrirModalRelatorio() {
-    const listEl = document.getElementById('relatorio-pacientes-list');
-    listEl.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
-    document.getElementById('relatorio-error').innerHTML = '';
-    document.getElementById('modal-relatorio').classList.add('open');
-
-    try {
-      const pacientes = await apiFetch('/pacientes');
-      listEl.innerHTML = '';
-      if (pacientes.length === 0) {
-        listEl.innerHTML = '<div style="font-size:var(--text-sm);color:var(--color-text-muted);text-align:center;padding:var(--space-6);">Nenhum paciente cadastrado.</div>';
-        return;
-      }
-      pacientes.forEach(p => {
-        const id = `check-pac-${p.id}`;
-        const row = document.createElement('div');
-        row.className = 'relatorio-paciente-check';
-        row.innerHTML = `
-          <input type="checkbox" id="${id}" value="${p.id}">
-          <label for="${id}">${p.nome}${p.data_nascimento ? ' · Nasc. ' + formatDate(p.data_nascimento) : ''}</label>`;
-        listEl.appendChild(row);
-      });
-    } catch (e) {
-      listEl.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-    }
-  }
-
-  function fecharModalRelatorio() {
-    document.getElementById('modal-relatorio').classList.remove('open');
-  }
-
-  document.getElementById('btn-gerar-relatorio').addEventListener('click', async function() {
-    const btn = this;
-    const checked = [...document.querySelectorAll('#relatorio-pacientes-list input[type="checkbox"]:checked')];
-    if (checked.length === 0) {
-      document.getElementById('relatorio-error').innerHTML = '<div class="alert alert-error">Selecione pelo menos um paciente.</div>';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Gerando...';
-    document.getElementById('relatorio-error').innerHTML = '';
-
-    try {
-      const paciente_ids = checked.map(c => parseInt(c.value));
-      const data = await apiFetch('/relatorio/crefito', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paciente_ids }),
-      });
-
-      fecharModalRelatorio();
-      renderRelatorioPrint(data);
-    } catch (e) {
-      document.getElementById('relatorio-error').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Gerar relatório';
-    }
-  });
-
-  function renderRelatorioPrint(relatorios) {
-    const view = document.getElementById('print-view');
-    const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-
-    let pacientesHtml = '';
-    relatorios.forEach(r => {
-      const p = r.paciente;
-      pacientesHtml += `
-        <div class="print-patient">
-          <div class="print-patient-name">${p.nome}</div>
-          <div class="print-patient-meta">
-            ${p.data_nascimento ? 'Data de nascimento: ' + formatDate(p.data_nascimento) + ' · ' : ''}
-            Total de sessões: ${r.total_sessoes}
-            ${r.primeira_sessao ? ' · Início: ' + formatDate(r.primeira_sessao) : ''}
-            ${r.ultima_sessao ? ' · Último atendimento: ' + formatDate(r.ultima_sessao) : ''}
-          </div>
-          <div class="print-section-label">Resumo clínico</div>
-          <div class="print-section-text">${r.resumo || 'Nenhuma sessão encerrada registrada para este paciente.'}</div>
-        </div>`;
-    });
-
-    view.innerHTML = `
-      <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;">
-        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none'">Fechar</button>
-      </div>
-      <div class="print-header">
-        <div class="print-title">Relatório de Atendimento — CREFITO</div>
-        <div class="print-subtitle">Gerado em ${hoje} · Physio Notes</div>
-      </div>
-      ${pacientesHtml}
-      <div class="print-footer">Documento gerado pelo sistema Physio Notes · powered by up it</div>
-    `;
-    view.style.display = 'block';
-  }
 
   /* ============================================================
      EDITAR PACIENTE
@@ -4518,7 +5095,9 @@
   }
   window.addEventListener('online', () => {
     updateOnlineStatus();
-    retrySendPendingAudio();
+    // Aguarda 2s para a rede estabilizar (comum em troca WiFi→4G)
+    // antes de reenviar áudios pendentes
+    setTimeout(retrySendPendingAudio, 2000);
   });
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
@@ -4545,14 +5124,8 @@
       }
     }
 
-    if (!navigator.onLine) {
-      setTimeout(() => {
-        pendingRetries.forEach(({ feedbackEl }) => mostrarBannerOffline(feedbackEl, true));
-      }, 1500);
-      return;
-    }
-
-    const toRetry = pendingRetries.splice(0);
+    // Filtra retries cujo feedbackEl já foi removido do DOM (ex: modal fechado)
+    const toRetry = pendingRetries.splice(0).filter(r => document.contains(r.feedbackEl));
     toRetry.forEach(({ feedbackEl, fn }) => {
       enviarComRetry(feedbackEl, fn).catch(e => {
         feedbackEl.innerHTML = `<div class="alert alert-error">${friendlyError(e)}</div>`;
@@ -4845,6 +5418,86 @@
     });
   }
 
+  function _gerarHtmlExtrato(params) {
+    const { todosItens, periodoLabel, pacienteLabel, hoje, fmtR, fmtData,
+            total_pacotes_valor, total_procedimentos_valor, total_recebido, nomeFisio } = params;
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    const linhas = todosItens.map((i, idx) => `
+      <tr style="${idx % 2 === 1 ? 'background:#F9F8F6;' : ''}">
+        <td style="padding:8px 6px;white-space:nowrap;border-bottom:1px solid #F0EFED;">${esc(fmtData(i.data) || '—')}</td>
+        <td style="padding:8px 6px;border-bottom:1px solid #F0EFED;">${esc(i.paciente)}</td>
+        <td style="padding:8px 6px;border-bottom:1px solid #F0EFED;">${esc(i.label)}</td>
+        <td style="padding:8px 6px;text-align:right;font-weight:600;white-space:nowrap;border-bottom:1px solid #F0EFED;">${esc(fmtR(i.valor))}</td>
+      </tr>`).join('');
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Extrato Financeiro — Physio Notes</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#F9F8F6;color:#1A1A1A;padding:32px;max-width:860px;margin:0 auto;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #1A1A1A;}
+  .header-left h1{font-size:22px;font-weight:700;margin-bottom:6px;}
+  .header-left .meta{font-size:12px;color:#6B6860;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .pill{display:inline-flex;align-items:center;background:#1A1A1A;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:9999px;letter-spacing:0.05em;}
+  .header-right{text-align:right;font-size:11px;color:#6B6860;}
+  .header-right strong{display:block;font-size:13px;color:#1A1A1A;margin-bottom:2px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:28px;}
+  thead tr{border-bottom:2px solid #1A1A1A;}
+  thead th{text-align:left;padding:8px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#6B6860;}
+  thead th:last-child{text-align:right;}
+  .totais{border-top:2px solid #1A1A1A;padding-top:16px;display:flex;flex-direction:column;gap:6px;max-width:340px;margin-left:auto;}
+  .totais-row{display:flex;justify-content:space-between;font-size:12px;color:#6B6860;}
+  .totais-total{display:flex;justify-content:space-between;font-size:15px;font-weight:700;border-top:1px solid #E8E6E1;padding-top:10px;margin-top:4px;}
+  .footer{margin-top:48px;padding-top:16px;border-top:1px solid #E8E6E1;font-size:10px;color:#A09D97;text-align:center;}
+  @media print{body{padding:16px;background:#fff;}.footer{position:fixed;bottom:16px;left:0;right:0;text-align:center;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>Extrato Financeiro</h1>
+    <div class="meta">
+      <span class="pill">${esc(periodoLabel)}</span>
+      <span>${esc(pacienteLabel)}</span>
+    </div>
+  </div>
+  <div class="header-right">
+    ${nomeFisio ? `<strong>${esc(nomeFisio)}</strong>` : ''}
+    <span>Gerado em ${esc(hoje)}</span>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Paciente</th>
+      <th>Item</th>
+      <th style="text-align:right;">Valor</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${linhas || '<tr><td colspan="4" style="padding:16px 6px;color:#A09D97;font-style:italic;">Nenhum lançamento no período.</td></tr>'}
+  </tbody>
+</table>
+
+<div class="totais">
+  <div class="totais-row"><span>Pacotes de sessões</span><span>${esc(fmtR(total_pacotes_valor || 0))}</span></div>
+  <div class="totais-row"><span>Procedimentos / taxas extras</span><span>${esc(fmtR(total_procedimentos_valor || 0))}</span></div>
+  <div class="totais-total"><span>Total</span><span>${esc(fmtR(total_recebido))}</span></div>
+</div>
+
+<div class="footer">powered by <strong>up it</strong> · Physio Notes</div>
+<script>window.addEventListener('load',()=>window.print());<\/script>
+</body>
+</html>`;
+  }
+
   function abrirModalExtrato(data, mesSel, pacienteSel, mesLabel, fmtR, fmtData) {
     const { pacotes, procedimentos = [], total_recebido,
             total_pacotes_valor, total_procedimentos_valor } = data;
@@ -4854,59 +5507,102 @@
       ? (data.pacientes_disponiveis.find(p => String(p.id) === String(pacienteSel))?.nome || '')
       : 'Todos os pacientes';
     const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const nomeFisio = (() => { try { return JSON.parse(localStorage.physio_user || '{}').name || ''; } catch { return ''; } })();
 
-    // Monta linhas de itens ordenadas por data
     const todosItens = [
-      ...pacotes.map(p => ({ data: p.data_pagamento, label: `Pacote — ${p.total_sessoes} sessões${p.descricao ? ' · ' + p.descricao : ''}`, paciente: p.paciente_nome, valor: p.valor_pago, tipo: 'pacote' })),
-      ...procedimentos.map(p => ({ data: p.data, label: `Procedimento — ${p.descricao}`, paciente: p.paciente_nome, valor: p.valor, tipo: 'proc' })),
+      ...pacotes.map(p => ({ data: p.data_pagamento, label: `Pacote — ${p.total_sessoes} sessões${p.descricao ? ' · ' + p.descricao : ''}`, paciente: p.paciente_nome, valor: p.valor_pago })),
+      ...procedimentos.map(p => ({ data: p.data, label: `Procedimento — ${p.descricao}`, paciente: p.paciente_nome, valor: p.valor })),
     ].sort((a, b) => (a.data || '').localeCompare(b.data || ''));
 
-    const linhas = todosItens.map((i, idx) => `
-      <tr style="${idx % 2 === 1 ? 'background:#F9F8F6;' : ''}">
-        <td style="white-space:nowrap;">${fmtData(i.data) || '—'}</td>
-        <td>${i.paciente}</td>
-        <td>${i.label}</td>
-        <td style="text-align:right;font-weight:600;white-space:nowrap;">${fmtR(i.valor)}</td>
+    const extratoParams = { todosItens, periodoLabel, pacienteLabel, hoje, fmtR, fmtData,
+      total_pacotes_valor, total_procedimentos_valor, total_recebido, nomeFisio };
+
+    // Render preview inline
+    const linhasPreview = todosItens.map((i, idx) => `
+      <tr style="${idx % 2 === 1 ? 'background:var(--color-bg);' : ''}">
+        <td style="padding:7px 6px;font-size:var(--text-sm);white-space:nowrap;">${fmtData(i.data) || '—'}</td>
+        <td style="padding:7px 6px;font-size:var(--text-sm);">${i.paciente}</td>
+        <td style="padding:7px 6px;font-size:var(--text-sm);">${i.label}</td>
+        <td style="padding:7px 6px;font-size:var(--text-sm);text-align:right;font-weight:600;white-space:nowrap;">${fmtR(i.valor)}</td>
       </tr>`).join('');
 
     const printView = document.getElementById('print-view');
     printView.innerHTML = `
-      <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;">
-        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none';">Fechar</button>
-      </div>
-      <div class="print-header">
-        <div class="print-title">Extrato Financeiro</div>
-        <div class="print-subtitle" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="display:inline-flex;align-items:center;background:#1A1A1A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:9999px;letter-spacing:0.05em;">${periodoLabel}</span> ${pacienteLabel} · Gerado em ${hoje}</div>
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-6);flex-wrap:wrap;" class="no-print">
+        <button class="btn btn-primary btn-sm _ext-pdf-btn" style="display:flex;align-items:center;gap:var(--space-2);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 5V2h8v3M4 11H2V6h12v5h-2M4 9h8v5H4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          Baixar PDF
+        </button>
+        <button class="btn btn-secondary btn-sm _ext-share-btn" style="display:flex;align-items:center;gap:var(--space-2);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="3" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="3" cy="8" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.9L4.5 7.1M4.5 8.9l6 3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Compartilhar
+        </button>
+        <button class="btn btn-ghost btn-sm _ext-fechar-btn">Fechar</button>
       </div>
 
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;">
-        <thead>
-          <tr style="border-bottom:2px solid #1A1A1A;">
-            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Data</th>
-            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Paciente</th>
-            <th style="text-align:left;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Item</th>
-            <th style="text-align:right;padding:8px 4px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;">Valor</th>
-          </tr>
-        </thead>
-        <tbody>${linhas}</tbody>
-      </table>
+      <div style="margin-bottom:var(--space-4);">
+        <div style="font-size:var(--text-2xl);font-weight:700;margin-bottom:var(--space-1);">Extrato Financeiro</div>
+        <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;font-size:var(--text-sm);color:var(--color-text-secondary);">
+          <span style="display:inline-flex;align-items:center;background:#1A1A1A;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:9999px;letter-spacing:0.05em;">${periodoLabel}</span>
+          <span>${pacienteLabel}</span>
+          <span style="color:var(--color-text-muted);">· ${hoje}</span>
+        </div>
+      </div>
 
-      <div style="border-top:2px solid #1A1A1A;padding-top:16px;display:flex;flex-direction:column;gap:6px;max-width:320px;margin-left:auto;">
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B6860;">
+      <div class="table-wrapper" style="margin-bottom:var(--space-5);">
+        <table class="table">
+          <thead><tr>
+            <th>Data</th><th>Paciente</th><th>Item</th><th style="text-align:right;">Valor</th>
+          </tr></thead>
+          <tbody>${linhasPreview || '<tr><td colspan="4" style="padding:var(--space-5);text-align:center;color:var(--color-text-muted);font-style:italic;">Nenhum lançamento no período.</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      <div style="border-top:2px solid #1A1A1A;padding-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);max-width:320px;margin-left:auto;">
+        <div style="display:flex;justify-content:space-between;font-size:var(--text-sm);color:var(--color-text-secondary);">
           <span>Pacotes de sessões</span><span>${fmtR(total_pacotes_valor || 0)}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B6860;">
-          <span>Procedimentos extras</span><span>${fmtR(total_procedimentos_valor || 0)}</span>
+        <div style="display:flex;justify-content:space-between;font-size:var(--text-sm);color:var(--color-text-secondary);">
+          <span>Procedimentos / taxas extras</span><span>${fmtR(total_procedimentos_valor || 0)}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;border-top:1px solid #E8E6E1;padding-top:8px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:var(--text-base);font-weight:700;border-top:var(--border);padding-top:var(--space-2);margin-top:var(--space-1);">
           <span>Total</span><span>${fmtR(total_recebido)}</span>
         </div>
       </div>
-
-      <div class="print-footer" style="margin-top:48px;">powered by up it · Physio Notes</div>
     `;
     printView.style.display = 'block';
+    printView.scrollTo?.({ top: 0 });
+    printView.parentElement?.scrollTo?.({ top: 0, behavior: 'smooth' });
+
+    printView.querySelector('._ext-fechar-btn').addEventListener('click', () => {
+      printView.style.display = 'none';
+    });
+
+    printView.querySelector('._ext-pdf-btn').addEventListener('click', () => {
+      _abrirJanelaRelatorio(_gerarHtmlExtrato(extratoParams));
+    });
+
+    printView.querySelector('._ext-share-btn').addEventListener('click', async function() {
+      const titulo = `Extrato Financeiro — ${periodoLabel}`;
+      const htmlStr = _gerarHtmlExtrato(extratoParams);
+      const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+      const file = new File([blob], `extrato-financeiro-${mesSel || 'todos'}.html`, { type: 'text/html' });
+      if (navigator.share) {
+        try {
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ title: titulo, files: [file] });
+            return;
+          }
+          const texto = `Extrato Financeiro\n${periodoLabel} · ${pacienteLabel}\nTotal: ${fmtR(total_recebido)}`;
+          await navigator.share({ title: titulo, text: texto });
+          return;
+        } catch (e) { if (e.name === 'AbortError') return; }
+      }
+      await navigator.clipboard.writeText(`Extrato Financeiro\n${periodoLabel} · ${pacienteLabel}\nTotal: ${fmtR(total_recebido)}`).catch(() => {});
+      const orig = this.innerHTML;
+      this.textContent = 'Copiado!';
+      setTimeout(() => { this.innerHTML = orig; }, 2000);
+    });
   }
 
   /* ============================================================
@@ -5487,6 +6183,8 @@
      AUTH — Logout e inatividade
   ============================================================ */
   function fazerLogout() {
+    // Garante que o microfone é liberado antes de sair
+    try { resetRecorder(); } catch {}
     localStorage.removeItem('physio_token');
     window.location.replace('/login.html');
   }

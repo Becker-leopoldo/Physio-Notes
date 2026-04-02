@@ -2,23 +2,26 @@ const CACHE_NAME = 'physio-notes-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 
-self.addEventListener('activate', async () => {
-  self.clients.claim();
+self.addEventListener('activate', async event => {
+  event.waitUntil((async () => {
+    // Aguarda claim antes de notificar clientes
+    await self.clients.claim();
 
-  // Notifica clientes abertos que há nova versão
-  const clients = await self.clients.matchAll({ type: 'window' });
-  clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
+    // Notifica clientes abertos que há nova versão
+    const clients = await self.clients.matchAll({ type: 'window' });
+    clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
 
-  // Notificação nativa de nova versão (se permissão concedida)
-  if (self.Notification && self.Notification.permission === 'granted') {
-    self.registration.showNotification('Physio Notes atualizado ✓', {
-      body: 'Nova versão instalada e pronta para uso.',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      tag: 'update',
-      renotify: false,
-    });
-  }
+    // Notificação nativa de nova versão (se permissão concedida)
+    if (self.Notification && self.Notification.permission === 'granted') {
+      self.registration.showNotification('Physio Notes atualizado ✓', {
+        body: 'Nova versão instalada e pronta para uso.',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'update',
+        renotify: false,
+      });
+    }
+  })());
 });
 
 // Push notification vindo do backend (futuro)

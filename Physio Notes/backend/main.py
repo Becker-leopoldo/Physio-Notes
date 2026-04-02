@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 import sqlite3
@@ -8,12 +9,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 import database as db
 import transcribe
 import ai
 import google_auth
 import notifications
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logger = logging.getLogger("physio_notes")
 
 # ---------- WebAuthn session store (in-memory) ----------
 _challenges: dict[str, bytes] = {}   # username -> challenge bytes
@@ -47,12 +54,36 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Physio Notes API", lifespan=lifespan)
 
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https://accounts.google.com; "
+        "frame-src https://accounts.google.com; "
+        "object-src 'none';"
+    )
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:8001,http://127.0.0.1:8001,http://localhost:8000,http://127.0.0.1:8000").split(",") if o.strip()],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # ---------- Auth middleware ----------
@@ -81,8 +112,8 @@ async def verificar_autenticacao(request: Request, call_next):
         try:
             google_auth.verificar_jwt(token)
             return await call_next(request)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.info("verificar_autenticacao: JWT inválido path=%s: %s", path, e)
         # Aceita sessão WebAuthn (compatibilidade com usuário existente)
         if token in _sessions:
             return await call_next(request)
@@ -122,9 +153,6 @@ class ComplementarAnamneseBody(BaseModel):
     transcricao: str
 
 
-class RelatorioCREFITOBody(BaseModel):
-    paciente_ids: list[int]
-
 
 class PacoteCreate(BaseModel):
     total_sessoes: int
@@ -137,6 +165,11 @@ class ProcedimentoCreate(BaseModel):
     descricao: str
     valor: float | None = None
     data: str | None = None
+
+
+class ProcedimentoUpdate(BaseModel):
+    descricao: str
+    valor: float | None = None
 
 
 class ExtrairProcedimentoBody(BaseModel):
@@ -164,11 +197,14 @@ def _owner_email(request: Request) -> str | None:
     auth = request.headers.get("authorization", "")
     if auth.startswith("Bearer "):
         token = auth.split(" ", 1)[1]
+        if token in _sessions:
+            val = _sessions[token]
+            return val if "@" in val else None  # só retorna se for email válido
         try:
             payload = google_auth.verificar_jwt(token)
             return payload.get("sub")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.info("_owner_email: JWT inválido: %s", e)
     return None
 
 
@@ -176,6 +212,22 @@ def _verificar_dono(paciente: dict, owner: str | None):
     """Lança 404 se o paciente não pertence ao usuário (None = WebAuthn, vê tudo)."""
     if owner and paciente.get("owner_email") and paciente["owner_email"] != owner:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+
+
+def _verificar_dono_sessao(sessao: dict, owner: str | None):
+    if not owner:
+        return
+    paciente = db.get_paciente(sessao["paciente_id"])
+    if paciente:
+        _verificar_dono(paciente, owner)
+
+
+def _verificar_dono_documento(doc: dict, owner: str | None):
+    if not owner:
+        return
+    paciente = db.get_paciente(doc["paciente_id"])
+    if paciente:
+        _verificar_dono(paciente, owner)
 
 
 # ---------- Pacientes ----------
@@ -278,7 +330,8 @@ async def sugerir_conduta(paciente_id: int, request: Request):
 
 
 @app.post("/transcrever")
-async def transcrever_audio_avulso(audio: UploadFile = File(...)):
+@limiter.limit("20/minute")
+async def transcrever_audio_avulso(request: Request, audio: UploadFile = File(...)):
     audio_bytes = await audio.read()
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
@@ -321,6 +374,7 @@ async def detectar_procedimentos(sessao_id: int, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
 
     chunks = db.get_chunks_sessao(sessao_id)
     consolidado = db.get_consolidado_sessao(sessao_id)
@@ -336,20 +390,35 @@ async def detectar_procedimentos(sessao_id: int, request: Request):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na IA: {str(e)}")
 
+    # Filtrar sugestões que já foram salvas (comparação por descrição normalizada)
+    ja_salvos = {p["descricao"].strip().lower() for p in db.get_procedimentos_sessao(sessao_id)}
+    sugestoes = [s for s in sugestoes if s.get("descricao", "").strip().lower() not in ja_salvos]
+
     return {"sugestoes": sugestoes}
 
 
 @app.get("/sessoes/{sessao_id}/procedimentos")
-def listar_procedimentos(sessao_id: int):
+def listar_procedimentos(sessao_id: int, request: Request):
+    sessao = db.get_sessao(sessao_id)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
     return db.get_procedimentos_sessao(sessao_id)
 
 
 @app.post("/sessoes/{sessao_id}/procedimentos")
-def criar_procedimento(sessao_id: int, body: ProcedimentoCreate):
+def criar_procedimento(sessao_id: int, body: ProcedimentoCreate, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
     return db.adicionar_procedimento(sessao_id, sessao["paciente_id"], body.descricao, body.valor, body.data)
+
+
+@app.put("/procedimentos/{proc_id}")
+def atualizar_procedimento(proc_id: int, body: ProcedimentoUpdate, request: Request):
+    db.atualizar_procedimento(proc_id, body.descricao, body.valor)
+    return {"ok": True}
 
 
 @app.delete("/procedimentos/{proc_id}")
@@ -368,44 +437,6 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
         raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
     return dados
 
-
-# ---------- Relatorio CREFITO ----------
-
-@app.post("/relatorio/crefito")
-async def relatorio_crefito(body: RelatorioCREFITOBody, request: Request = None):
-    resultado = []
-    for paciente_id in body.paciente_ids:
-        paciente = db.get_paciente(paciente_id)
-        if not paciente:
-            continue
-
-        historico = db.get_historico_paciente(paciente_id)
-
-        if historico:
-            try:
-                resumo = await ai.resumir_historico(historico, paciente, owner_email=_owner_email(request))
-            except Exception:
-                resumo = None
-        else:
-            resumo = None
-
-        sessoes_encerradas = [s for s in historico if s.get("status") == "encerrada"]
-        total_sessoes = len(sessoes_encerradas)
-
-        datas = [s.get("data") for s in sessoes_encerradas if s.get("data")]
-        datas_sorted = sorted(datas) if datas else []
-        primeira_sessao = datas_sorted[0] if datas_sorted else None
-        ultima_sessao = datas_sorted[-1] if datas_sorted else None
-
-        resultado.append({
-            "paciente": paciente,
-            "resumo": resumo,
-            "total_sessoes": total_sessoes,
-            "primeira_sessao": primeira_sessao,
-            "ultima_sessao": ultima_sessao,
-        })
-
-    return resultado
 
 
 # ---------- Sessoes ----------
@@ -427,10 +458,11 @@ def criar_sessao(body: SessaoCreate):
 
 
 @app.get("/sessoes/{sessao_id}")
-def buscar_sessao(sessao_id: int):
+def buscar_sessao(sessao_id: int, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
 
     chunks = db.get_chunks_sessao(sessao_id)
     consolidado = db.get_consolidado_sessao(sessao_id)
@@ -443,6 +475,7 @@ async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: R
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão já encerrada")
 
@@ -459,11 +492,30 @@ async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: R
     return {"chunk": chunk, "transcricao": transcricao}
 
 
-@app.delete("/sessoes/{sessao_id}")
-def cancelar_sessao(sessao_id: int):
+class CancelamentoBody(BaseModel):
+    cobrar: bool = True
+    valor: float | None = None
+    complemento: str | None = None
+
+
+@app.post("/sessoes/{sessao_id}/cancelar-com-cobranca")
+def cancelar_com_cobranca(sessao_id: int, body: CancelamentoBody, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
+    if sessao["status"] != "aberta":
+        raise HTTPException(status_code=400, detail="Sessão não está aberta")
+    db.registrar_cancelamento(sessao_id, body.cobrar, body.valor, body.complemento, _owner_email(request))
+    return {"status": "cancelada", "sessao_id": sessao_id}
+
+
+@app.delete("/sessoes/{sessao_id}")
+def cancelar_sessao(sessao_id: int, request: Request):
+    sessao = db.get_sessao(sessao_id)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
     chunks = db.get_chunks_sessao(sessao_id)
     # Sessão aberta sem áudio → cancela (hard delete)
     if sessao["status"] == "aberta" and not chunks:
@@ -481,6 +533,7 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
     if sessao["status"] == "aberta":
         raise HTTPException(status_code=400, detail="Use o endpoint /audio para sessões abertas")
     if sessao["data"] != date.today().isoformat():
@@ -502,17 +555,19 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
     try:
         dados = await ai.consolidar_sessao([c["transcricao"] for c in chunks], _owner_email(request))
         db.salvar_consolidado(sessao_id, dados)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("adicionar_audio: falha ao re-consolidar sessao_id=%s: %s", sessao_id, e)
 
     return {"chunk": chunk, "transcricao": transcricao}
 
 
 @app.post("/sessoes/{sessao_id}/encerrar")
-async def encerrar_sessao(sessao_id: int, request: Request = None):
+@limiter.limit("10/minute")
+async def encerrar_sessao(sessao_id: int, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    _verificar_dono_sessao(sessao, _owner_email(request))
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão já está encerrada")
 
@@ -534,6 +589,9 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
     owner = _owner_email(request)
     resultado_encerramento = db.encerrar_sessao(sessao_id, owner)
 
+    if resultado_encerramento.get("_ja_encerrada"):
+        raise HTTPException(status_code=409, detail="Sessão já foi encerrada.")
+
     # Detecção automática de procedimentos extras na transcrição
     transcricao_completa = "\n".join(transcricoes)
     nota = dados_consolidados.get("nota") or dados_consolidados.get("conduta")
@@ -544,8 +602,8 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
                 sessao_id, sessao["paciente_id"],
                 item["descricao"], item.get("valor"), None,
             )
-    except Exception:
-        pass  # detecção de extras é best-effort, não bloqueia o encerramento
+    except Exception as e:
+        logger.warning("encerrar_sessao: falha ao detectar procedimentos extras sessao_id=%s: %s", sessao_id, e)
 
     # Notificação: pacote quase acabando (≤ 2 sessões restantes)
     try:
@@ -555,8 +613,8 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
             notifications.notificar_pacote_quase_acabando(
                 owner, paciente_info["nome"], restantes
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("encerrar_sessao: falha ao notificar pacote sessao_id=%s: %s", sessao_id, e)
 
     return {
         "consolidado": consolidado,
@@ -567,20 +625,12 @@ async def encerrar_sessao(sessao_id: int, request: Request = None):
 
 
 @app.get("/pacientes/{paciente_id}/sessoes")
-def listar_sessoes_paciente(paciente_id: int):
+def listar_sessoes_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-
-    sessoes = db.get_sessoes_paciente(paciente_id)
-
-    # Enriquece cada sessão com seu consolidado, se existir
-    result = []
-    for s in sessoes:
-        consolidado = db.get_consolidado_sessao(s["id"])
-        result.append({**s, "consolidado": consolidado})
-
-    return result
+    _verificar_dono(paciente, _owner_email(request))
+    return db.get_sessoes_com_consolidado(paciente_id)
 
 
 # ---------- Historico / IA ----------
@@ -602,7 +652,7 @@ def billing(mes: str | None = None, request: Request = None):
 
 
 @app.get("/pacientes/{paciente_id}/resumo")
-async def resumo_paciente(paciente_id: int, request: Request = None):
+async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
@@ -611,7 +661,7 @@ async def resumo_paciente(paciente_id: int, request: Request = None):
     documentos = db.get_documentos_paciente(paciente_id)
 
     try:
-        resumo = await ai.resumir_historico(historico, paciente, documentos, _owner_email(request))
+        resumo = await ai.resumir_historico(historico, paciente, documentos, _owner_email(request), tipo=tipo)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao gerar resumo: {str(e)}")
 
@@ -656,7 +706,8 @@ async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), re
     try:
         reader = PdfReader(io.BytesIO(conteudo))
         texto = "\n\n".join(p.extract_text() or "" for p in reader.pages).strip()
-    except Exception:
+    except Exception as e:
+        logger.warning("upload_documento: falha ao extrair texto PDF paciente_id=%s: %s", paciente_id, e)
         texto = ""
 
     # Salva arquivo em disco
@@ -670,26 +721,28 @@ async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), re
     if texto:
         try:
             resumo = await ai.resumir_documento(texto, _owner_email(request))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("upload_documento: falha ao gerar resumo IA paciente_id=%s: %s", paciente_id, e)
 
     doc = db.salvar_documento(paciente_id, arquivo.filename, nome_arquivo, resumo)
     return doc
 
 
 @app.get("/pacientes/{paciente_id}/documentos")
-def listar_documentos(paciente_id: int):
+def listar_documentos(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     return db.get_documentos_paciente(paciente_id)
 
 
 @app.get("/documentos/{doc_id}/arquivo")
-def servir_documento(doc_id: int):
+def servir_documento(doc_id: int, request: Request):
     doc = db.get_documento(doc_id)
     if not doc or doc.get("deletado_em"):
         raise HTTPException(status_code=404, detail="Documento não encontrado")
+    _verificar_dono_documento(doc, _owner_email(request))
     caminho = os.path.join(db.DOCS_DIR, doc["caminho"])
     if not os.path.isfile(caminho):
         raise HTTPException(status_code=404, detail="Arquivo não encontrado no servidor")
@@ -697,28 +750,38 @@ def servir_documento(doc_id: int):
 
 
 @app.delete("/documentos/{doc_id}", status_code=204)
-def deletar_documento(doc_id: int):
+def deletar_documento(doc_id: int, request: Request):
     doc = db.get_documento(doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Documento não encontrado")
+    _verificar_dono_documento(doc, _owner_email(request))
     db.deletar_documento(doc_id)
+    import os as _os
+    caminho_fisico = _os.path.join(db.DOCS_DIR, doc["caminho"])
+    try:
+        if _os.path.isfile(caminho_fisico):
+            _os.remove(caminho_fisico)
+    except OSError as e:
+        logger.warning("Falha ao deletar arquivo físico doc_id=%s: %s", doc_id, e)
 
 
 # ---------- Pacotes ----------
 
 @app.post("/pacientes/{paciente_id}/pacotes", status_code=201)
-def criar_pacote(paciente_id: int, body: PacoteCreate):
+def criar_pacote(paciente_id: int, body: PacoteCreate, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     return db.criar_pacote(paciente_id, body.total_sessoes, body.valor_pago, body.data_pagamento, body.descricao)
 
 
 @app.get("/pacientes/{paciente_id}/pacotes")
-def listar_pacotes(paciente_id: int):
+def listar_pacotes(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
     return db.get_pacotes_paciente(paciente_id)
 
 
@@ -905,7 +968,8 @@ async def auth_config():
     }
 
 @app.post("/auth/google-login")
-async def auth_google_login(body: GoogleLoginBody):
+@limiter.limit("20/minute")
+async def auth_google_login(request: Request, body: GoogleLoginBody):
     """Verifica o credential do Google, cria/atualiza usuário e retorna JWT."""
     if not google_auth.GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Google SSO não configurado no servidor.")
@@ -1039,7 +1103,8 @@ async def auth_register_complete(request: Request, body: dict):
     db.salvar_credencial_webauthn(usuario["id"], credential_id_str, verified.credential_public_key, verified.sign_count)
 
     token = secrets.token_hex(32)
-    _sessions[token] = _USERNAME
+    webauthn_email = os.environ.get("WEBAUTHN_OWNER_EMAIL", "")
+    _sessions[token] = webauthn_email if webauthn_email else _USERNAME
     return {"token": token, "message": "Dispositivo registrado com sucesso"}
 
 
@@ -1114,7 +1179,8 @@ async def auth_login_complete(request: Request, body: dict):
     db.atualizar_sign_count(credencial["id"], verified.new_sign_count)
 
     token = secrets.token_hex(32)
-    _sessions[token] = _USERNAME
+    webauthn_email = os.environ.get("WEBAUTHN_OWNER_EMAIL", "")
+    _sessions[token] = webauthn_email if webauthn_email else _USERNAME
     return {"token": token}
 
 

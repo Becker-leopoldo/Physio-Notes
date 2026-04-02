@@ -4,6 +4,188 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.241 — 2026-04-02
+
+### Funcionalidades
+
+1. **Cancelar sessão com cobrança (sessões avulsas)**: Sessões sem pacote ganham botão "Cancelar sessão" no banner de sessão aberta. Abre modal com toggle de cobrança (padrão: ativado), valor pré-preenchido com 50% da sessão avulsa configurada, campo de texto complementar e opção de áudio (transcrição automática). Gera nota automática "Sessão cancelada pelo paciente." + complemento e lançamento financeiro de taxa de cancelamento
+2. **Extrato financeiro com PDF e Compartilhar**: Substituído o fluxo de impressão legado (`window.print()` via `#print-view`) por visualização in-app com botões "Baixar PDF" (abre HTML standalone em nova janela com auto-print) e "Compartilhar" (usa `navigator.share` com arquivo HTML ou texto, com fallback para clipboard). Mesma arquitetura do relatório clínico
+3. **Badge "Cancelada" no histórico de sessões**: Sessões canceladas exibem badge vermelho distinto de "Encerrada" na lista do paciente, com preview da nota de cancelamento
+
+### Correções
+
+- `renderOpenSessionBanner` agora recebe `temPacote` corretamente em todos os fluxos (incluindo `iniciarNovaSessao`)
+- Módulo-level `_temPacoteAtivo` centraliza o estado do pacote para evitar race conditions entre criação de sessão e renderização do banner
+
+---
+
+## Beta-0.240 — 2026-04-02
+
+### Correções — Q.A Gravação de Áudio
+8 bugs na lógica de gravação corrigidos:
+
+1. **iOS/Safari — anamnese e conduta quebravam**: fallback era `audio/ogg;codecs=opus`, que Safari não suporta. Corrigido para cadeia `webm;codecs=opus → webm → mp4 → browser default`, mesma usada no recorder principal
+2. **Stream vazava se `new MediaRecorder()` falhava**: após `getUserMedia`, se a construção do `MediaRecorder` lançava erro (ex: mimeType inválido), o stream ficava ativo com microfone aberto. Adicionado `stream.getTracks().forEach(t => t.stop())` no catch
+3. **Nota extra — chunks inválidos no blob**: `ondataavailable` não filtrava `e.data.size > 0`, incluindo frames vazios. Adicionado o check (padrão dos outros fluxos)
+4. **Nota extra — mimeType não especificado**: `new MediaRecorder(stream)` sem mimeType usava default do browser, mas blob era criado como `'audio/webm'` fixo. Corrigido para usar `recorder.mimeType` real
+5. **`fecharGravacaoAnamnese/Conduta` — `.stop()` sem try/catch**: podia lançar se recorder estivesse em estado de erro. Envolvido em try/catch
+6. **`pendingRetries` — update de elemento removido do DOM**: ao reconectar, retries tentavam atualizar `innerHTML` de modais já fechados. Adicionado `filter(r => document.contains(r.feedbackEl))` antes de processar
+7. **Logout sem parar gravação**: `fazerLogout()` redirecionava sem liberar o microfone. Adicionado `resetRecorder()` antes do redirect
+8. **Nota extra — sem proteção no `new MediaRecorder()`**: igual ao fix 2, adicionado try/catch com cleanup do stream
+
+---
+
+## Beta-0.239 — 2026-04-02
+
+### Correções — Q.A Conexão de Internet
+7 bugs na lógica de detecção de rede corrigidos:
+
+1. **`enviarComRetry` não bloqueia mais em `navigator.onLine`**: a função sempre tenta enviar primeiro; só enfileira retry se o envio realmente falhar com erro de rede. Corrige o caso de usuário com internet sendo tratado como offline (falso negativo do browser ao trocar WiFi→4G)
+
+2. **`apiFetch` distingue erro de rede de outros erros**: erros de `fetch()` (nível de rede) agora carregam flag `_network = true`; erros 4xx/5xx do servidor não são mais mascarados como "sem conexão"
+
+3. **`isNetworkError` usa flag `_network`**: não depende mais de `navigator.onLine`; classifica corretamente erros de rede vs. erros de servidor
+
+4. **`friendlyError` não usa `navigator.onLine` para classificar**: mensagem de "sem conexão" só aparece para erros realmente de rede; errors de servidor mostram mensagem adequada
+
+5. **Debounce de 2s no evento `online`**: ao reconectar (especialmente troca WiFi→4G), aguarda 2 segundos antes de reenviar áudios pendentes — evita retry prematuro com rede instável
+
+6. **`retrySendPendingAudio` não bloqueia em `navigator.onLine`**: deixa o `enviarComRetry` decidir se reenfileira; elimina loop de falsos "ainda sem internet"
+
+7. **Mensagens de aviso ao gravar**: substituído "Sem internet" por "Conexão instável" — mais preciso, pois `navigator.onLine = false` não garante ausência de internet
+
+---
+
+## Beta-0.238 — 2026-04-02
+
+### Melhorias
+- **Barra de progresso do pacote**: faixa intermediária alterada de amarelo para azul (`--color-info`)
+
+---
+
+## Beta-0.237 — 2026-04-02
+
+### Melhorias
+- **Barra de progresso do pacote — cores dinâmicas**: a barra agora representa sessões **restantes** (depleta à direita) com cor baseada no percentual restante: verde (75–100%), amarelo (20–74%), vermelho (0–19%)
+
+---
+
+## Beta-0.236 — 2026-04-02
+
+### Melhorias
+- **Procedimentos detectados — salvo automaticamente**: removido o modal de confirmação. Quando a IA detecta procedimentos na transcrição (ao encerrar sessão ou ao adicionar nota extra), eles são salvos diretamente no sistema. O fisio pode editar ou remover após. Uma notificação flutuante confirma o que foi detectado
+- **Procedimentos — exibição corrigida**: campo de descrição com JSON acidental (dados antigos corrompidos) agora é sanitizado na renderização — o nome real é extraído do JSON e exibido corretamente
+
+### Correções
+- `_descricaoProc()`: sanitizador que detecta se a descrição contém JSON e extrai os nomes legíveis
+- `_showSnack()`: nova função de notificação flutuante temporária (snackbar)
+
+---
+
+## Beta-0.235 — 2026-04-02
+
+### Melhorias
+- **Relatório — PDF corrigido**: "Baixar PDF" agora abre janela dedicada com layout standalone; o `window.print()` da página principal escondia o conteúdo por conflito com o CSS de impressão existente
+- **Relatório — identidade visual**: novo design tipo documento clínico com cabeçalho escuro (monograma PN + "PhysioNotes"), bloco de paciente destacado em fundo suave, seções com rótulos em small caps, rodapé com branding
+- **Relatório — nome do fisioterapeuta**: adicionado ao bloco de identificação do paciente (recuperado do `localStorage.physio_user`)
+- **Compartilhar**: tenta compartilhar o arquivo HTML do relatório via `navigator.share({ files })` (funciona no mobile); fallback para compartilhar texto; fallback final para copiar para clipboard
+- **Visualização in-app**: redesenhada com card-documento estilizado, consistente com o PDF exportado
+
+---
+
+## Beta-0.234 — 2026-04-02
+
+### Melhorias
+- **Prompts de IA reforçados**: todos os agentes agora têm persona de "fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação musculoesquelética, neurológica e respiratória, e dos jargões técnicos da fisioterapia brasileira" — eliminados os 4 prompts com persona genérica (`resumir_historico` resumido/completo, `extrair_dados_paciente`, `extrair_dados_pacote`)
+
+---
+
+## Beta-0.233 — 2026-04-02
+
+### Melhorias
+- **Relatório Resumido reformulado**: prompt da IA agora instrui máximo 20 linhas com estrutura de snapshot clínico rápido (queixa principal, histórico relevante, técnicas aplicadas, evolução, situação atual) — `max_tokens` reduzido de 2048 para 512
+- **Relatório Completo mantido**: prompt formal detalhado, sem alteração
+- **Backend**: endpoint `GET /pacientes/{id}/resumo` aceita `?tipo=resumido|completo`; frontend passa `?tipo=resumido` para o relatório resumido
+
+---
+
+## Beta-0.232 — 2026-04-02
+
+### Correções
+- **Procedimentos duplicados**: corrigido em dois níveis — (1) backend: `detectar-procedimentos` agora filtra sugestões cujo nome já existe como procedimento salvo na sessão (comparação normalizada); (2) frontend: botão "Salvar selecionados" é desabilitado imediatamente ao clicar, evitando duplo envio
+
+---
+
+## Beta-0.231 — 2026-04-02
+
+### Melhorias
+- **Paginação no histórico de sessões**: exibe 10 sessões por página com controles "← Anterior / X de Y / Próximas →"; ao mudar de página faz scroll para o topo; página reseta ao aplicar ou limpar filtro de busca; menos de 10 itens não exibe controles
+
+---
+
+## Beta-0.230 — 2026-04-02
+
+### Correções
+- **"+ Nota" no detalhe da sessão**: botão agora aparece dentro da tela de detalhe (cabeçalho da nota clínica), não apenas no card da lista — disponível somente para sessões encerradas do dia atual
+- **Detecção de procedimentos na nota extra**: após envio de áudio via "+ Nota", o sistema chama automaticamente `/detectar-procedimentos` e, se identificar procedimentos, abre o modal de revisão antes de fechar
+- **Detecção de procedimentos ao encerrar sessão**: ao encerrar qualquer sessão, o sistema agora detecta procedimentos extras e exibe o modal de confirmação se houver sugestões da IA
+
+---
+
+## Beta-0.229 — 2026-04-02
+
+### Funcionalidades
+- **Relatório Paciente redesenhado**: removido o relatório CREFITO (não utilizado). O botão "Relatório" no topo do paciente agora gera um relatório clínico focado no paciente, fisio e outros profissionais
+  - **Resumido**: identificação (nome, idade, CPF) + síntese clínica gerada por IA com os principais pontos
+  - **Completo**: identificação completa (nome, idade, CPF, endereço, observações), anamnese, conduta de tratamento, todas as sessões com notas clínicas e procedimentos (carregados em paralelo), síntese IA ao final
+  - Idade calculada automaticamente a partir da data de nascimento
+  - Botões **Compartilhar** (`navigator.share` nativo, fallback cópia) e **Baixar PDF** (`window.print()`)
+- **Remoção do Relatório CREFITO**: drawer, modal, endpoint `/relatorio/crefito` e CSS associado removidos
+
+### Backend
+- Removido: `RelatorioCREFITOBody` e endpoint `POST /relatorio/crefito`
+
+---
+
+## Beta-0.228 — 2026-04-02
+
+### Funcionalidades
+- **Editar procedimentos extras**: cada procedimento na evolução diária agora tem botão "Editar" que abre um bottom sheet para alterar descrição e valor — salva via `PUT /procedimentos/{id}`
+- **Relatório Paciente (resumido/completo)**: botão "Resumo IA" renomeado para "Relatório" — ao clicar abre modal de escolha entre "Resumido" (síntese IA) e "Completo" (histórico de todas as sessões com notas e status)
+- **Compartilhar / Baixar PDF**: relatório do paciente agora exibe barra de ações com botão "Compartilhar" (`navigator.share` nativo, fallback cópia para clipboard) e "Baixar PDF" (`window.print()`)
+
+### Backend
+- `PUT /procedimentos/{id}` — atualiza descrição e valor de procedimento extra
+- `atualizar_procedimento()` adicionado em `database.py`
+
+---
+
+## Beta-0.227 — 2026-04-02
+
+### Melhorias
+- **Verificação de compatibilidade do browser**: ao carregar o app, detecta se `MediaRecorder`, `getUserMedia`, `fetch` e `Promise` estão disponíveis — se algum estiver ausente, exibe tela de bloqueio com instrução para atualizar (Chrome 90+, Safari 14.5+, Firefox 85+); usa feature detection, não user-agent
+
+---
+
+## Beta-0.226 — 2026-04-02
+
+### Segurança
+- **CORS restrito**: origens, métodos e headers limitados via variável `ALLOWED_ORIGINS`
+- **Autorização em todas as rotas**: `_verificar_dono_sessao` e `_verificar_dono_documento` aplicados em todas as rotas que antes não tinham verificação de propriedade
+- **Race condition encerramento**: `encerrar_sessao` usa `WHERE status = 'aberta'` + retorna 409 se já encerrada
+- **Rate limiting**: `slowapi` em `/transcrever` (20/min), `/auth/google-login` (20/min) e `/sessoes/{id}/encerrar` (10/min)
+- **CSP headers**: `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` via middleware
+- **XSS protection**: função `escHtml()` aplicada em todos os template literals com dados do backend no frontend (nome, observações, transcrições, nota clínica, procedimentos, relatório CREFITO)
+- **Delete físico de PDF**: ao excluir documento, o arquivo físico é removido do disco além do soft-delete no banco
+- **Índices DB**: 8 índices adicionados para acelerar queries frequentes (sessao, audio_chunk, pacote, paciente, api_uso, documento)
+- **Logging estruturado**: `logging` configurado em `main.py`; todos os `except Exception: pass` agora logam via `logger.warning/info`
+- **WebAuthn owner_email**: variável `WEBAUTHN_OWNER_EMAIL` associa usuário WebAuthn legado a um email real
+
+### Melhorias
+- **N+1 query eliminada**: `GET /pacientes/{id}/sessoes` usa novo `get_sessoes_com_consolidado()` — uma query com LEFT JOIN ao invés de N queries separadas
+
+---
+
 ## Beta-0.225 — 2026-04-02
 
 ### Melhorias
