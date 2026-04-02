@@ -1100,19 +1100,14 @@
     <!-- Painel de configurações inline -->
     <div id="drawer-config-panel" style="display:none;padding:var(--space-3);border:var(--border);border-radius:var(--radius-md);margin:var(--space-2) 0;background:var(--color-bg);">
       <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-text-muted);margin-bottom:var(--space-3);">Sessão avulsa</div>
-      <!-- Checkbox cobrar automaticamente -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border:var(--border);border-radius:var(--radius-sm);margin-bottom:var(--space-3);">
-        <label for="config-cobrar-avulsa" style="font-size:var(--text-sm);color:var(--color-text);cursor:pointer;">Cobrar automaticamente</label>
-        <input type="checkbox" id="config-cobrar-avulsa" checked style="width:16px;height:16px;cursor:pointer;accent-color:#1A1A1A;">
-      </div>
-      <!-- Valor -->
-      <div id="config-valor-row" style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
         <span style="font-size:var(--text-sm);color:var(--color-text-secondary);flex-shrink:0;">R$</span>
         <input id="config-valor-avulsa" type="number" min="0" step="0.01" placeholder="280,00"
           style="flex:1;min-width:0;padding:6px 10px;border:var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);background:var(--color-surface);color:var(--color-text);outline:none;">
       </div>
       <button id="config-salvar-btn" style="width:100%;padding:7px;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);cursor:pointer;font-weight:500;">Salvar</button>
       <div id="config-feedback" style="font-size:var(--text-xs);margin-top:var(--space-2);color:var(--color-success);display:none;">Salvo!</div>
+      <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2);">Se não houver pacote ativo, cada sessão encerrada gera esse valor no faturamento.</div>
     </div>
   </nav>
   <div class="drawer-footer">
@@ -1502,7 +1497,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.244'; // bump a cada deploy: Beta-0.245, Beta-0.246...
+  const APP_VERSION = 'Beta-0.241'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -3006,34 +3001,16 @@
   }
 
   async function encerrarSessao(sessaoId) {
-    // Sessões avulsas: usar configuração do painel (sem modal por sessão)
-    if (!_temPacoteAtivo) {
-      let cobrar = true, valor = null;
-      try {
-        const cfg = await apiFetch('/configuracoes');
-        cobrar = cfg.cobrar_avulsa !== false;
-        valor  = cfg.valor_sessao_avulsa || null;
-      } catch {}
-      await _executarEncerrarSessao(sessaoId, cobrar, valor);
-      return;
-    }
-    await _executarEncerrarSessao(sessaoId, true, null);
-  }
-
-  async function _executarEncerrarSessao(sessaoId, cobrar, valor) {
     clearAutoCloseTimer(sessaoId);
     ['btn-encerrar', 'btn-encerrar-rec'].forEach(id => {
       const b = document.getElementById(id);
       if (b) { b.disabled = true; b.textContent = 'Processando IA...'; }
     });
     let sucesso = false;
-    let res = null;
+    let avulsaValor = null;
     try {
-      res = await apiFetch(`/sessoes/${sessaoId}/encerrar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cobrar, valor }),
-      });
+      const res = await apiFetch(`/sessoes/${sessaoId}/encerrar`, { method: 'POST' });
+      avulsaValor = res.sessao_avulsa_valor || null;
       sucesso = true;
     } catch (e) {
       const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
@@ -3041,13 +3018,9 @@
     } finally {
       if (sucesso) {
         await openPaciente(currentPacienteId);
-        const avulsaValor = res?.sessao_avulsa_valor;
         if (avulsaValor) {
           const fb = document.getElementById('banner-feedback');
           if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replace('.', ',')}</div>`;
-        } else if (cobrar && res && !res.teve_pacote) {
-          // Cobrar solicitado mas nenhum valor foi detectado → prompt manual
-          _abrirPromptValorAvulsa(sessaoId);
         }
         // Detectar e salvar procedimentos extras automaticamente
         try {
@@ -3070,41 +3043,6 @@
         });
       }
     }
-  }
-
-  function _abrirPromptValorAvulsa(sessaoId) {
-    const snack = el('div', {
-      style: 'position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-4) var(--space-5);z-index:300;display:flex;align-items:center;gap:var(--space-3);max-width:360px;width:calc(100% - 2rem);',
-    });
-    snack.innerHTML = `
-      <div style="flex:1;">
-        <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-1);">Qual foi o valor desta sessão?</div>
-        <div style="display:flex;gap:var(--space-2);align-items:center;">
-          <input class="form-input" type="number" id="prompt-valor-avulsa" step="0.01" min="0" placeholder="R$ 0,00" style="max-width:120px;margin:0;">
-          <button class="btn btn-primary btn-sm" id="prompt-valor-salvar">Registrar</button>
-          <button class="btn btn-ghost btn-sm" id="prompt-valor-pular" style="color:var(--color-text-muted);">Pular</button>
-        </div>
-      </div>`;
-    document.body.appendChild(snack);
-
-    snack.querySelector('#prompt-valor-pular').addEventListener('click', () => snack.remove());
-    snack.querySelector('#prompt-valor-salvar').addEventListener('click', async () => {
-      const val = parseFloat(snack.querySelector('#prompt-valor-avulsa').value) || 0;
-      if (val <= 0) { snack.querySelector('#prompt-valor-avulsa').focus(); return; }
-      try {
-        await apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ descricao: 'Sessão avulsa', valor: val, data: null }),
-        });
-        snack.remove();
-        _showSnack(`Cobrança de R$ ${val.toFixed(2).replace('.', ',')} registrada`);
-      } catch (e) {
-        snack.querySelector('#prompt-valor-avulsa').style.borderColor = 'var(--color-danger)';
-      }
-    });
-
-    // Auto-remove após 30s se o fisio não interagir
-    setTimeout(() => { if (document.body.contains(snack)) snack.remove(); }, 30000);
   }
 
   /* ============================================================
@@ -4704,17 +4642,6 @@
   document.getElementById('drawerOverlay').addEventListener('click', fecharDrawer);
 
   // Configurações — toggle painel e carregar valor salvo
-  const _cfgCobrarChk  = document.getElementById('config-cobrar-avulsa');
-  const _cfgValorRow   = document.getElementById('config-valor-row');
-  const _cfgValorInput = document.getElementById('config-valor-avulsa');
-
-  function _cfgAtualizarValorRow() {
-    const ativo = _cfgCobrarChk.checked;
-    _cfgValorRow.style.opacity  = ativo ? '1' : '0.4';
-    _cfgValorInput.disabled = !ativo;
-  }
-  _cfgCobrarChk.addEventListener('change', _cfgAtualizarValorRow);
-
   document.getElementById('drawer-configuracoes-btn').addEventListener('click', async () => {
     const panel = document.getElementById('drawer-config-panel');
     const aberto = panel.style.display !== 'none';
@@ -4722,25 +4649,23 @@
     if (!aberto) {
       try {
         const cfg = await apiFetch('/configuracoes');
-        _cfgValorInput.value = cfg.valor_sessao_avulsa != null ? cfg.valor_sessao_avulsa : '';
-        _cfgCobrarChk.checked = cfg.cobrar_avulsa !== false;
-        _cfgAtualizarValorRow();
+        const input = document.getElementById('config-valor-avulsa');
+        input.value = cfg.valor_sessao_avulsa != null ? cfg.valor_sessao_avulsa : '';
       } catch (_) {}
     }
   });
 
   document.getElementById('config-salvar-btn').addEventListener('click', async () => {
-    const fb    = document.getElementById('config-feedback');
-    const valor = _cfgValorInput.value !== '' ? parseFloat(_cfgValorInput.value) : null;
-    const cobrar = _cfgCobrarChk.checked;
+    const input = document.getElementById('config-valor-avulsa');
+    const fb = document.getElementById('config-feedback');
+    const valor = input.value !== '' ? parseFloat(input.value) : null;
     try {
       await apiFetch('/configuracoes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ valor_sessao_avulsa: valor, cobrar_avulsa: cobrar }),
+        body: JSON.stringify({ valor_sessao_avulsa: valor }),
       });
       fb.style.display = '';
-      fb.style.color = 'var(--color-success)';
       fb.textContent = 'Salvo!';
       setTimeout(() => { fb.style.display = 'none'; }, 2000);
     } catch (e) {
