@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.216 — 2026-04-02
+
+### Correções
+- **Drawer mobile sem scroll**: painel de Configurações expandia além da tela e não era possível rolar — adicionado `overflow-y: auto` + `min-height: 0` + `-webkit-overflow-scrolling: touch` no `.drawer-nav`
+
+---
+
 ## Beta-0.215 — 2026-04-02
 
 ### Melhorias
