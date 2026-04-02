@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.215 — 2026-04-02
+
+### Melhorias
+- **Sessão avulsa padrão R$ 280**: valor padrão aplicado automaticamente para novos usuários e para quem ainda não configurou — sem precisar preencher manualmente no drawer
+
+---
+
 ## Beta-0.214 — 2026-04-02
 
 ### Melhorias
