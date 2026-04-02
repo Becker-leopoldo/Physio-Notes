@@ -2,7 +2,12 @@ import os
 from datetime import datetime, timedelta, timezone
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-JWT_SECRET = os.getenv("JWT_SECRET", "physio-notes-dev-secret-mude-em-producao")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET não configurada. Defina a variável de ambiente JWT_SECRET "
+        "com uma chave aleatória de 32+ bytes (ex: openssl rand -base64 32)."
+    )
 JWT_ALGORITHM = "HS256"
 TOKEN_HOURS = 8  # token válido por 1 dia de trabalho
 

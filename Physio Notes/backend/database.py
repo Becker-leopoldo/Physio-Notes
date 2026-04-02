@@ -695,6 +695,13 @@ def adicionar_procedimento(sessao_id: int, paciente_id: int, descricao: str, val
         return _row_to_dict(conn.execute("SELECT * FROM procedimento_extra WHERE id = ?", (cur.lastrowid,)).fetchone())
 
 
+def get_procedimento(proc_id: int) -> dict | None:
+    with get_conn() as conn:
+        return _row_to_dict(conn.execute(
+            "SELECT * FROM procedimento_extra WHERE id = ? AND deletado_em IS NULL", (proc_id,)
+        ).fetchone())
+
+
 def get_procedimentos_sessao(sessao_id: int) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(

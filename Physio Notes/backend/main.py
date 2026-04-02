@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -21,6 +21,24 @@ import notifications
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("physio_notes")
+
+_MAX_AUDIO_BYTES  = 50 * 1024 * 1024   # 50 MB por áudio
+_MAX_UPLOAD_BYTES = 30 * 1024 * 1024   # 30 MB por documento PDF
+
+
+async def _ler_audio(upload: UploadFile, max_bytes: int = _MAX_AUDIO_BYTES) -> bytes:
+    """Lê UploadFile de áudio com limite de tamanho."""
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in upload:
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(status_code=413, detail="Arquivo de áudio muito grande (máximo 50 MB)")
+        chunks.append(chunk)
+    data = b"".join(chunks)
+    if not data:
+        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+    return data
 
 # ---------- WebAuthn session store (in-memory) ----------
 _challenges: dict[str, bytes] = {}   # username -> challenge bytes
@@ -65,6 +83,8 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Permissions-Policy"] = "camera=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; "
@@ -124,13 +144,13 @@ async def verificar_autenticacao(request: Request, call_next):
 # ---------- Schemas ----------
 
 class PacienteCreate(BaseModel):
-    nome: str
-    data_nascimento: str | None = None
-    observacoes: str | None = None
-    anamnese: str | None = None
-    data_atendimento: str | None = None
-    cpf: str | None = None
-    endereco: str | None = None
+    nome: str                                     = Field(..., min_length=1, max_length=200)
+    data_nascimento: str | None                   = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    observacoes: str | None                       = Field(None, max_length=2000)
+    anamnese: str | None                          = Field(None, max_length=100_000)
+    data_atendimento: str | None                  = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    cpf: str | None                               = Field(None, max_length=20)
+    endereco: str | None                          = Field(None, max_length=500)
 
 
 class SessaoCreate(BaseModel):
@@ -138,56 +158,54 @@ class SessaoCreate(BaseModel):
 
 
 class PerguntaBody(BaseModel):
-    pergunta: str
+    pergunta: str = Field(..., min_length=1, max_length=2000)
 
 
 class ExtrairPacienteBody(BaseModel):
-    transcricao: str
+    transcricao: str = Field(..., min_length=1, max_length=50_000)
 
 
 class ExtrairPacoteBody(BaseModel):
-    transcricao: str
+    transcricao: str = Field(..., min_length=1, max_length=50_000)
 
 
 class ComplementarAnamneseBody(BaseModel):
-    transcricao: str
-
+    transcricao: str = Field(..., min_length=1, max_length=50_000)
 
 
 class PacoteCreate(BaseModel):
-    total_sessoes: int
-    valor_pago: float | None = None
-    data_pagamento: str | None = None
-    descricao: str | None = None
+    total_sessoes: int                = Field(..., ge=1, le=500)
+    valor_pago: float | None          = Field(None, ge=0, le=999_999)
+    data_pagamento: str | None        = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    descricao: str | None             = Field(None, max_length=500)
 
 
 class ProcedimentoCreate(BaseModel):
-    descricao: str
-    valor: float | None = None
-    data: str | None = None
+    descricao: str            = Field(..., min_length=1, max_length=500)
+    valor: float | None       = Field(None, ge=0, le=999_999)
+    data: str | None          = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 
 class ProcedimentoUpdate(BaseModel):
-    descricao: str
-    valor: float | None = None
+    descricao: str      = Field(..., min_length=1, max_length=500)
+    valor: float | None = Field(None, ge=0, le=999_999)
 
 
 class ExtrairProcedimentoBody(BaseModel):
-    transcricao: str
+    transcricao: str = Field(..., min_length=1, max_length=50_000)
 
 
 class NotaFiscalCreate(BaseModel):
-    paciente_id: int | None = None
-    paciente_nome: str
-    valor_servico: float
-    descricao: str
-    competencia: str | None = None  # YYYY-MM
-    # dados extras para compor o "fake NFS-e"
-    prestador_razao: str | None = None
-    prestador_cnpj: str | None = None
-    tomador_cpf: str | None = None
-    tomador_endereco: str | None = None
-    iss_aliquota: float | None = None  # percentual, ex: 2.5
+    paciente_id: int | None           = None
+    paciente_nome: str                = Field(..., min_length=1, max_length=200)
+    valor_servico: float              = Field(..., ge=0, le=999_999)
+    descricao: str                    = Field(..., min_length=1, max_length=500)
+    competencia: str | None           = Field(None, pattern=r"^\d{4}-\d{2}$")
+    prestador_razao: str | None       = Field(None, max_length=200)
+    prestador_cnpj: str | None        = Field(None, max_length=20)
+    tomador_cpf: str | None           = Field(None, max_length=20)
+    tomador_endereco: str | None      = Field(None, max_length=500)
+    iss_aliquota: float | None        = Field(None, ge=0, le=100)
 
 
 # ---------- Helper de autenticação ----------
@@ -228,6 +246,22 @@ def _verificar_dono_documento(doc: dict, owner: str | None):
     paciente = db.get_paciente(doc["paciente_id"])
     if paciente:
         _verificar_dono(paciente, owner)
+
+
+def _verificar_dono_procedimento(proc: dict, owner: str | None):
+    if not owner:
+        return
+    paciente = db.get_paciente(proc["paciente_id"])
+    if paciente:
+        _verificar_dono(paciente, owner)
+
+
+def _verificar_dono_nf(nf: dict, owner: str | None):
+    if not owner:
+        return
+    nf_owner = nf.get("owner_email")
+    if nf_owner and nf_owner != owner:
+        raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
 
 
 # ---------- Pacientes ----------
@@ -332,13 +366,12 @@ async def sugerir_conduta(paciente_id: int, request: Request):
 @app.post("/transcrever")
 @limiter.limit("20/minute")
 async def transcrever_audio_avulso(request: Request, audio: UploadFile = File(...)):
-    audio_bytes = await audio.read()
-    if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+    audio_bytes = await _ler_audio(audio)
     try:
         transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
+        logger.error("transcrever_audio_avulso: %s", e)
+        raise HTTPException(status_code=502, detail="Erro na transcrição do áudio. Tente novamente.")
     return {"transcricao": transcricao}
 
 
@@ -349,7 +382,8 @@ async def extrair_dados_paciente(body: ExtrairPacienteBody, request: Request):
     try:
         dados = await ai.extrair_dados_paciente(body.transcricao, _owner_email(request))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
+        logger.error("extrair_dados_paciente: %s", e)
+        raise HTTPException(status_code=502, detail="Erro ao processar transcrição. Tente novamente.")
     return dados
 
 
@@ -360,7 +394,8 @@ async def extrair_procedimento(body: ExtrairProcedimentoBody, request: Request):
     try:
         dados = await ai.extrair_procedimento(body.transcricao, _owner_email(request))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
+        logger.error("extrair_procedimento: %s", e)
+        raise HTTPException(status_code=502, detail="Erro ao processar transcrição. Tente novamente.")
     return dados
 
 
@@ -388,7 +423,8 @@ async def detectar_procedimentos(sessao_id: int, request: Request):
     try:
         sugestoes = await ai.detectar_procedimentos_extras(transcricao, nota, _owner_email(request))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na IA: {str(e)}")
+        logger.error("detectar_procedimentos sessao_id=%s: %s", sessao_id, e)
+        raise HTTPException(status_code=502, detail="Erro ao detectar procedimentos. Tente novamente.")
 
     # Filtrar sugestões que já foram salvas (comparação por descrição normalizada)
     ja_salvos = {p["descricao"].strip().lower() for p in db.get_procedimentos_sessao(sessao_id)}
@@ -417,12 +453,20 @@ def criar_procedimento(sessao_id: int, body: ProcedimentoCreate, request: Reques
 
 @app.put("/procedimentos/{proc_id}")
 def atualizar_procedimento(proc_id: int, body: ProcedimentoUpdate, request: Request):
+    proc = db.get_procedimento(proc_id)
+    if not proc:
+        raise HTTPException(status_code=404, detail="Procedimento não encontrado")
+    _verificar_dono_procedimento(proc, _owner_email(request))
     db.atualizar_procedimento(proc_id, body.descricao, body.valor)
     return {"ok": True}
 
 
 @app.delete("/procedimentos/{proc_id}")
-def deletar_procedimento(proc_id: int):
+def deletar_procedimento(proc_id: int, request: Request):
+    proc = db.get_procedimento(proc_id)
+    if not proc:
+        raise HTTPException(status_code=404, detail="Procedimento não encontrado")
+    _verificar_dono_procedimento(proc, _owner_email(request))
     db.deletar_procedimento(proc_id)
     return {"ok": True}
 
@@ -434,7 +478,8 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
     try:
         dados = await ai.extrair_dados_pacote(body.transcricao, _owner_email(request))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na extração: {str(e)}")
+        logger.error("extrair_dados_pacote: %s", e)
+        raise HTTPException(status_code=502, detail="Erro ao processar transcrição. Tente novamente.")
     return dados
 
 
@@ -442,10 +487,11 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
 # ---------- Sessoes ----------
 
 @app.post("/sessoes", status_code=201)
-def criar_sessao(body: SessaoCreate):
+def criar_sessao(body: SessaoCreate, request: Request):
     paciente = db.get_paciente(body.paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
 
     aberta = db.sessao_aberta_do_paciente(body.paciente_id)
     if aberta:
@@ -479,14 +525,12 @@ async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: R
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão já encerrada")
 
-    audio_bytes = await audio.read()
-    if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
-
+    audio_bytes = await _ler_audio(audio)
     try:
         transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
+        logger.error("upload_audio sessao_id=%s: %s", sessao_id, e)
+        raise HTTPException(status_code=502, detail="Erro na transcrição do áudio. Tente novamente.")
 
     chunk = db.add_audio_chunk(sessao_id, transcricao)
     return {"chunk": chunk, "transcricao": transcricao}
@@ -539,14 +583,12 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = F
     if sessao["data"] != date.today().isoformat():
         raise HTTPException(status_code=400, detail="Só é possível adicionar notas em sessões do dia atual")
 
-    audio_bytes = await audio.read()
-    if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
-
+    audio_bytes = await _ler_audio(audio)
     try:
         transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
+        logger.error("adicionar_audio sessao_id=%s: %s", sessao_id, e)
+        raise HTTPException(status_code=502, detail="Erro na transcrição do áudio. Tente novamente.")
 
     chunk = db.add_audio_chunk(sessao_id, transcricao)
 
@@ -583,7 +625,8 @@ async def encerrar_sessao(sessao_id: int, request: Request):
     try:
         dados_consolidados = await ai.consolidar_sessao(transcricoes, _owner_email(request))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro ao consolidar com IA: {str(e)}")
+        logger.error("encerrar_sessao consolidar sessao_id=%s: %s", sessao_id, e)
+        raise HTTPException(status_code=502, detail="Erro ao consolidar sessão. Tente novamente.")
 
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
     owner = _owner_email(request)
@@ -663,7 +706,8 @@ async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Req
     try:
         resumo = await ai.resumir_historico(historico, paciente, documentos, _owner_email(request), tipo=tipo)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro ao gerar resumo: {str(e)}")
+        logger.error("resumo paciente_id=%s: %s", paciente_id, e)
+        raise HTTPException(status_code=502, detail="Erro ao gerar resumo clínico. Tente novamente.")
 
     return {"paciente": paciente, "resumo": resumo}
 
@@ -682,7 +726,8 @@ async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody, request: 
     try:
         resposta = await ai.responder_pergunta(body.pergunta, historico, paciente, _owner_email(request))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Erro ao consultar IA: {str(e)}")
+        logger.error("perguntar_ao_historico paciente_id=%s: %s", paciente_id, e)
+        raise HTTPException(status_code=502, detail="Erro ao consultar IA. Tente novamente.")
 
     return {"pergunta": body.pergunta, "resposta": resposta}
 
@@ -697,10 +742,25 @@ async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), re
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    if not arquivo.filename.lower().endswith(".pdf"):
+    _verificar_dono(paciente, _owner_email(request))
+
+    # Valida MIME type declarado E extensão
+    content_type = (arquivo.content_type or "").lower()
+    filename_lower = (arquivo.filename or "").lower()
+    if content_type not in ("application/pdf", "application/octet-stream") and not filename_lower.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos")
+    if not filename_lower.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos")
 
-    conteudo = await arquivo.read()
+    # Lê com limite de tamanho
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in arquivo:
+        total += len(chunk)
+        if total > _MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Arquivo muito grande (máximo 30 MB)")
+        chunks.append(chunk)
+    conteudo = b"".join(chunks)
 
     # Extrai texto do PDF
     try:
@@ -880,11 +940,12 @@ def listar_notas_fiscais(
 
 
 @app.get("/notas-fiscais/{nf_id}")
-def buscar_nota_fiscal(nf_id: int):
+def buscar_nota_fiscal(nf_id: int, request: Request):
     import json as _json
     nf = db.get_nota_fiscal(nf_id)
     if not nf:
         raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
+    _verificar_dono_nf(nf, _owner_email(request))
     try:
         dados = _json.loads(nf.get("dados_json") or "{}")
     except Exception:
@@ -893,10 +954,11 @@ def buscar_nota_fiscal(nf_id: int):
 
 
 @app.delete("/notas-fiscais/{nf_id}", status_code=204)
-def cancelar_nota_fiscal(nf_id: int):
+def cancelar_nota_fiscal(nf_id: int, request: Request):
     nf = db.get_nota_fiscal(nf_id)
     if not nf:
         raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
+    _verificar_dono_nf(nf, _owner_email(request))
     db.cancelar_nota_fiscal(nf_id)
 
 
@@ -968,7 +1030,7 @@ async def auth_config():
     }
 
 @app.post("/auth/google-login")
-@limiter.limit("20/minute")
+@limiter.limit("5/minute")
 async def auth_google_login(request: Request, body: GoogleLoginBody):
     """Verifica o credential do Google, cria/atualiza usuário e retorna JWT."""
     if not google_auth.GOOGLE_CLIENT_ID:
@@ -976,7 +1038,8 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     try:
         info = google_auth.verificar_google_token(body.credential)
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Token Google inválido: {e}")
+        logger.warning("auth_google_login: token inválido: %s", e)
+        raise HTTPException(status_code=401, detail="Credencial Google inválida ou expirada.")
     email = info.get("email")
     nome  = info.get("name", email)
     foto  = info.get("picture")

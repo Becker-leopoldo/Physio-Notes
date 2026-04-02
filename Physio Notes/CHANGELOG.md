@@ -4,6 +4,22 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.242 — 2026-04-02
+
+### Segurança — Q.A completo (9 correções)
+
+1. **JWT_SECRET obrigatório**: servidor falha na inicialização se `JWT_SECRET` não estiver definida como variável de ambiente — elimina o risco de usar o fallback fraco hardcoded
+2. **Ownership em 5 endpoints descobertos**: `PUT /procedimentos/{id}`, `DELETE /procedimentos/{id}`, `GET /notas-fiscais/{id}`, `DELETE /notas-fiscais/{id}` e `POST /sessoes` agora verificam se o recurso pertence ao usuário autenticado antes de operar
+3. **Novos helpers de autorização**: `_verificar_dono_procedimento` e `_verificar_dono_nf` adicionados; `get_procedimento(proc_id)` adicionado ao `database.py`
+4. **Limite de tamanho em uploads**: áudios limitados a 50 MB, documentos PDF a 30 MB; leitura via streaming com rejeição imediata ao exceder o limite (HTTP 413); helper `_ler_audio()` centraliza a lógica
+5. **Sanitização de erros**: todos os `detail=f"Erro: {str(e)}"` substituídos por mensagens genéricas — exceções reais agora vão para o log do servidor, não para o cliente
+6. **Validação de input com `Field`**: todos os Pydantic models (`PacienteCreate`, `ProcedimentoCreate`, `PacoteCreate`, `NotaFiscalCreate`, etc.) agora têm `max_length`, `min_length`, `ge/le` e `pattern` para datas
+7. **Rate limit no login**: reduzido de `20/minute` para `5/minute` no endpoint `/auth/google-login`
+8. **HSTS**: adicionado header `Strict-Transport-Security: max-age=31536000; includeSubDomains` em todas as respostas; também adicionado `Permissions-Policy: camera=(), geolocation=()`
+9. **Versões fixas no requirements.txt**: todas as dependências com versão `==` explícita para evitar atualizações automáticas que possam introduzir CVEs
+
+---
+
 ## Beta-0.241 — 2026-04-02
 
 ### Funcionalidades
