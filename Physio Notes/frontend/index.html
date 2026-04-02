@@ -352,6 +352,9 @@
       z-index: 200;
       align-items: flex-end;
       justify-content: center;
+      /* iOS Safari: permite scroll quando teclado empurra o conteúdo */
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
     }
     .modal-overlay.open { display: flex; }
     .modal {
@@ -360,9 +363,15 @@
       width: 100%;
       max-width: 480px;
       padding: var(--space-6);
+      /* padding extra para safe area (notch/home bar do iPhone) */
+      padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
       box-shadow: var(--shadow-lg);
-      max-height: 90dvh;
+      max-height: 92dvh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      /* Garante que o modal nunca some atrás do teclado */
+      flex-shrink: 0;
     }
     .modal-title {
       font-family: var(--font-display);
@@ -1491,7 +1500,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.20'; // bump a cada deploy: Beta-0.21, Beta-0.22...
+  const APP_VERSION = 'Beta-0.21'; // bump a cada deploy: Beta-0.22, Beta-0.23...
 
   /* ============================================================
      STATE
@@ -3503,9 +3512,10 @@
   }
 
   function abrirModalNovoPacote(pacienteId) {
-    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:var(--space-5);' });
+    const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:flex;align-items:flex-end;justify-content:center;overflow-y:scroll;-webkit-overflow-scrolling:touch;' });
     modal.innerHTML = `
-      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-6);width:100%;max-width:400px;box-shadow:var(--shadow-lg);">
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:var(--space-6);padding-bottom:calc(var(--space-6) + env(safe-area-inset-bottom,0px));width:100%;max-width:480px;box-shadow:var(--shadow-lg);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;flex-shrink:0;">
+        <div style="width:40px;height:4px;background:var(--color-border-strong);border-radius:999px;margin:0 auto var(--space-4);"></div>
         <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-2);">Novo pacote</h3>
         <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Grave um áudio ou preencha manualmente.</p>
 
