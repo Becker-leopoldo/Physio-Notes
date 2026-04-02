@@ -1506,7 +1506,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.218'; // bump a cada deploy: Beta-0.219, Beta-0.220...
+  const APP_VERSION = 'Beta-0.219'; // bump a cada deploy: Beta-0.220, Beta-0.221...
 
   /* ============================================================
      STATE
@@ -1517,7 +1517,7 @@
   let audioChunks       = [];
   let recordTimerInterval = null;
   let recordSeconds     = 0;
-  let pendingAudioBlob  = null; // áudio aguardando reconexão para ser enviado
+  const pendingRetries  = []; // [{feedbackEl, fn}] — áudios aguardando reconexão
 
   const AUTO_CLOSE_MINUTES = 5;
   let autoCloseInterval    = null;
@@ -1632,13 +1632,26 @@
 
   function friendlyError(err) {
     const msg = (err?.message || '').toLowerCase();
-    if (msg.includes('sem conexão') || msg.includes('connection') || msg.includes('network') || msg.includes('failed to fetch')) {
-      return 'Estamos sem internet no momento 😕 Verifique sua conexão e tente novamente.';
+    const status = err?.status || 0;
+    if (!navigator.onLine || msg.includes('failed to fetch') || msg.includes('network') || msg.includes('connection')) {
+      return 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
     }
-    if (msg.includes('transcrição') || msg.includes('transcri')) {
-      return 'Não foi possível processar o áudio agora 😕 Verifique sua conexão e tente novamente.';
+    if (msg.includes('transcri') || msg.includes('áudio') || msg.includes('audio')) {
+      return 'Não foi possível processar o áudio. Verifique sua conexão e tente gravar novamente.';
     }
-    return err?.message || 'Algo deu errado. Tente novamente.';
+    if (status === 409) {
+      return 'Já existe um cadastro com essas informações. Verifique os dados e tente novamente.';
+    }
+    if (status === 401 || status === 403) {
+      return 'Sua sessão expirou. Faça login novamente.';
+    }
+    if (status >= 500) {
+      return 'O serviço está temporariamente indisponível. Tente novamente em alguns instantes.';
+    }
+    if (status === 404) {
+      return 'As informações solicitadas não foram encontradas.';
+    }
+    return 'Algo deu errado. Tente novamente ou entre em contato com o suporte.';
   }
 
   // Renderiza texto de anamnese com markdown básico (# títulos, **bold**, listas)
@@ -2011,33 +2024,28 @@
         document.getElementById('modal-record-timer').classList.remove('visible');
 
         const blob = new Blob(modalChunks, { type: modalRecorder.mimeType || 'audio/webm' });
+        const ext = blob.type.includes('webm') ? 'webm' : blob.type.includes('mp4') ? 'mp4' : 'audio';
 
         fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo...</div>';
-        try {
-          const ext = blob.type.includes('webm') ? 'webm' : blob.type.includes('mp4') ? 'mp4' : 'audio';
+        await enviarComRetry(fb, async () => {
           const formData = new FormData();
           formData.append('audio', blob, `gravacao.${ext}`);
-
           const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
-
           fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
           const extRes = await apiFetch('/extrair-paciente', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ transcricao: transJson.transcricao }),
           });
-
-          // Acumular dados capturados
           if (extRes.nome) capturedData.nome = extRes.nome;
           if (extRes.data_nascimento) capturedData.data_nascimento = extRes.data_nascimento;
           if (extRes.cpf) capturedData.cpf = extRes.cpf.replace(/\D/g, '');
           if (extRes.endereco) capturedData.endereco = extRes.endereco;
-
           fb.innerHTML = '';
           atualizarConversaVoz();
-        } catch (err) {
+        }).catch(err => {
           fb.innerHTML = `<div class="alert alert-error">${friendlyError(err)}</div>`;
-        }
+        });
       };
 
       modalRecorder.start();
@@ -2289,7 +2297,7 @@
               const blob = new Blob(anamneseChunks, { type: mimeType });
               const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
               micFb.innerHTML = '<span style="color:var(--color-text-muted);">Transcrevendo áudio...</span>';
-              try {
+              await enviarComRetry(micFb, async () => {
                 const formData = new FormData();
                 formData.append('audio', blob, `anamnese.${ext}`);
                 const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
@@ -2306,9 +2314,9 @@
                 document.getElementById('anamnese-preview').textContent = anamnesePreviewText(novaAnamnese);
                 document.getElementById('anamnese-textarea-manual').value = novaAnamnese;
                 fecharGravacaoAnamnese();
-              } catch (err) {
+              }).catch(err => {
                 micFb.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(err)}</span>`;
-              }
+              });
             };
             anamneseRecorder.start();
             anamneseRecording = true;
@@ -2502,7 +2510,7 @@
               const blob = new Blob(condutaChunks, { type: mimeType });
               const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
               micFb.innerHTML = '<span style="color:var(--color-text-muted);">Transcrevendo áudio...</span>';
-              try {
+              await enviarComRetry(micFb, async () => {
                 const formData = new FormData();
                 formData.append('audio', blob, `conduta.${ext}`);
                 const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
@@ -2520,9 +2528,9 @@
                 document.getElementById('conduta-preview').textContent = condutaPreviewText(novaConduta);
                 document.getElementById('conduta-textarea-manual').value = novaConduta;
                 fecharGravacaoConduta();
-              } catch (err) {
+              }).catch(err => {
                 micFb.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(err)}</span>`;
-              }
+              });
             };
             condutaRecorder.start();
             condutaRecording = true;
@@ -2725,17 +2733,17 @@
           micBtn.style.background = 'var(--color-accent)';
           feedback.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;"></span> Processando...';
           micBtn.disabled = true;
-          try {
-            const blob = new Blob(chunks, { type: 'audio/webm' });
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          await enviarComRetry(feedback, async () => {
             const form = new FormData();
             form.append('audio', blob, 'nota.webm');
             await apiFetch(`/sessoes/${sessaoId}/adicionar-audio`, { method: 'POST', body: form });
             modal.remove();
             openPaciente(currentPacienteId);
-          } catch (e) {
-            feedback.textContent = e.message;
+          }).catch(e => {
+            feedback.textContent = friendlyError(e);
             micBtn.disabled = false;
-          }
+          });
         };
         recorder.start();
         recording = true;
@@ -3034,44 +3042,25 @@
 
   async function sendAudio(blob) {
     const fb = document.getElementById('rec-feedback');
-
-    // Sem internet: guarda o blob e aguarda reconexão
-    if (!navigator.onLine) {
-      pendingAudioBlob = blob;
-      showPendingAudioBanner(fb);
-      return;
-    }
-
-    pendingAudioBlob = null;
     fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo áudio...</div>';
 
     const ext = blob.type.includes('webm') ? 'webm' : blob.type.includes('mp4') ? 'mp4' : 'audio';
-    const formData = new FormData();
-    formData.append('audio', blob, `gravacao.${ext}`);
 
-    try {
+    await enviarComRetry(fb, async () => {
+      const formData = new FormData();
+      formData.append('audio', blob, `gravacao.${ext}`);
       fb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
-      const data = await apiFetch(`/sessoes/${currentSessaoId}/audio`, {
-        method: 'POST',
-        body: formData,
-      });
-
+      await apiFetch(`/sessoes/${currentSessaoId}/audio`, { method: 'POST', body: formData });
       fb.innerHTML = `<div class="alert alert-success" style="display:flex;align-items:center;gap:var(--space-2);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Trecho transcrito e salvo.</div>`;
       startAutoCloseTimer();
       await loadChunksIntoRecorder(currentSessaoId);
-    } catch (e) {
-      // Falhou durante o envio — pode ter perdido internet no meio
-      if (!navigator.onLine) {
-        pendingAudioBlob = blob;
-        showPendingAudioBanner(fb);
-      } else {
-        fb.innerHTML = `<div class="alert alert-error">${friendlyError(e)}</div>`;
-      }
-    }
+    }).catch(e => {
+      fb.innerHTML = `<div class="alert alert-error">${friendlyError(e)}</div>`;
+    });
   }
 
-  function showPendingAudioBanner(fb) {
-    fb.innerHTML = `
+  function mostrarBannerOffline(el) {
+    el.innerHTML = `
       <div class="alert alert-warning" style="display:flex;flex-direction:column;gap:var(--space-2);">
         <div style="display:flex;align-items:center;gap:var(--space-2);">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l7 14H1L8 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v4M8 12v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -3079,6 +3068,25 @@
         </div>
         <button onclick="retrySendPendingAudio()" style="align-self:flex-start;font-size:var(--text-xs);font-family:var(--font-body);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 10px;cursor:pointer;">Tentar agora</button>
       </div>`;
+  }
+
+  // Wrapper genérico: executa fn(), se offline agenda retry automático
+  async function enviarComRetry(feedbackEl, fn) {
+    if (!navigator.onLine) {
+      pendingRetries.push({ feedbackEl, fn });
+      mostrarBannerOffline(feedbackEl);
+      return;
+    }
+    try {
+      await fn();
+    } catch (e) {
+      if (!navigator.onLine) {
+        pendingRetries.push({ feedbackEl, fn });
+        mostrarBannerOffline(feedbackEl);
+      } else {
+        throw e;
+      }
+    }
   }
 
   /* ============================================================
@@ -3300,7 +3308,7 @@
             stream.getTracks().forEach(t => t.stop());
             const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
             micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo...</div>';
-            try {
+            await enviarComRetry(micFb, async () => {
               const fd = new FormData();
               fd.append('audio', blob, `proc.${mimeType.includes('ogg') ? 'ogg' : 'webm'}`);
               const tj = await apiFetch('/transcrever', { method: 'POST', body: fd });
@@ -3312,9 +3320,9 @@
               if (ext.descricao) modal.querySelector('#proc-desc').value = ext.descricao;
               if (ext.valor)     modal.querySelector('#proc-valor').value = ext.valor;
               micFb.innerHTML = '<span style="color:var(--color-success);">✓ Campos preenchidos — revise e salve</span>';
-            } catch (err) {
+            }).catch(err => {
               micFb.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(err)}</span>`;
-            }
+            });
           };
           rec.start();
           recording = true;
@@ -3648,18 +3656,16 @@
             const blob = new Blob(mpChunks, { type: mimeType || 'audio/webm' });
             const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
             micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Transcrevendo...</div>';
-            try {
+            await enviarComRetry(micFb, async () => {
               const formData = new FormData();
               formData.append('audio', blob, `pacote.${ext}`);
               const transJson = await apiFetch('/transcrever', { method: 'POST', body: formData });
-
               micFb.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando com IA...</div>';
               const extRes = await apiFetch('/extrair-pacote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ transcricao: transJson.transcricao }),
               });
-
               const aiFieldStyle = (input) => {
                 input.style.background = 'rgba(45,106,79,0.07)';
                 input.style.borderColor = 'var(--color-success)';
@@ -3668,11 +3674,10 @@
               if (extRes.valor_pago)    { const i = modal.querySelector('#mp-valor'); i.value = extRes.valor_pago;    aiFieldStyle(i); }
               if (extRes.data_pagamento){ const i = modal.querySelector('#mp-data');  i.value = extRes.data_pagamento; aiFieldStyle(i); }
               if (extRes.descricao)     { const i = modal.querySelector('#mp-desc');  i.value = extRes.descricao;     aiFieldStyle(i); }
-
               micFb.innerHTML = `<div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--color-success-bg);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4L6.5 11 3 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Campos preenchidos — revise e salve</div>`;
-            } catch (err) {
+            }).catch(err => {
               micFb.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(err)}</span>`;
-            }
+            });
           };
           mpRecorder.start();
           mpRecording = true;
@@ -4489,19 +4494,19 @@
   }
   window.addEventListener('online', () => {
     updateOnlineStatus();
-    // Retenta automaticamente se havia áudio pendente
-    if (pendingAudioBlob && currentSessaoId) {
-      retrySendPendingAudio();
-    }
+    retrySendPendingAudio();
   });
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
   function retrySendPendingAudio() {
-    if (!pendingAudioBlob) return;
-    const blob = pendingAudioBlob;
-    pendingAudioBlob = null;
-    sendAudio(blob);
+    if (!pendingRetries.length) return;
+    const toRetry = pendingRetries.splice(0);
+    toRetry.forEach(({ feedbackEl, fn }) => {
+      enviarComRetry(feedbackEl, fn).catch(e => {
+        feedbackEl.innerHTML = `<div class="alert alert-error">${friendlyError(e)}</div>`;
+      });
+    });
   }
 
   /* ============================================================

@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.219 — 2026-04-02
+
+### Melhorias
+- **Retry de áudio em todos os fluxos de voz**: a proteção contra falta de internet agora cobre todos os 7 fluxos (gravador principal, novo paciente, anamnese, conduta, sessão detalhe, procedimento extra, pacote) — áudio preservado em memória com retry automático ao reconectar
+- **Mensagens de erro humanizadas**: `friendlyError` reescrito com linguagem acessível para não-técnicos, cobrindo offline, erros de áudio, sessão expirada, servidor indisponível e duplicidade de cadastro
+
+---
+
 ## Beta-0.218 — 2026-04-02
 
 ### Melhorias
