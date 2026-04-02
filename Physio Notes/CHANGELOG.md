@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.212 — 2026-04-02
+
+### Funcionalidades
+- **Billing admin**: administrador vê custo de IA individual por fisioterapeuta no mês selecionado — barra de progresso, chamadas e tokens por usuário, total consolidado
+- Endpoint `GET /admin/billing?mes=YYYY-MM` restrito ao admin
+- Seção "Custo por fisioterapeuta" aparece automaticamente na tela de Billing IA quando logado como admin
+
+---
+
 ## Beta-0.211 — 2026-04-02
 
 ### Melhorias

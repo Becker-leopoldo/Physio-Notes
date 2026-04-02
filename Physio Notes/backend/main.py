@@ -943,6 +943,17 @@ def admin_revogar_usuario(email: str, request: Request):
     return {"ok": True}
 
 
+@app.get("/admin/billing")
+def admin_billing(mes: str | None = None, request: Request = None):
+    from datetime import date
+    _verificar_admin(request)
+    ano_mes = mes or date.today().strftime("%Y-%m")
+    return {
+        "mes": ano_mes,
+        "usuarios": db.get_billing_por_usuario(ano_mes),
+    }
+
+
 # ---------- Auth WebAuthn ----------
 
 @app.post("/auth/register/begin")

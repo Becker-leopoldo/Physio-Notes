@@ -1500,7 +1500,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.211'; // bump a cada deploy: Beta-0.212, Beta-0.213...
+  const APP_VERSION = 'Beta-0.212'; // bump a cada deploy: Beta-0.213, Beta-0.214...
 
   /* ============================================================
      STATE
@@ -3828,7 +3828,9 @@
       fetch('/auth/config').then(r => r.json()).then(cfg => {
         if (cfg.admin_email && u.email === cfg.admin_email) {
           document.getElementById('drawer-admin-link').style.display = '';
+          window._isAdmin = true;
         }
+        window._adminEmail = cfg.admin_email || '';
       }).catch(() => {});
     } catch (_) {}
   })();
@@ -3953,17 +3955,17 @@
     body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
 
     try {
-      const [data, cotacao] = await Promise.all([
-        apiFetch(`/billing${mes ? `?mes=${mes}` : ''}`),
-        fetchCotacao(),
-      ]);
-      renderBilling(data, cotacao);
+      const qs = mes ? `?mes=${mes}` : '';
+      const requests = [apiFetch(`/billing${qs}`), fetchCotacao()];
+      if (window._isAdmin) requests.push(apiFetch(`/admin/billing${qs}`).catch(() => null));
+      const [data, cotacao, adminData] = await Promise.all(requests);
+      renderBilling(data, cotacao, adminData || null);
     } catch (e) {
       body.innerHTML = `<div class="alert alert-error">Erro ao carregar billing: ${e.message}</div>`;
     }
   }
 
-  function renderBilling(data, cotacao) {
+  function renderBilling(data, cotacao, adminData) {
     const body = document.getElementById('billing-body');
     const { mes_atual, historico } = data;
 
@@ -4101,12 +4103,58 @@
           </table>
         </div>
       </div>` : ''}
+
+      <div id="billing-admin-slot"></div>
     `;
 
     const pickerBilling = criarPickerMesAno(mes_atual.mes, (novoMes) => {
       openBilling(novoMes);
     });
     body.querySelector('#billing-picker-mes-slot').appendChild(pickerBilling);
+
+    // Seção admin: custo por usuário
+    if (adminData && adminData.usuarios && adminData.usuarios.length > 0) {
+      const totalAdmin = adminData.usuarios.reduce((s, u) => s + (u.total_usd || 0), 0);
+      const maxAdmin = Math.max(...adminData.usuarios.map(u => u.total_usd || 0), 0.0001);
+      const slot = body.querySelector('#billing-admin-slot');
+      slot.innerHTML = `
+        <div class="card" style="padding:0;overflow:hidden;margin-top:var(--space-6);border-top:3px solid var(--color-accent);">
+          <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:var(--text-sm);font-weight:700;">Custo por fisioterapeuta</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Visível apenas para o administrador</div>
+            </div>
+            <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(totalAdmin, cotacao)}</span>
+          </div>
+          ${adminData.usuarios.map(u => {
+            const pct = Math.round(((u.total_usd || 0) / maxAdmin) * 100);
+            const isMe = u.owner_email === (window._adminEmail ? window._userEmail : '');
+            return `
+            <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
+                <div style="display:flex;align-items:center;gap:var(--space-2);min-width:0;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:var(--color-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">
+                    ${(u.nome || u.owner_email || '?').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase()}
+                  </div>
+                  <div style="min-width:0;">
+                    <div style="font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.nome || u.owner_email}</div>
+                    <div style="font-size:10px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.owner_email}</div>
+                  </div>
+                </div>
+                <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:var(--space-3);">${fmtBRL(u.total_usd, cotacao)}</span>
+              </div>
+              <div style="background:var(--color-border);border-radius:var(--radius-full);height:3px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+              </div>
+              <div style="display:flex;gap:var(--space-4);margin-top:var(--space-1);">
+                <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${u.total_chamadas} chamada${u.total_chamadas !== 1 ? 's' : ''}</span>
+                <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↑ ${fmtTokens(u.total_input_tokens)}</span>
+                <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↓ ${fmtTokens(u.total_output_tokens)}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
   }
 
   /* ============================================================

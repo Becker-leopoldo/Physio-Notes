@@ -504,6 +504,27 @@ def get_billing_meses(owner_email: str | None = None) -> list[dict]:
         return [_row_to_dict(r) for r in rows]
 
 
+def get_billing_por_usuario(ano_mes: str) -> list[dict]:
+    """Admin: retorna custo agrupado por owner_email no mês."""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT
+                a.owner_email,
+                COALESCE(u.nome, a.owner_email) AS nome,
+                COUNT(*) AS total_chamadas,
+                SUM(a.input_tokens)  AS total_input_tokens,
+                SUM(a.output_tokens) AS total_output_tokens,
+                ROUND(SUM(a.custo_usd), 6) AS total_usd
+            FROM api_uso a
+            LEFT JOIN usuario_google u ON u.email = a.owner_email
+            WHERE strftime('%Y-%m', a.criado_em) = ?
+              AND a.owner_email IS NOT NULL
+            GROUP BY a.owner_email
+            ORDER BY total_usd DESC
+        """, (ano_mes,)).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
 # ---------- Documentos ----------
 
 def salvar_documento(paciente_id: int, nome_original: str, caminho: str, resumo_ia: str | None) -> dict:
