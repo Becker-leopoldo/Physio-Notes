@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.217 — 2026-04-02
+
+### Correções
+- **Drawer: estrutura nav/footer corrigida** — "Gerenciar usuários" e "Configurações" movidos para o nav (área scrollável); footer fixo contém apenas usuário logado + Sair + versão
+
+---
+
 ## Beta-0.216 — 2026-04-02
 
 ### Correções
