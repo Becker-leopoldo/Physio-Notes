@@ -4,6 +4,20 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.248 — 2026-04-02
+
+### Melhorias
+
+**Modal de valor avulsa integrado ao fluxo de encerramento**
+- Pergunta "Qual o valor da sessão?" aparece como modal centralizado ANTES de processar a IA
+- Fluxo: clicar Encerrar → modal de valor → confirmar → IA processa e fecha
+- Botões "Confirmar e encerrar" e "Encerrar sem valor"
+- Campo pré-preenchido com valor configurado nas configurações (se houver)
+- Se checkbox "Cobrar automaticamente" marcado E valor configurado → auto-cobra sem modal
+- Se checkbox desmarcado OU sem valor configurado → modal sempre abre
+
+---
+
 ## Beta-0.247 — 2026-04-02
 
 ### Melhorias

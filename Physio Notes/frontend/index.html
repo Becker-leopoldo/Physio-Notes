@@ -1501,7 +1501,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.247'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.248'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -3004,37 +3004,73 @@
     }
   }
 
+  // Modal de valor avulsa — aparece ANTES de fechar a sessão. Retorna Promise<number|null>.
+  function _pedirValorModal(valorSugerido) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25);padding:var(--space-4);';
+      overlay.innerHTML = `
+        <div style="background:var(--color-surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);padding:var(--space-6);width:100%;max-width:320px;">
+          <div style="font-size:var(--text-base);font-weight:600;margin-bottom:var(--space-4);">Qual o valor da sessão?</div>
+          <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-5);">
+            <span style="font-size:var(--text-sm);color:var(--color-text-secondary);flex-shrink:0;">R$</span>
+            <input id="_valor-modal-inp" type="number" min="0" step="0.01" placeholder="0,00"
+              value="${valorSugerido || ''}"
+              style="flex:1;padding:8px 12px;border:var(--border-strong);border-radius:var(--radius-md);font-size:var(--text-base);font-family:var(--font-body);outline:none;background:var(--color-surface);">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+            <button id="_valor-modal-ok" class="btn btn-primary" style="width:100%;">Confirmar e encerrar</button>
+            <button id="_valor-modal-pular" class="btn btn-ghost" style="width:100%;color:var(--color-text-muted);">Encerrar sem valor</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const inp = overlay.querySelector('#_valor-modal-inp');
+      inp.focus();
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') overlay.querySelector('#_valor-modal-ok').click(); });
+      overlay.querySelector('#_valor-modal-ok').addEventListener('click', () => {
+        const v = parseFloat(inp.value);
+        overlay.remove();
+        resolve(v > 0 ? v : null);
+      });
+      overlay.querySelector('#_valor-modal-pular').addEventListener('click', () => {
+        overlay.remove();
+        resolve(null);
+      });
+    });
+  }
+
   async function encerrarSessao(sessaoId) {
     clearAutoCloseTimer(sessaoId);
+
+    // Para sessão avulsa: perguntar valor ANTES de processar
+    let encerrarBody = {};
+    if (!_temPacoteAtivo) {
+      try {
+        const cfg = await apiFetch('/configuracoes');
+        if (cfg.cobrar_avulsa !== false && cfg.valor_sessao_avulsa) {
+          // Tem valor configurado e checkbox marcado → auto-cobrar, sem modal
+          encerrarBody = { cobrar: true, valor: cfg.valor_sessao_avulsa };
+        } else {
+          // Checkbox desmarcado ou sem valor → perguntar agora
+          const valorDigitado = await _pedirValorModal(cfg.valor_sessao_avulsa || null);
+          encerrarBody = valorDigitado ? { cobrar: true, valor: valorDigitado } : { cobrar: false };
+        }
+      } catch (_) {}
+    }
+
     ['btn-encerrar', 'btn-encerrar-rec'].forEach(id => {
       const b = document.getElementById(id);
       if (b) { b.disabled = true; b.textContent = 'Processando IA...'; }
     });
     let sucesso = false;
     let avulsaValor = null;
-    let valorAiDetectado = null;
     try {
-      // Para sessão avulsa (sem pacote ativo), lê configuração de cobrança
-      let encerrarBody = {};
-      if (!_temPacoteAtivo) {
-        try {
-          const cfg = await apiFetch('/configuracoes');
-          if (cfg.cobrar_avulsa !== false) {
-            // Auto-cobrar: backend usa valor configurado ou detecta da IA
-            encerrarBody = { cobrar: true, valor: cfg.valor_sessao_avulsa || null };
-          } else {
-            // Não auto-cobrar: encerra sem criar cobrança, prompt será aberto depois
-            encerrarBody = { cobrar: false };
-          }
-        } catch (_) {}
-      }
       const res = await apiFetch(`/sessoes/${sessaoId}/encerrar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(encerrarBody),
       });
       avulsaValor = res.sessao_avulsa_valor || null;
-      valorAiDetectado = res.valor_ai_detectado || null;
       sucesso = true;
     } catch (e) {
       const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
@@ -3043,12 +3079,8 @@
       if (sucesso) {
         await openPaciente(currentPacienteId);
         if (avulsaValor) {
-          // Cobrado automaticamente com sucesso
           const fb = document.getElementById('banner-feedback');
           if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replace('.', ',')}</div>`;
-        } else if (!_temPacoteAtivo) {
-          // Sem valor auto-detectado (checkbox desmarcado ou sem valor configurado) → pede manualmente
-          _abrirPromptValorAvulsa(sessaoId, valorAiDetectado);
         }
         // Detectar e salvar procedimentos extras automaticamente
         try {
@@ -3071,50 +3103,6 @@
         });
       }
     }
-  }
-
-  function _abrirPromptValorAvulsa(sessaoId, valorSugerido) {
-    const existente = document.getElementById('prompt-valor-avulsa');
-    if (existente) existente.remove();
-    const el = document.createElement('div');
-    el.id = 'prompt-valor-avulsa';
-    el.style.cssText = 'position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);z-index:1100;background:var(--color-surface);border:var(--border-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-4) var(--space-5);display:flex;align-items:center;gap:var(--space-3);max-width:360px;width:calc(100% - 2rem);';
-    const hint = valorSugerido ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:3px;">IA detectou R$ ${valorSugerido.toFixed(2).replace('.', ',')} no áudio</div>` : '';
-    el.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-1);">Qual o valor da sessão?</div>
-        <div style="display:flex;align-items:center;gap:var(--space-2);">
-          <span style="font-size:var(--text-sm);color:var(--color-text-secondary);">R$</span>
-          <input id="prompt-valor-inp" type="number" min="0" step="0.01" placeholder="0,00"
-            value="${valorSugerido || ''}"
-            style="flex:1;padding:5px 8px;border:var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);outline:none;">
-        </div>
-        ${hint}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:var(--space-1);flex-shrink:0;">
-        <button id="prompt-valor-ok" style="padding:6px 14px;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);cursor:pointer;font-weight:500;">OK</button>
-        <button id="prompt-valor-pular" style="padding:5px 14px;background:none;border:var(--border);border-radius:var(--radius-sm);font-size:var(--text-xs);font-family:var(--font-body);cursor:pointer;color:var(--color-text-muted);">Pular</button>
-      </div>`;
-    document.body.appendChild(el);
-    const inp = document.getElementById('prompt-valor-inp');
-    inp.focus();
-    const fechar = () => el.remove();
-    document.getElementById('prompt-valor-pular').addEventListener('click', fechar);
-    document.getElementById('prompt-valor-ok').addEventListener('click', async () => {
-      const v = parseFloat(inp.value);
-      if (!v || v <= 0) { fechar(); return; }
-      fechar();
-      try {
-        await apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ descricao: 'Sessão avulsa', valor: v }),
-        });
-        _showSnack(`Sessão avulsa registrada — R$ ${v.toFixed(2).replace('.', ',')}`);
-        await openPaciente(currentPacienteId);
-      } catch (_) {}
-    });
-    // Auto-fecha após 30s
-    setTimeout(() => { if (document.getElementById('prompt-valor-avulsa')) fechar(); }, 30000);
   }
 
   /* ============================================================
