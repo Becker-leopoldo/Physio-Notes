@@ -4,6 +4,17 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.253 — 2026-04-03
+
+### Correções
+
+**Bug: faturamento exibia pacientes e meses de outros usuários**
+- `get_faturamento_pacientes`: queries de `meses_disponiveis` e `pacientes_disponiveis` não aplicavam filtro por `owner_email`
+- Usuário autenticado via Google SSO via dados cruzados de outra conta
+- Corrigido com JOIN na tabela `paciente` filtrando por `p.owner_email` em ambas as queries
+
+---
+
 ## Beta-0.252 — 2026-04-02
 
 ### Segurança

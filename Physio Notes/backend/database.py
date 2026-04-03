@@ -909,27 +909,31 @@ def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | Non
         total_recebido = round(total_pacotes + total_procedimentos, 2)
         total_sessoes_vendidas = sum(p["total_sessoes"] or 0 for p in pacotes)
 
-        # meses disponíveis (união de datas de pacotes e procedimentos)
-        meses_rows = conn.execute("""
+        # meses disponíveis (união de datas de pacotes e procedimentos — filtrado por owner)
+        owner_join_pk = "JOIN paciente p ON p.id = pacote.paciente_id AND p.owner_email = ?" if owner_email else ""
+        owner_join_pe = "JOIN paciente p ON p.id = procedimento_extra.paciente_id AND p.owner_email = ?" if owner_email else ""
+        meses_params = ([owner_email, owner_email] if owner_email else [])
+        meses_rows = conn.execute(f"""
             SELECT DISTINCT mes FROM (
                 SELECT strftime('%Y-%m', COALESCE(data_pagamento, DATE(criado_em))) AS mes
-                FROM pacote WHERE deletado_em IS NULL AND valor_pago IS NOT NULL
+                FROM pacote {owner_join_pk} WHERE pacote.deletado_em IS NULL AND pacote.valor_pago IS NOT NULL
                 UNION
                 SELECT strftime('%Y-%m', COALESCE(data, criado_em)) AS mes
-                FROM procedimento_extra WHERE deletado_em IS NULL AND valor IS NOT NULL
+                FROM procedimento_extra {owner_join_pe} WHERE procedimento_extra.deletado_em IS NULL AND procedimento_extra.valor IS NOT NULL
             ) ORDER BY mes DESC
-        """).fetchall()
+        """, meses_params).fetchall()
 
-        # pacientes disponíveis (união de pacotes e procedimentos)
-        pacientes_rows = conn.execute("""
+        # pacientes disponíveis (união de pacotes e procedimentos — filtrado por owner)
+        owner_pac_filter = "AND p.owner_email = ?" if owner_email else ""
+        pacientes_rows = conn.execute(f"""
             SELECT DISTINCT p.id, p.nome FROM paciente p
-            WHERE p.deletado_em IS NULL AND (
+            WHERE p.deletado_em IS NULL {owner_pac_filter} AND (
                 EXISTS (SELECT 1 FROM pacote pk WHERE pk.paciente_id = p.id AND pk.deletado_em IS NULL AND pk.valor_pago IS NOT NULL)
                 OR
                 EXISTS (SELECT 1 FROM procedimento_extra pe WHERE pe.paciente_id = p.id AND pe.deletado_em IS NULL AND pe.valor IS NOT NULL)
             )
             ORDER BY p.nome COLLATE NOCASE
-        """).fetchall()
+        """, ([owner_email] if owner_email else [])).fetchall()
 
         return {
             "pacotes": pacotes,
