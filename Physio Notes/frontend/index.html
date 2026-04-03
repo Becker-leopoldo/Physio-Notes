@@ -1519,7 +1519,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.255'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.256'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5256,11 +5256,57 @@
 
   let _agendaMes = new Date().getMonth();
   let _agendaAno = new Date().getFullYear();
-  let _agendaSessoes = [];
+  let _agendaSessoes = [];       // sessões reais da API
+  let _agendaDemo = [];          // sessões demo geradas no frontend
+  let _agendaListaExpandida = false;
+  const AGENDA_PAGE = 20;
 
   async function openAgenda() {
     showSection('sec-agenda');
     await _agendaCarregar();
+  }
+
+  // LCG simples para pseudo-aleatório determinístico por seed
+  function _lcg(seed) {
+    let s = seed;
+    return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+  }
+
+  // Gera sessões demo a partir dos pacientes do owner (já filtrados pela API).
+  // Usa ID do paciente como seed → mesmos resultados a cada reload.
+  function _gerarDemoSessoes(pacientes) {
+    const hoje = new Date();
+    const fimAno = new Date(2026, 11, 31); // 31 dez 2026
+    const dias = Math.floor((fimAno - hoje) / 86400000);
+    const resultado = [];
+
+    pacientes.forEach(p => {
+      const rng = _lcg(p.id * 31337);
+      // 8-18 sessões por paciente distribuídas até dezembro
+      const total = 8 + Math.floor(rng() * 11);
+      // Frequência em dias (1-2x por semana → intervalo 3-7 dias)
+      let cursor = new Date(hoje);
+      cursor.setDate(cursor.getDate() + Math.floor(rng() * 5)); // offset inicial
+      for (let i = 0; i < total; i++) {
+        const intervalo = 3 + Math.floor(rng() * 5);
+        cursor = new Date(cursor);
+        cursor.setDate(cursor.getDate() + intervalo);
+        if (cursor > fimAno) break;
+        const data = cursor.toISOString().slice(0, 10);
+        // Sessões no futuro = 'agendada' (demo), no passado = 'encerrada'
+        const status = cursor > hoje ? 'agendada' : 'encerrada';
+        resultado.push({
+          id: null,
+          paciente_id: p.id,
+          paciente_nome: p.nome,
+          data,
+          status,
+          _demo: true,
+        });
+      }
+    });
+
+    return resultado;
   }
 
   async function _agendaCarregar() {
@@ -5268,11 +5314,20 @@
     const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
     body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
     try {
-      _agendaSessoes = await apiFetch(`/agenda?mes=${mesStr}`);
+      const [sessoes, pacientes] = await Promise.all([
+        apiFetch(`/agenda?mes=${mesStr}`),
+        apiFetch('/pacientes'),
+      ]);
+      _agendaSessoes = sessoes;
+      // Gera demo apenas uma vez por sessão de navegação
+      if (!_agendaDemo.length) {
+        _agendaDemo = _gerarDemoSessoes(pacientes);
+      }
     } catch (e) {
       body.innerHTML = `<div class="alert alert-error">Erro ao carregar agenda: ${e.message}</div>`;
       return;
     }
+    _agendaListaExpandida = false;
     _agendaRenderizar();
   }
 
@@ -5281,59 +5336,80 @@
     const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
     const nomeMes = new Date(_agendaAno, _agendaMes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-    // Mapeia sessões por dia
+    // Demo filtradas pelo mês atual
+    const demoMes = _agendaDemo.filter(s => s.data.startsWith(mesStr));
+    // Combina reais + demo, reais têm prioridade visual
+    const todasMes = [..._agendaSessoes, ...demoMes];
+
+    // Mapeia por dia
     const porDia = {};
-    _agendaSessoes.forEach(s => {
-      const dia = s.data; // YYYY-MM-DD
-      if (!porDia[dia]) porDia[dia] = [];
-      porDia[dia].push(s);
+    todasMes.forEach(s => {
+      if (!porDia[s.data]) porDia[s.data] = [];
+      porDia[s.data].push(s);
     });
 
-    // Dias do mês
-    const primeiroDia = new Date(_agendaAno, _agendaMes, 1).getDay(); // 0=Dom
+    const primeiroDia = new Date(_agendaAno, _agendaMes, 1).getDay();
     const totalDias = new Date(_agendaAno, _agendaMes + 1, 0).getDate();
     const hoje = new Date().toISOString().slice(0, 10);
-
-    // Grade: começa na segunda (ajuste: Dom=0 → offset)
-    const offset = (primeiroDia + 6) % 7; // segunda=0
+    const offset = (primeiroDia + 6) % 7;
 
     let celulas = '';
-    // Células vazias antes do dia 1
-    for (let i = 0; i < offset; i++) {
-      celulas += `<div class="cal-cell cal-cell-empty"></div>`;
-    }
+    for (let i = 0; i < offset; i++) celulas += `<div class="cal-cell cal-cell-empty"></div>`;
     for (let d = 1; d <= totalDias; d++) {
       const dataKey = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const sessoesDia = porDia[dataKey] || [];
       const isHoje = dataKey === hoje;
-      const temSessao = sessoesDia.length > 0;
 
       let eventos = '';
       sessoesDia.slice(0, 3).forEach(s => {
-        const cor = s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
-        const bg  = s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
-        eventos += `<div class="cal-evento" style="background:${bg};color:${cor};" data-sessao-id="${s.id}" data-paciente-id="${s.paciente_id}" title="${s.paciente_nome}">${s.paciente_nome.split(' ')[0]}</div>`;
+        const isDemo = s._demo;
+        const cor = isDemo ? 'var(--color-text-muted)' : (s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)');
+        const bg  = isDemo ? 'var(--color-border)' : (s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)');
+        const pid = s.paciente_id ? `data-paciente-id="${s.paciente_id}"` : '';
+        eventos += `<div class="cal-evento${isDemo ? ' cal-evento-demo' : ''}" style="background:${bg};color:${cor};" ${pid} title="${s.paciente_nome}">${s.paciente_nome.split(' ')[0]}</div>`;
       });
       if (sessoesDia.length > 3) {
         eventos += `<div style="font-size:10px;color:var(--color-text-muted);padding:0 2px;">+${sessoesDia.length - 3} mais</div>`;
       }
 
       celulas += `
-        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}${temSessao ? ' cal-cell-com-evento' : ''}" data-data="${dataKey}">
+        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}${sessoesDia.length ? ' cal-cell-com-evento' : ''}" data-data="${dataKey}">
           <span class="cal-dia-num">${d}</span>
           <div class="cal-eventos-wrap">${eventos}</div>
         </div>`;
     }
 
-    const totalSessoesMes = _agendaSessoes.length;
+    const totalReal = _agendaSessoes.length;
+    const totalDemo = demoMes.length;
+    const totalMes = totalReal + totalDemo;
     const abertas = _agendaSessoes.filter(s => s.status === 'aberta').length;
-    const encerradas = _agendaSessoes.filter(s => s.status === 'encerrada').length;
+    const encerradas = _agendaSessoes.filter(s => s.status === 'encerrada').length + demoMes.filter(s => s.status === 'encerrada').length;
+
+    // Lista do mês com paginação
+    const listaOrdenada = [...todasMes].sort((a, b) => a.data.localeCompare(b.data));
+    const listaVisiveis = _agendaListaExpandida ? listaOrdenada : listaOrdenada.slice(0, AGENDA_PAGE);
+    const temMais = listaOrdenada.length > AGENDA_PAGE && !_agendaListaExpandida;
+
+    const listaHTML = listaVisiveis.map(s => {
+      const [,, dia] = s.data.split('-'); const [ano2, mes2] = s.data.split('-');
+      const dataFmt = `${dia}/${mes2}`;
+      const isDemo = s._demo;
+      const cor = isDemo ? 'var(--color-text-muted)' : (s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)');
+      const bg  = isDemo ? 'var(--color-border)' : (s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)');
+      const label = isDemo ? (s.status === 'agendada' ? 'Agendada' : 'Encerrada') : (s.status === 'aberta' ? 'Aberta' : 'Encerrada');
+      const pid = s.paciente_id ? `data-paciente-id="${s.paciente_id}"` : '';
+      return `<div class="agenda-lista-item${isDemo ? '' : ' agenda-lista-real'}" ${pid} style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2);border-radius:var(--radius-sm);cursor:${s.paciente_id ? 'pointer' : 'default'};transition:background 0.1s;">
+        <span style="font-size:var(--text-sm);color:var(--color-text-muted);width:40px;flex-shrink:0;">${dataFmt}</span>
+        <span style="flex:1;font-size:var(--text-sm);color:${isDemo ? 'var(--color-text-muted)' : 'var(--color-text)'};">${s.paciente_nome}</span>
+        <span style="font-size:var(--text-xs);padding:2px 8px;border-radius:var(--radius-full);background:${bg};color:${cor};">${label}</span>
+      </div>`;
+    }).join('');
 
     body.innerHTML = `
       <!-- Banner Google Calendar -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-surface);border:var(--border);border-radius:var(--radius-lg);margin-bottom:var(--space-5);gap:var(--space-3);">
         <div style="display:flex;align-items:center;gap:var(--space-3);">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <rect x="2" y="4" width="20" height="18" rx="3" stroke="#4285F4" stroke-width="1.6"/>
             <path d="M7 2v4M17 2v4M2 9h20" stroke="#4285F4" stroke-width="1.6" stroke-linecap="round"/>
             <path d="M8 14l2 2 4-4" stroke="#34A853" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -5352,12 +5428,12 @@
       <!-- KPIs do mês -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3);margin-bottom:var(--space-5);">
         <div class="card" style="padding:var(--space-4);text-align:center;">
-          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-text);">${totalSessoesMes}</div>
+          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-text);">${totalMes}</div>
           <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Sessões no mês</div>
         </div>
         <div class="card" style="padding:var(--space-4);text-align:center;">
-          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-info);">${abertas}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Em aberto</div>
+          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-info);">${abertas + demoMes.filter(s => s.status === 'agendada').length}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Agendadas</div>
         </div>
         <div class="card" style="padding:var(--space-4);text-align:center;">
           <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-success);">${encerradas}</div>
@@ -5367,7 +5443,6 @@
 
       <!-- Calendário -->
       <div class="card" style="padding:var(--space-4);">
-        <!-- Navegação de mês -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
           <button id="agenda-prev" style="width:32px;height:32px;border:var(--border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -5377,36 +5452,30 @@
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
-        <!-- Cabeçalho dias da semana -->
         <div class="cal-grid-header">
           <div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div>
         </div>
-        <!-- Grade de dias -->
         <div class="cal-grid">${celulas}</div>
+        <div style="display:flex;align-items:center;gap:var(--space-3);margin-top:var(--space-3);padding-top:var(--space-3);border-top:var(--border);">
+          <span style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);"><span style="width:10px;height:10px;border-radius:2px;background:var(--color-success-bg);border:1px solid var(--color-success);display:inline-block;"></span>Encerrada</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);"><span style="width:10px;height:10px;border-radius:2px;background:var(--color-info-bg);border:1px solid var(--color-info);display:inline-block;"></span>Em aberto</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);"><span style="width:10px;height:10px;border-radius:2px;background:var(--color-border);border:1px solid var(--color-border-strong);display:inline-block;"></span>Agendada</span>
+        </div>
       </div>
 
       <!-- Lista do mês -->
-      ${totalSessoesMes > 0 ? `
+      ${totalMes > 0 ? `
       <div class="card" style="margin-top:var(--space-4);padding:var(--space-4);">
-        <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-3);">Sessões de ${nomeMes}</div>
-        <div id="agenda-lista">
-          ${_agendaSessoes.map(s => {
-            const [ano, mes, dia] = s.data.split('-');
-            const dataFmt = `${dia}/${mes}`;
-            const cor = s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
-            const bg  = s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
-            const label = s.status === 'aberta' ? 'Aberta' : 'Encerrada';
-            return `<div class="agenda-lista-item" data-paciente-id="${s.paciente_id}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-2);border-radius:var(--radius-sm);cursor:pointer;transition:background 0.1s;">
-              <span style="font-size:var(--text-sm);color:var(--color-text-muted);width:40px;flex-shrink:0;">${dataFmt}</span>
-              <span style="flex:1;font-size:var(--text-sm);color:var(--color-text);">${s.paciente_nome}</span>
-              <span style="font-size:var(--text-xs);padding:2px 8px;border-radius:var(--radius-full);background:${bg};color:${cor};">${label}</span>
-            </div>`;
-          }).join('')}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+          <span style="font-size:var(--text-sm);font-weight:600;">Sessões de ${nomeMes}</span>
+          <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${totalMes} sessão${totalMes !== 1 ? 'ões' : ''}</span>
         </div>
+        <div id="agenda-lista">${listaHTML}</div>
+        ${temMais ? `<button id="agenda-ver-mais" style="width:100%;margin-top:var(--space-3);padding:var(--space-2);border:var(--border);border-radius:var(--radius-md);background:transparent;color:var(--color-text-secondary);font-size:var(--text-sm);font-family:var(--font-body);cursor:pointer;">Ver mais ${listaOrdenada.length - AGENDA_PAGE} sessões</button>` : ''}
       </div>` : ''}
     `;
 
-    // CSS do calendário (injetado uma vez)
+    // CSS (injetado uma vez)
     if (!document.getElementById('cal-style')) {
       const style = document.createElement('style');
       style.id = 'cal-style';
@@ -5421,32 +5490,38 @@
         .cal-eventos-wrap { display:flex; flex-direction:column; gap:2px; }
         .cal-evento { font-size:10px; padding:2px 4px; border-radius:3px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; transition:opacity 0.1s; }
         .cal-evento:hover { opacity:0.75; }
+        .cal-evento-demo { cursor:default; opacity:0.8; }
         .agenda-lista-item:hover { background:var(--color-accent-light); }
+        .agenda-lista-real:hover { background:var(--color-accent-light); }
       `;
       document.head.appendChild(style);
     }
 
-    // Navegação de mês
     document.getElementById('agenda-prev').addEventListener('click', () => {
-      _agendaMes--;
-      if (_agendaMes < 0) { _agendaMes = 11; _agendaAno--; }
-      _agendaCarregar();
+      _agendaMes--; if (_agendaMes < 0) { _agendaMes = 11; _agendaAno--; }
+      _agendaListaExpandida = false; _agendaCarregar();
     });
     document.getElementById('agenda-next').addEventListener('click', () => {
-      _agendaMes++;
-      if (_agendaMes > 11) { _agendaMes = 0; _agendaAno++; }
-      _agendaCarregar();
+      _agendaMes++; if (_agendaMes > 11) { _agendaMes = 0; _agendaAno++; }
+      _agendaListaExpandida = false; _agendaCarregar();
     });
 
-    // Clique em evento → abre paciente
-    body.querySelectorAll('.cal-evento').forEach(el => {
+    const verMaisBtn = document.getElementById('agenda-ver-mais');
+    if (verMaisBtn) {
+      verMaisBtn.addEventListener('click', () => {
+        _agendaListaExpandida = true;
+        _agendaRenderizar();
+      });
+    }
+
+    body.querySelectorAll('.cal-evento:not(.cal-evento-demo)').forEach(el => {
       el.addEventListener('click', e => {
         e.stopPropagation();
         const pid = parseInt(el.dataset.pacienteId);
         if (pid) openPaciente(pid);
       });
     });
-    body.querySelectorAll('.agenda-lista-item').forEach(el => {
+    body.querySelectorAll('.agenda-lista-item[data-paciente-id]').forEach(el => {
       el.addEventListener('click', () => {
         const pid = parseInt(el.dataset.pacienteId);
         if (pid) openPaciente(pid);

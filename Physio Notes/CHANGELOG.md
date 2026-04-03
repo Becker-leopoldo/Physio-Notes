@@ -4,6 +4,22 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.256 — 2026-04-03
+
+### Melhorias
+
+**Agenda: sessões demo + paginação**
+- Sessões fictícias geradas no frontend a partir dos pacientes do próprio fisio (cada um vê apenas os seus)
+- Geração determinística via LCG com seed = patient ID — resultados consistentes entre reloads
+- 8–18 sessões por paciente com intervalo de 3–7 dias distribuídas até 31/12/2026
+- Sessões demo exibidas em cinza, distinguíveis das reais (verde/azul)
+- KPIs do mês incluem demo para apelo visual
+- Lista do mês paginada em 20 itens com botão "Ver mais N sessões"
+- Legenda de cores adicionada abaixo do grid
+- Demo events não clicáveis; eventos reais continuam abrindo o paciente
+
+---
+
 ## Beta-0.255 — 2026-04-03
 
 ### Funcionalidades
