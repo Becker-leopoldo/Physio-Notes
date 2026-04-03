@@ -74,6 +74,12 @@ def _bloco_anamnese(paciente: dict | None) -> str:
     return f"ANAMNESE INICIAL (registrada no cadastro do paciente):\n{paciente['anamnese']}\n\n---\n\n"
 
 
+def _bloco_conduta(paciente: dict | None) -> str:
+    if not paciente or not paciente.get("conduta_tratamento"):
+        return ""
+    return f"CONDUTA DE TRATAMENTO (plano terapêutico do paciente):\n{paciente['conduta_tratamento']}\n\n---\n\n"
+
+
 async def resumir_historico(
     historico: list[dict],
     paciente: dict | None = None,
@@ -357,7 +363,8 @@ async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dic
     Responde pergunta da fisioterapeuta com base no histórico do paciente.
     """
     anamnese_bloco = _bloco_anamnese(paciente)
-    if not historico and not anamnese_bloco:
+    conduta_bloco = _bloco_conduta(paciente)
+    if not historico and not anamnese_bloco and not conduta_bloco:
         return "Não há histórico registrado para este paciente. Registre algumas sessões antes de fazer perguntas."
 
     sessoes_texto = []
@@ -368,11 +375,11 @@ async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dic
             partes.append(nota)
         sessoes_texto.append("\n".join(partes))
 
-    historico_formatado = "\n\n---\n\n".join(sessoes_texto)
+    historico_formatado = "\n\n---\n\n".join(sessoes_texto) if sessoes_texto else "Nenhuma sessão encerrada registrada."
 
     prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação e dos jargões técnicos da fisioterapia brasileira, ajudando uma colega a consultar o histórico de um paciente.
 
-{anamnese_bloco}Histórico de sessões do paciente:
+{anamnese_bloco}{conduta_bloco}Histórico de sessões do paciente:
 {historico_formatado}
 
 ---
@@ -514,6 +521,205 @@ ANAMNESE DO PACIENTE:
     _registrar("sugerir_conduta", message, owner_email)
 
     return message.content[0].text.strip()
+
+
+async def gerar_sugestao_paciente(
+    anamnese: str,
+    sessoes_recentes: list[dict],
+    owner_email: str | None = None,
+) -> dict:
+    """
+    Gera sugestão clínica estruturada com base na anamnese e nas últimas sessões
+    (sliding window de até 8 sessões). Retorna dict com:
+      reavaliacao, testes_fisioterapeuticos, exames_clinicos
+    Cada campo é uma lista de strings (bullets).
+    """
+    sessoes_texto = []
+    for i, s in enumerate(sessoes_recentes[:8]):
+        nota = s.get("nota") or s.get("conduta") or s.get("queixa") or ""
+        if nota:
+            sessoes_texto.append(f"Sessão recente {i + 1} — {s.get('data', '')}:\n{nota}")
+
+    historico_bloco = (
+        "\n\n---\n\n".join(sessoes_texto)
+        if sessoes_texto
+        else "Nenhuma sessão encerrada registrada ainda."
+    )
+
+    prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio de anatomia, biomecânica, reabilitação musculoesquelética e neurológica.
+
+Com base na anamnese e nas sessões recentes abaixo, elabore sugestões clínicas objetivas para o próximo período de tratamento.
+
+ANAMNESE DO PACIENTE:
+{anamnese}
+
+SESSÕES RECENTES (até 8 mais recentes):
+{historico_bloco}
+
+Retorne APENAS um JSON válido com esta estrutura (cada campo é uma lista de strings):
+{{
+  "reavaliacao": ["sugestão 1", "sugestão 2", ...],
+  "testes_fisioterapeuticos": ["teste 1", "teste 2", ...],
+  "exames_clinicos": ["exame 1", "exame 2", ...]
+}}
+
+Regras:
+- Baseie-se EXCLUSIVAMENTE nas informações fornecidas — não invente dados
+- Cada lista deve ter de 2 a 5 itens objetivos e específicos
+- Use linguagem clínica técnica da fisioterapia brasileira
+- Se não houver dados suficientes para uma seção, coloque ["Aguardando mais sessões para sugestão específica."]
+- Responda APENAS com o JSON, sem texto adicional"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("gerar_sugestao_paciente", message, owner_email)
+
+    raw_text = message.content[0].text.strip()
+    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    if json_match:
+        raw_text = json_match.group(0)
+
+    try:
+        result = json.loads(raw_text)
+    except json.JSONDecodeError:
+        result = {}
+
+    for chave in ("reavaliacao", "testes_fisioterapeuticos", "exames_clinicos"):
+        if chave not in result or not isinstance(result[chave], list):
+            result[chave] = ["Não foi possível gerar sugestão para este campo."]
+
+    return result
+
+
+async def formatar_anamnese_texto(texto: str, owner_email: str | None = None) -> str:
+    """
+    Recebe texto livre de anamnese e o reorganiza com tópicos
+    no padrão **TÓPICO:** sem adicionar nem remover informações clínicas.
+    """
+    prompt = f"""Você é um fisioterapeuta clínico experiente. O profissional colou ou digitou manualmente o texto abaixo sobre a anamnese de um paciente.
+
+Sua tarefa é APENAS reorganizar e formatar o texto, sem adicionar nem remover nenhuma informação clínica.
+
+Regras:
+- Mantenha TODAS as informações do texto original — não invente, não omita nada
+- Organize por tópicos usando **NOME DO TÓPICO:** em negrito (queixa principal, histórico, comorbidades, medicamentos, antecedentes, etc.)
+- Agrupe informações relacionadas no tópico mais adequado
+- Use listas com "- " para enumerações dentro dos tópicos
+- NÃO inclua título geral com # — o título já é exibido pela interface
+- Retorne APENAS o texto reorganizado, sem introduções ou explicações
+
+TEXTO ORIGINAL:
+{texto}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("formatar_anamnese_texto", message, owner_email)
+    return message.content[0].text.strip()
+
+
+async def formatar_conduta_texto(texto: str, owner_email: str | None = None) -> str:
+    """
+    Recebe texto livre de conduta de tratamento e o reorganiza com tópicos
+    no padrão **TÓPICO:** sem adicionar nem remover informações clínicas.
+    """
+    prompt = f"""Você é um fisioterapeuta clínico experiente. O profissional digitou manualmente o texto abaixo sobre a conduta de tratamento de um paciente.
+
+Sua tarefa é APENAS reorganizar e formatar o texto, sem adicionar nem remover nenhuma informação clínica.
+
+Regras:
+- Mantenha TODAS as informações do texto original — não invente, não omita nada
+- Organize por tópicos usando **NOME DO TÓPICO:** em negrito (ex: **Objetivos terapêuticos:**, **Técnicas propostas:**, **Frequência sugerida:**, **Evolução esperada:**, **Observações:**)
+- Agrupe informações relacionadas no tópico mais adequado
+- Use listas com "- " para enumerações dentro dos tópicos
+- NÃO inclua título geral com # — o título já é exibido pela interface
+- Retorne APENAS o texto reorganizado, sem introduções ou explicações
+
+TEXTO ORIGINAL:
+{texto}"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("formatar_conduta_texto", message, owner_email)
+    return message.content[0].text.strip()
+
+
+async def sugestao_do_dia(
+    anamnese: str,
+    conduta: str | None,
+    sessoes_recentes: list[dict],
+    owner_email: str | None = None,
+) -> dict:
+    """
+    Gera sugestão prática para a sessão de hoje com base na anamnese,
+    conduta de tratamento e últimas 2-3 sessões.
+    Retorna dict com: foco_sessao, tecnicas, progressao, observacoes.
+    """
+    ultima_sessao = ""
+    for s in sessoes_recentes[:3]:
+        nota = s.get("nota") or s.get("conduta") or s.get("queixa") or ""
+        if nota:
+            ultima_sessao += f"Sessão de {s.get('data', '')}:\n{nota}\n\n---\n\n"
+    if not ultima_sessao:
+        ultima_sessao = "Nenhuma sessão anterior registrada."
+
+    conduta_bloco = f"CONDUTA DE TRATAMENTO ESTABELECIDA:\n{conduta}\n\n" if conduta else ""
+
+    prompt = f"""Você é um fisioterapeuta clínico experiente. O fisioterapeuta está prestes a iniciar uma sessão hoje e precisa de uma orientação prática sobre o que fazer.
+
+Com base nas informações abaixo, sugira o que priorizar na sessão de HOJE — seja objetivo e prático.
+
+ANAMNESE DO PACIENTE:
+{anamnese}
+
+{conduta_bloco}SESSÕES RECENTES (contexto de evolução):
+{ultima_sessao}
+
+Retorne APENAS um JSON válido com esta estrutura (cada campo é uma lista de strings curtas e práticas):
+{{
+  "foco_sessao": ["objetivo principal de hoje", ...],
+  "tecnicas": ["técnica 1 com parâmetro se aplicável", ...],
+  "progressao": ["ajuste ou progressão recomendada vs sessão anterior", ...],
+  "observacoes": ["ponto de atenção específico para hoje", ...]
+}}
+
+Regras:
+- Máximo 3 itens por lista — seja direto e clínico
+- Use linguagem técnica da fisioterapia brasileira
+- Baseie-se APENAS nas informações fornecidas
+- "progressao" deve comparar com a sessão anterior quando houver dados; caso contrário, omita ou coloque []
+- Responda APENAS com o JSON, sem texto adicional"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("sugestao_do_dia", message, owner_email)
+
+    raw_text = message.content[0].text.strip()
+    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    if json_match:
+        raw_text = json_match.group(0)
+
+    try:
+        result = json.loads(raw_text)
+    except json.JSONDecodeError:
+        result = {}
+
+    for chave in ("foco_sessao", "tecnicas", "progressao", "observacoes"):
+        if chave not in result or not isinstance(result[chave], list):
+            result[chave] = []
+
+    return result
 
 
 async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:

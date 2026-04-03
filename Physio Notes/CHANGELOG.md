@@ -4,6 +4,37 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.257 — 2026-04-03
+
+### Funcionalidades
+
+**Check clínico e Sugestão do Dia (chips de IA)**
+- Chips "✦ Sugestão do Dia" e "✦ Check clínico" adicionados no início da seção "Perguntar ao histórico", com visual azul de destaque
+- **Check clínico**: gera sugestões estruturadas de reavaliação, testes fisioterapêuticos e exames clínicos com base na anamnese e últimas 8 sessões
+- **Sugestão do Dia**: gera orientação prática para a sessão atual — foco, técnicas, progressão e pontos de atenção — com base na anamnese e últimas 3 sessões
+
+**Formatação automática de anamnese e conduta**
+- Ao salvar anamnese manualmente, a IA reorganiza o texto em tópicos no padrão `**TÓPICO:**` sem alterar o conteúdo
+- Ao salvar conduta manualmente, a IA formata o texto da mesma forma antes de gravar
+- Renderização visual de tópicos no frontend (`renderTopicos`): cada `**TÓPICO:**` vira um bloco visual com label e conteúdo separados
+
+**Conduta gerada automaticamente após anamnese**
+- Ao salvar anamnese (manual ou por voz) em paciente sem conduta, a IA gera a conduta de tratamento de forma síncrona
+- Frontend atualiza o card de conduta imediatamente após o retorno do endpoint — sem necessidade de reload
+
+### Melhorias
+
+- "Perguntar ao histórico" agora inclui conduta de tratamento no contexto enviado à IA
+- Histórico vazio passou a exibir mensagem explícita ao invés de string vazia no prompt da IA
+- Check clínico e Sugestão do Dia não bloqueiam mais a geração quando a anamnese é `null` ou vazia — passam o contexto disponível e a IA responde com base no histórico de sessões
+
+### Correções
+
+- Bug: anamnese salva por voz não gerava conduta automaticamente — corrigido com geração síncrona no endpoint `complementar-anamnese`
+- Bug: "Check clínico" e "Sugestão do Dia" retornavam erro 400 mesmo com anamnese preenchida — removido gate desnecessário; endpoints agora sempre geram com o que estiver disponível
+
+---
+
 ## Beta-0.256 — 2026-04-03
 
 ### Melhorias

@@ -4,7 +4,7 @@ import secrets
 import sqlite3
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -300,19 +300,48 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
     return resultado
 
 
+async def _disparar_ia_pos_anamnese(paciente_id: int, anamnese: str, conduta_atual: str | None, owner: str | None):
+    """
+    Background task: gera/atualiza check clínico (sugestao_ia).
+    Conduta é gerada de forma síncrona no endpoint — não repetir aqui.
+    Nunca levanta exceção.
+    """
+    import json as _json
+    try:
+        sessoes = db.get_historico_paciente(paciente_id)
+        sugestao = await ai.gerar_sugestao_paciente(anamnese, sessoes, owner)
+        db.salvar_sugestao_ia(paciente_id, _json.dumps(sugestao, ensure_ascii=False))
+    except Exception as exc:
+        logger.warning("_disparar_ia_pos_anamnese: paciente_id=%s: %s", paciente_id, exc)
+
+
 @app.post("/pacientes/{paciente_id}/complementar-anamnese")
-async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, request: Request):
+async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, background_tasks: BackgroundTasks, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    _verificar_dono(paciente, _owner_email(request))
-    anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), _owner_email(request))
+    owner = _owner_email(request)
+    _verificar_dono(paciente, owner)
+    anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), owner)
+    conduta_atual = paciente.get("conduta_tratamento")
+    conduta_gerada = None
+    if not conduta_atual:
+        try:
+            conduta_gerada = await ai.sugerir_conduta(anamnese_atualizada, owner)
+        except Exception as exc:
+            logger.warning("complementar_anamnese: conduta fallback: paciente_id=%s: %s", paciente_id, exc)
+    conduta_final = conduta_gerada or conduta_atual
     paciente_atualizado = db.atualizar_paciente(
         paciente_id, paciente["nome"], paciente.get("data_nascimento"),
         anamnese_atualizada, paciente.get("cpf"), paciente.get("endereco"),
-        paciente.get("conduta_tratamento"),
+        conduta_final,
     )
-    return {"anamnese": paciente_atualizado["anamnese"]}
+    background_tasks.add_task(_disparar_ia_pos_anamnese, paciente_id, anamnese_atualizada, conduta_final, owner)
+    return {
+        "anamnese": paciente_atualizado["anamnese"],
+        "conduta_tratamento": paciente_atualizado.get("conduta_tratamento"),
+        "conduta_gerada": conduta_gerada is not None,
+    }
 
 
 class ComplementarCondutaBody(BaseModel):
@@ -343,6 +372,94 @@ async def sugerir_conduta(paciente_id: int, request: Request):
     if not paciente.get("anamnese"):
         raise HTTPException(status_code=400, detail="Paciente não possui anamnese registrada. Registre a anamnese primeiro.")
     sugestao = await ai.sugerir_conduta(paciente["anamnese"], _owner_email(request))
+    return {"sugestao": sugestao}
+
+
+@app.post("/pacientes/{paciente_id}/gerar-sugestao")
+async def gerar_sugestao(paciente_id: int, request: Request):
+    """Atualiza a sugestão da IA para o paciente (botão 'Atualizar' no card)."""
+    import json as _json
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    owner = _owner_email(request)
+    _verificar_dono(paciente, owner)
+    sessoes = db.get_historico_paciente(paciente_id)
+    sugestao = await ai.gerar_sugestao_paciente(paciente.get("anamnese") or "", sessoes, owner)
+    sugestao_json = _json.dumps(sugestao, ensure_ascii=False)
+    db.salvar_sugestao_ia(paciente_id, sugestao_json)
+    return {"sugestao_ia": sugestao, "sugestao_ia_em": db.get_paciente(paciente_id).get("sugestao_ia_em")}
+
+
+class SalvarAnamneseManualBody(BaseModel):
+    texto: str
+
+@app.post("/pacientes/{paciente_id}/salvar-anamnese-manual")
+async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBody, background_tasks: BackgroundTasks, request: Request):
+    """
+    Formata anamnese com IA, salva.
+    Se conduta estiver vazia, gera conduta de forma síncrona e retorna ambas.
+    Check clínico fica em background.
+    """
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    owner = _owner_email(request)
+    _verificar_dono(paciente, owner)
+    texto = body.texto.strip()
+    if not texto:
+        db.atualizar_paciente(paciente_id, paciente["nome"], paciente.get("data_nascimento"), None, paciente.get("cpf"), paciente.get("endereco"), paciente.get("conduta_tratamento"))
+        return {"anamnese": None, "conduta_tratamento": paciente.get("conduta_tratamento")}
+
+    # 1. Formata anamnese
+    anamnese_formatada = await ai.formatar_anamnese_texto(texto, owner)
+
+    # 2. Gera conduta se vazia (síncrono — retorna para o frontend)
+    conduta_atual = paciente.get("conduta_tratamento")
+    conduta_gerada = None
+    if not conduta_atual:
+        try:
+            conduta_gerada = await ai.sugerir_conduta(anamnese_formatada, owner)
+        except Exception as exc:
+            logger.warning("salvar_anamnese_manual[conduta]: %s", exc)
+
+    conduta_final = conduta_gerada or conduta_atual
+    db.atualizar_paciente(paciente_id, paciente["nome"], paciente.get("data_nascimento"), anamnese_formatada, paciente.get("cpf"), paciente.get("endereco"), conduta_final)
+
+    # 3. Check clínico em background
+    background_tasks.add_task(_disparar_ia_pos_anamnese, paciente_id, anamnese_formatada, conduta_final, owner)
+
+    return {"anamnese": anamnese_formatada, "conduta_tratamento": conduta_final, "conduta_gerada": conduta_gerada is not None}
+
+
+@app.post("/pacientes/{paciente_id}/formatar-conduta")
+async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
+    """Formata texto livre de conduta com tópicos via IA, sem alterar conteúdo."""
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, _owner_email(request))
+    if not body.transcricao.strip():
+        raise HTTPException(status_code=400, detail="Texto não pode ser vazio")
+    formatado = await ai.formatar_conduta_texto(body.transcricao, _owner_email(request))
+    return {"conduta_formatada": formatado}
+
+
+@app.post("/pacientes/{paciente_id}/sugestao-dia")
+async def sugestao_do_dia(paciente_id: int, request: Request):
+    """Gera sugestão prática do que fazer na sessão de hoje."""
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    owner = _owner_email(request)
+    _verificar_dono(paciente, owner)
+    sessoes = db.get_historico_paciente(paciente_id)
+    sugestao = await ai.sugestao_do_dia(
+        paciente.get("anamnese") or "",
+        paciente.get("conduta_tratamento"),
+        sessoes,
+        owner,
+    )
     return {"sugestao": sugestao}
 
 

@@ -153,6 +153,13 @@ def _migrate():
         # Blind index: cpf_hash (HMAC determinístico) + índice único por owner
         if "cpf_hash" not in cols:
             conn.execute("ALTER TABLE paciente ADD COLUMN cpf_hash TEXT")
+
+        # Sugestão da IA (always overwrite, never accumulate)
+        cols_pac2 = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
+        if "sugestao_ia" not in cols_pac2:
+            conn.execute("ALTER TABLE paciente ADD COLUMN sugestao_ia TEXT")
+        if "sugestao_ia_em" not in cols_pac2:
+            conn.execute("ALTER TABLE paciente ADD COLUMN sugestao_ia_em TEXT")
         conn.execute("DROP INDEX IF EXISTS idx_paciente_cpf_owner")
         conn.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_cpf_hash_owner
@@ -395,6 +402,16 @@ def get_paciente(paciente_id: int) -> dict | None:
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone()
         return _decrypt_paciente(_row_to_dict(row))
+
+
+def salvar_sugestao_ia(paciente_id: int, sugestao_json: str) -> None:
+    """Sobrescreve (nunca acumula) a sugestão da IA para o paciente."""
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE paciente SET sugestao_ia = ?, sugestao_ia_em = ? WHERE id = ?",
+            (sugestao_json, _now(), paciente_id),
+        )
+        conn.commit()
 
 
 # ---------- Sessao ----------
