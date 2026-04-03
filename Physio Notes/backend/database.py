@@ -915,10 +915,10 @@ def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | Non
         meses_params = ([owner_email, owner_email] if owner_email else [])
         meses_rows = conn.execute(f"""
             SELECT DISTINCT mes FROM (
-                SELECT strftime('%Y-%m', COALESCE(data_pagamento, DATE(criado_em))) AS mes
+                SELECT strftime('%Y-%m', COALESCE(pacote.data_pagamento, DATE(pacote.criado_em))) AS mes
                 FROM pacote {owner_join_pk} WHERE pacote.deletado_em IS NULL AND pacote.valor_pago IS NOT NULL
                 UNION
-                SELECT strftime('%Y-%m', COALESCE(data, criado_em)) AS mes
+                SELECT strftime('%Y-%m', COALESCE(procedimento_extra.data, procedimento_extra.criado_em)) AS mes
                 FROM procedimento_extra {owner_join_pe} WHERE procedimento_extra.deletado_em IS NULL AND procedimento_extra.valor IS NOT NULL
             ) ORDER BY mes DESC
         """, meses_params).fetchall()

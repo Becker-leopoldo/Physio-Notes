@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.254 — 2026-04-03
+
+### Correções
+
+**Bug: faturamento quebrando após fix do Beta-0.253**
+- JOIN com tabela `paciente` tornava `criado_em` e `data_pagamento` ambíguos no SQLite
+- Corrigido qualificando todas as colunas com nome da tabela (`pacote.criado_em`, `procedimento_extra.data`, etc.)
+
+---
+
 ## Beta-0.253 — 2026-04-03
 
 ### Correções
