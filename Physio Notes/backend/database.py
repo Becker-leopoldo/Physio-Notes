@@ -425,6 +425,28 @@ def deletar_sessao(sessao_id: int):
         conn.commit()
 
 
+def get_agenda_owner(owner_email: str | None, ano_mes: str | None = None) -> list[dict]:
+    """Retorna todas as sessões do owner com nome do paciente, opcionalmente filtradas por mês."""
+    with get_conn() as conn:
+        where = ["s.deletado_em IS NULL"]
+        params: list = []
+        if owner_email:
+            where.append("p.owner_email = ?")
+            params.append(owner_email)
+        if ano_mes:
+            where.append("strftime('%Y-%m', s.data) = ?")
+            params.append(ano_mes)
+        rows = conn.execute(f"""
+            SELECT s.id, s.paciente_id, s.data, s.status, s.criado_em,
+                   p.nome AS paciente_nome
+            FROM sessao s
+            JOIN paciente p ON p.id = s.paciente_id
+            WHERE {" AND ".join(where)}
+            ORDER BY s.data DESC, s.criado_em DESC
+        """, params).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
 def get_sessoes_paciente(paciente_id: int) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(

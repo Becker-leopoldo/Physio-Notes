@@ -698,6 +698,12 @@ def billing(mes: str | None = None, request: Request = None):
     }
 
 
+@app.get("/agenda")
+def get_agenda(mes: str | None = None, request: Request = None):
+    owner = _owner_email(request)
+    return db.get_agenda_owner(owner, ano_mes=mes)
+
+
 @app.get("/pacientes/{paciente_id}/resumo")
 async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Request = None):
     paciente = db.get_paciente(paciente_id)

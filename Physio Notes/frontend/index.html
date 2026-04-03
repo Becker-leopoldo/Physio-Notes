@@ -1075,6 +1075,11 @@
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Pacientes
     </button>
+    <div class="drawer-nav-label" style="margin-top:var(--space-2);">Agenda</div>
+    <button class="drawer-item" id="drawer-agenda">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14M5 1v2M11 1v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="4" y="8" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="7" y="8" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="10" y="8" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="4" y="11" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="7" y="11" width="2" height="2" rx="0.5" fill="currentColor"/></svg>
+      Agenda
+    </button>
     <div class="drawer-nav-label" style="margin-top:var(--space-2);">Financeiro</div>
     <button class="drawer-item" id="drawer-faturamento">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v14M4 5h6a2 2 0 0 1 0 4H6a2 2 0 0 0 0 4h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1356,6 +1361,19 @@
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
 
+  <!-- ======================== SECTION: AGENDA ======================== -->
+  <section id="sec-agenda" class="section">
+    <div class="top-bar">
+      <button class="top-bar-back" id="back-home-from-agenda" title="Voltar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="top-bar-title">Agenda</span>
+    </div>
+    <div class="section-body" id="agenda-body" style="padding:var(--space-5);max-width:820px;margin:0 auto;">
+    </div>
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </section>
+
   <!-- ======================== SECTION: NOTAS FISCAIS ======================== -->
   <section id="sec-notas" class="section">
     <div class="top-bar">
@@ -1501,7 +1519,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.254'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.255'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5219,6 +5237,222 @@
     showSection('sec-home');
     loadPacientes();
   });
+
+  /* ============================================================
+     AGENDA / CALENDÁRIO
+  ============================================================ */
+
+  document.getElementById('drawer-agenda').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-agenda');
+    openAgenda();
+  });
+
+  document.getElementById('back-home-from-agenda').addEventListener('click', () => {
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+  });
+
+  let _agendaMes = new Date().getMonth();
+  let _agendaAno = new Date().getFullYear();
+  let _agendaSessoes = [];
+
+  async function openAgenda() {
+    showSection('sec-agenda');
+    await _agendaCarregar();
+  }
+
+  async function _agendaCarregar() {
+    const body = document.getElementById('agenda-body');
+    const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
+    body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
+    try {
+      _agendaSessoes = await apiFetch(`/agenda?mes=${mesStr}`);
+    } catch (e) {
+      body.innerHTML = `<div class="alert alert-error">Erro ao carregar agenda: ${e.message}</div>`;
+      return;
+    }
+    _agendaRenderizar();
+  }
+
+  function _agendaRenderizar() {
+    const body = document.getElementById('agenda-body');
+    const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
+    const nomeMes = new Date(_agendaAno, _agendaMes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+    // Mapeia sessões por dia
+    const porDia = {};
+    _agendaSessoes.forEach(s => {
+      const dia = s.data; // YYYY-MM-DD
+      if (!porDia[dia]) porDia[dia] = [];
+      porDia[dia].push(s);
+    });
+
+    // Dias do mês
+    const primeiroDia = new Date(_agendaAno, _agendaMes, 1).getDay(); // 0=Dom
+    const totalDias = new Date(_agendaAno, _agendaMes + 1, 0).getDate();
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    // Grade: começa na segunda (ajuste: Dom=0 → offset)
+    const offset = (primeiroDia + 6) % 7; // segunda=0
+
+    let celulas = '';
+    // Células vazias antes do dia 1
+    for (let i = 0; i < offset; i++) {
+      celulas += `<div class="cal-cell cal-cell-empty"></div>`;
+    }
+    for (let d = 1; d <= totalDias; d++) {
+      const dataKey = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const sessoesDia = porDia[dataKey] || [];
+      const isHoje = dataKey === hoje;
+      const temSessao = sessoesDia.length > 0;
+
+      let eventos = '';
+      sessoesDia.slice(0, 3).forEach(s => {
+        const cor = s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
+        const bg  = s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
+        eventos += `<div class="cal-evento" style="background:${bg};color:${cor};" data-sessao-id="${s.id}" data-paciente-id="${s.paciente_id}" title="${s.paciente_nome}">${s.paciente_nome.split(' ')[0]}</div>`;
+      });
+      if (sessoesDia.length > 3) {
+        eventos += `<div style="font-size:10px;color:var(--color-text-muted);padding:0 2px;">+${sessoesDia.length - 3} mais</div>`;
+      }
+
+      celulas += `
+        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}${temSessao ? ' cal-cell-com-evento' : ''}" data-data="${dataKey}">
+          <span class="cal-dia-num">${d}</span>
+          <div class="cal-eventos-wrap">${eventos}</div>
+        </div>`;
+    }
+
+    const totalSessoesMes = _agendaSessoes.length;
+    const abertas = _agendaSessoes.filter(s => s.status === 'aberta').length;
+    const encerradas = _agendaSessoes.filter(s => s.status === 'encerrada').length;
+
+    body.innerHTML = `
+      <!-- Banner Google Calendar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-surface);border:var(--border);border-radius:var(--radius-lg);margin-bottom:var(--space-5);gap:var(--space-3);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="4" width="20" height="18" rx="3" stroke="#4285F4" stroke-width="1.6"/>
+            <path d="M7 2v4M17 2v4M2 9h20" stroke="#4285F4" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M8 14l2 2 4-4" stroke="#34A853" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);">Integração com Google Calendar</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Sincronize suas sessões automaticamente</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-2);">
+          <span style="font-size:var(--text-xs);font-weight:600;padding:3px 8px;background:#EFF6FF;color:#1E3A5F;border-radius:var(--radius-full);white-space:nowrap;">Em breve</span>
+          <button disabled style="padding:7px 14px;border:var(--border);background:var(--color-surface);color:var(--color-text-muted);border-radius:var(--radius-md);font-size:var(--text-sm);font-family:var(--font-body);cursor:not-allowed;white-space:nowrap;">Conectar</button>
+        </div>
+      </div>
+
+      <!-- KPIs do mês -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3);margin-bottom:var(--space-5);">
+        <div class="card" style="padding:var(--space-4);text-align:center;">
+          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-text);">${totalSessoesMes}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Sessões no mês</div>
+        </div>
+        <div class="card" style="padding:var(--space-4);text-align:center;">
+          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-info);">${abertas}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Em aberto</div>
+        </div>
+        <div class="card" style="padding:var(--space-4);text-align:center;">
+          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-success);">${encerradas}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Encerradas</div>
+        </div>
+      </div>
+
+      <!-- Calendário -->
+      <div class="card" style="padding:var(--space-4);">
+        <!-- Navegação de mês -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
+          <button id="agenda-prev" style="width:32px;height:32px;border:var(--border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span style="font-size:var(--text-base);font-weight:600;text-transform:capitalize;">${nomeMes}</span>
+          <button id="agenda-next" style="width:32px;height:32px;border:var(--border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <!-- Cabeçalho dias da semana -->
+        <div class="cal-grid-header">
+          <div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div>
+        </div>
+        <!-- Grade de dias -->
+        <div class="cal-grid">${celulas}</div>
+      </div>
+
+      <!-- Lista do mês -->
+      ${totalSessoesMes > 0 ? `
+      <div class="card" style="margin-top:var(--space-4);padding:var(--space-4);">
+        <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-3);">Sessões de ${nomeMes}</div>
+        <div id="agenda-lista">
+          ${_agendaSessoes.map(s => {
+            const [ano, mes, dia] = s.data.split('-');
+            const dataFmt = `${dia}/${mes}`;
+            const cor = s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
+            const bg  = s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
+            const label = s.status === 'aberta' ? 'Aberta' : 'Encerrada';
+            return `<div class="agenda-lista-item" data-paciente-id="${s.paciente_id}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-2);border-radius:var(--radius-sm);cursor:pointer;transition:background 0.1s;">
+              <span style="font-size:var(--text-sm);color:var(--color-text-muted);width:40px;flex-shrink:0;">${dataFmt}</span>
+              <span style="flex:1;font-size:var(--text-sm);color:var(--color-text);">${s.paciente_nome}</span>
+              <span style="font-size:var(--text-xs);padding:2px 8px;border-radius:var(--radius-full);background:${bg};color:${cor};">${label}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+    `;
+
+    // CSS do calendário (injetado uma vez)
+    if (!document.getElementById('cal-style')) {
+      const style = document.createElement('style');
+      style.id = 'cal-style';
+      style.textContent = `
+        .cal-grid-header { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:var(--text-xs); font-weight:600; color:var(--color-text-muted); margin-bottom:var(--space-2); }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+        .cal-cell { min-height:72px; border-radius:var(--radius-sm); padding:4px; background:var(--color-bg); position:relative; }
+        .cal-cell-empty { background:transparent; }
+        .cal-cell-hoje { background:#F0EFED; outline:2px solid var(--color-accent); outline-offset:-2px; }
+        .cal-dia-num { font-size:var(--text-xs); font-weight:600; color:var(--color-text-secondary); display:block; margin-bottom:2px; }
+        .cal-cell-hoje .cal-dia-num { color:var(--color-text); }
+        .cal-eventos-wrap { display:flex; flex-direction:column; gap:2px; }
+        .cal-evento { font-size:10px; padding:2px 4px; border-radius:3px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; transition:opacity 0.1s; }
+        .cal-evento:hover { opacity:0.75; }
+        .agenda-lista-item:hover { background:var(--color-accent-light); }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Navegação de mês
+    document.getElementById('agenda-prev').addEventListener('click', () => {
+      _agendaMes--;
+      if (_agendaMes < 0) { _agendaMes = 11; _agendaAno--; }
+      _agendaCarregar();
+    });
+    document.getElementById('agenda-next').addEventListener('click', () => {
+      _agendaMes++;
+      if (_agendaMes > 11) { _agendaMes = 0; _agendaAno++; }
+      _agendaCarregar();
+    });
+
+    // Clique em evento → abre paciente
+    body.querySelectorAll('.cal-evento').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const pid = parseInt(el.dataset.pacienteId);
+        if (pid) openPaciente(pid);
+      });
+    });
+    body.querySelectorAll('.agenda-lista-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const pid = parseInt(el.dataset.pacienteId);
+        if (pid) openPaciente(pid);
+      });
+    });
+  }
 
   async function openFaturamento(mes, pacienteId) {
     showSection('sec-faturamento');

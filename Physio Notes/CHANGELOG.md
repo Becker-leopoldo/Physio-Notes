@@ -4,6 +4,22 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.255 — 2026-04-03
+
+### Funcionalidades
+
+**Área de Agenda / Calendário**
+- Nova seção "Agenda" no menu lateral
+- Vista mensal com grade de 7 colunas (Seg–Dom) e navegação por mês/ano
+- Sessões existentes aparecem como eventos coloridos no calendário (verde = encerrada, azul = aberta)
+- KPIs do mês: total de sessões, em aberto e encerradas
+- Lista de sessões do mês abaixo do calendário com link direto ao paciente
+- Clique em qualquer evento ou linha da lista → abre o paciente
+- Banner "Integrar com Google Calendar" com badge "Em breve" e botão desabilitado
+- Novo endpoint `GET /agenda?mes=YYYY-MM` retornando sessões do owner autenticado
+
+---
+
 ## Beta-0.254 — 2026-04-03
 
 ### Correções
