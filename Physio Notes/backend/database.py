@@ -265,8 +265,28 @@ def _row_to_dict(row) -> dict:
 
 # ---------- Paciente ----------
 
+def _cpf_ja_existe(conn, cpf: str, owner_email: str | None, excluir_id: int | None = None) -> bool:
+    """Verifica unicidade de CPF por owner descriptografando os valores existentes."""
+    where = "cpf IS NOT NULL AND deletado_em IS NULL"
+    params: list = []
+    if owner_email:
+        where += " AND owner_email = ?"
+        params.append(owner_email)
+    if excluir_id:
+        where += " AND id != ?"
+        params.append(excluir_id)
+    rows = conn.execute(f"SELECT cpf FROM paciente WHERE {where}", params).fetchall()
+    cpf_norm = cpf.strip()
+    for row in rows:
+        if _decrypt_field(row["cpf"]) == cpf_norm:
+            return True
+    return False
+
+
 def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None, owner_email: str | None = None, conduta_tratamento: str | None = None) -> dict:
     with get_conn() as conn:
+        if cpf and _cpf_ja_existe(conn, cpf, owner_email):
+            raise ValueError("CPF já cadastrado para este fisioterapeuta")
         cur = conn.execute(
             "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, conduta_tratamento, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _encrypt_field(endereco), owner_email, conduta_tratamento, _now()),
@@ -277,6 +297,11 @@ def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | No
 
 def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None) -> dict:
     with get_conn() as conn:
+        if cpf:
+            owner_row = conn.execute("SELECT owner_email FROM paciente WHERE id = ?", (paciente_id,)).fetchone()
+            owner = owner_row["owner_email"] if owner_row else None
+            if _cpf_ja_existe(conn, cpf, owner, excluir_id=paciente_id):
+                raise ValueError("CPF já cadastrado para este fisioterapeuta")
         conn.execute(
             "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, endereco = ?, conduta_tratamento = ? WHERE id = ?",
             (nome, data_nascimento, anamnese, _encrypt_field(cpf), _encrypt_field(endereco), conduta_tratamento, paciente_id),

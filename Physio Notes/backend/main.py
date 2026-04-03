@@ -237,7 +237,7 @@ def criar_paciente(body: PacienteCreate, request: Request):
     owner = _owner_email(request)
     try:
         paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
-    except sqlite3.IntegrityError:
+    except (sqlite3.IntegrityError, ValueError):
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
     return paciente
 
@@ -280,7 +280,10 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     _verificar_dono(paciente, _owner_email(request))
-    return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
+    try:
+        return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
+    except ValueError:
+        raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
 
 
 @app.post("/pacientes/{paciente_id}/complementar-anamnese")
