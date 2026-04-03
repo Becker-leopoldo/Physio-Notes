@@ -1055,6 +1055,7 @@ def admin_billing(mes: str | None = None, request: Request = None):
 # ---------- Auth WebAuthn ----------
 
 @app.post("/auth/register/begin")
+@limiter.limit("5/minute")
 async def auth_register_begin(request: Request):
     from webauthn import generate_registration_options, options_to_json
     from webauthn.helpers.structs import (
@@ -1086,6 +1087,7 @@ async def auth_register_begin(request: Request):
 
 
 @app.post("/auth/register/complete")
+@limiter.limit("5/minute")
 async def auth_register_complete(request: Request, body: dict):
     from webauthn import verify_registration_response
     from webauthn.helpers.structs import RegistrationCredential, AuthenticatorAttestationResponse
@@ -1131,6 +1133,7 @@ async def auth_register_complete(request: Request, body: dict):
 
 
 @app.post("/auth/login/begin")
+@limiter.limit("10/minute")
 async def auth_login_begin(request: Request):
     from webauthn import generate_authentication_options, options_to_json
     from webauthn.helpers.structs import PublicKeyCredentialDescriptor, UserVerificationRequirement
@@ -1155,6 +1158,7 @@ async def auth_login_begin(request: Request):
 
 
 @app.post("/auth/login/complete")
+@limiter.limit("10/minute")
 async def auth_login_complete(request: Request, body: dict):
     from webauthn import verify_authentication_response
     from webauthn.helpers.structs import AuthenticationCredential, AuthenticatorAssertionResponse

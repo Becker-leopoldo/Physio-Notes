@@ -4,6 +4,19 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.249 — 2026-04-02
+
+### Segurança
+
+**Rate limiting nos endpoints de autenticação WebAuthn**
+- `POST /auth/register/begin` → 5/minuto por IP
+- `POST /auth/register/complete` → 5/minuto por IP
+- `POST /auth/login/begin` → 10/minuto por IP
+- `POST /auth/login/complete` → 10/minuto por IP
+- Protege contra brute force e enumeração de usuários
+
+---
+
 ## Beta-0.248 — 2026-04-02
 
 ### Melhorias
