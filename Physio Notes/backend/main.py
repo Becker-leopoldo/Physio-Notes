@@ -282,7 +282,7 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
     _verificar_dono(paciente, _owner_email(request))
     try:
         return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
-    except ValueError:
+    except (sqlite3.IntegrityError, ValueError):
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
 
 

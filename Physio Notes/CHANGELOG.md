@@ -4,6 +4,19 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.251 — 2026-04-02
+
+### Segurança
+
+**Blind Index para unicidade de CPF criptografado**
+- Substituído check O(n) em memória por índice único no banco via HMAC-SHA256 (`cpf_hash`)
+- Derivação de chave com separação de contexto: `SHA256("enc:" + key)` para Fernet, `SHA256("hash:" + key)` para HMAC
+- Coluna `cpf_hash` adicionada à tabela `paciente` com unique index `(cpf_hash, owner_email) WHERE cpf_hash IS NOT NULL AND deletado_em IS NULL`
+- Migração automática: `_migrar_criptografar_pii()` agora também popula `cpf_hash` para registros existentes
+- `atualizar_paciente` captura `IntegrityError` do DB (constraint violada) em vez de `ValueError`
+
+---
+
 ## Beta-0.250 — 2026-04-02
 
 ### Segurança

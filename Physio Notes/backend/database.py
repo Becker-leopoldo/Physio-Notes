@@ -2,19 +2,24 @@ import sqlite3
 import os
 import base64
 import hashlib
+import hmac as _hmac
 import logging
 from datetime import datetime, timezone
 
 logger = logging.getLogger("physio_notes")
 
 # ---------- Criptografia de campos PII (CPF, endereço) ----------
+# Estratégia: Blind Index
+#   cpf      → Fernet (AES-128-CBC + HMAC, IV aleatório) — para exibição/leitura
+#   cpf_hash → HMAC-SHA256 determinístico             — para unicidade via índice DB
+# Chaves derivadas de FIELD_ENCRYPTION_KEY com contextos distintos ("enc:" e "hash:")
 
 _fernet_instance = None
+_hash_key: bytes | None = None
 _ENC_PREFIX = "enc:"
 
 
 def _get_fernet():
-    """Retorna instância Fernet ou None se FIELD_ENCRYPTION_KEY não configurada."""
     global _fernet_instance
     if _fernet_instance is None:
         raw = os.getenv("FIELD_ENCRYPTION_KEY", "")
@@ -22,9 +27,19 @@ def _get_fernet():
             logger.warning("FIELD_ENCRYPTION_KEY não configurada — CPF/endereço armazenados em plaintext")
             return None
         from cryptography.fernet import Fernet
-        key = base64.urlsafe_b64encode(hashlib.sha256(raw.encode()).digest())
-        _fernet_instance = Fernet(key)
+        enc_key = base64.urlsafe_b64encode(hashlib.sha256(("enc:" + raw).encode()).digest())
+        _fernet_instance = Fernet(enc_key)
     return _fernet_instance
+
+
+def _get_hash_key() -> bytes | None:
+    global _hash_key
+    if _hash_key is None:
+        raw = os.getenv("FIELD_ENCRYPTION_KEY", "")
+        if not raw:
+            return None
+        _hash_key = hashlib.sha256(("hash:" + raw).encode()).digest()
+    return _hash_key
 
 
 def _encrypt_field(value: str | None) -> str | None:
@@ -48,6 +63,16 @@ def _decrypt_field(value: str | None) -> str | None:
         return f.decrypt(value[len(_ENC_PREFIX):].encode()).decode()
     except Exception:
         return value
+
+
+def _cpf_hash(cpf: str | None) -> str | None:
+    """HMAC-SHA256 determinístico do CPF — usado como blind index para unicidade."""
+    if not cpf:
+        return None
+    key = _get_hash_key()
+    if key is None:
+        return None
+    return _hmac.new(key, cpf.strip().encode(), hashlib.sha256).hexdigest()
 
 
 def _decrypt_paciente(p: dict | None) -> dict | None:
@@ -125,12 +150,16 @@ def _migrate():
         if "conduta_tratamento" not in cols_pac:
             conn.execute("ALTER TABLE paciente ADD COLUMN conduta_tratamento TEXT")
 
-        # Remove índice único em CPF: incompatível com criptografia não-determinística
+        # Blind index: cpf_hash (HMAC determinístico) + índice único por owner
+        if "cpf_hash" not in cols:
+            conn.execute("ALTER TABLE paciente ADD COLUMN cpf_hash TEXT")
         conn.execute("DROP INDEX IF EXISTS idx_paciente_cpf_owner")
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_cpf_hash_owner
+            ON paciente(cpf_hash, owner_email)
+            WHERE cpf_hash IS NOT NULL AND deletado_em IS NULL
+        """)
         conn.commit()
-
-    # Criptografa CPFs e endereços existentes em plaintext (migração única)
-    _migrar_criptografar_pii()
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS api_uso (
@@ -254,6 +283,8 @@ def _migrate():
         """)
         conn.commit()
 
+    _migrar_criptografar_pii()
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -265,31 +296,11 @@ def _row_to_dict(row) -> dict:
 
 # ---------- Paciente ----------
 
-def _cpf_ja_existe(conn, cpf: str, owner_email: str | None, excluir_id: int | None = None) -> bool:
-    """Verifica unicidade de CPF por owner descriptografando os valores existentes."""
-    where = "cpf IS NOT NULL AND deletado_em IS NULL"
-    params: list = []
-    if owner_email:
-        where += " AND owner_email = ?"
-        params.append(owner_email)
-    if excluir_id:
-        where += " AND id != ?"
-        params.append(excluir_id)
-    rows = conn.execute(f"SELECT cpf FROM paciente WHERE {where}", params).fetchall()
-    cpf_norm = cpf.strip()
-    for row in rows:
-        if _decrypt_field(row["cpf"]) == cpf_norm:
-            return True
-    return False
-
-
 def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None, owner_email: str | None = None, conduta_tratamento: str | None = None) -> dict:
     with get_conn() as conn:
-        if cpf and _cpf_ja_existe(conn, cpf, owner_email):
-            raise ValueError("CPF já cadastrado para este fisioterapeuta")
         cur = conn.execute(
-            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, endereco, owner_email, conduta_tratamento, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _encrypt_field(endereco), owner_email, conduta_tratamento, _now()),
+            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, cpf_hash, endereco, owner_email, conduta_tratamento, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco), owner_email, conduta_tratamento, _now()),
         )
         conn.commit()
         return _decrypt_paciente(_row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (cur.lastrowid,)).fetchone()))
@@ -297,14 +308,9 @@ def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | No
 
 def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None) -> dict:
     with get_conn() as conn:
-        if cpf:
-            owner_row = conn.execute("SELECT owner_email FROM paciente WHERE id = ?", (paciente_id,)).fetchone()
-            owner = owner_row["owner_email"] if owner_row else None
-            if _cpf_ja_existe(conn, cpf, owner, excluir_id=paciente_id):
-                raise ValueError("CPF já cadastrado para este fisioterapeuta")
         conn.execute(
-            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, endereco = ?, conduta_tratamento = ? WHERE id = ?",
-            (nome, data_nascimento, anamnese, _encrypt_field(cpf), _encrypt_field(endereco), conduta_tratamento, paciente_id),
+            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, cpf_hash = ?, endereco = ?, conduta_tratamento = ? WHERE id = ?",
+            (nome, data_nascimento, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco), conduta_tratamento, paciente_id),
         )
         conn.commit()
         return _decrypt_paciente(_row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone()))
@@ -1077,28 +1083,37 @@ VALOR_SESSAO_AVULSA_PADRAO = 280.0
 
 
 def _migrar_criptografar_pii():
-    """Criptografa CPFs e endereços existentes em plaintext. Executa apenas se FIELD_ENCRYPTION_KEY configurada."""
+    """Criptografa CPFs e endereços existentes em plaintext e popula cpf_hash. Executa apenas se FIELD_ENCRYPTION_KEY configurada."""
     if not _get_fernet():
         return
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT id, cpf, endereco FROM paciente WHERE deletado_em IS NULL"
+            "SELECT id, cpf, cpf_hash, endereco FROM paciente WHERE deletado_em IS NULL"
         ).fetchall()
         atualizados = 0
         for row in rows:
             cpf_raw = row["cpf"]
             end_raw = row["endereco"]
+            hash_atual = row["cpf_hash"]
+
+            # Criptografa CPF se ainda em plaintext
             novo_cpf = _encrypt_field(cpf_raw) if cpf_raw and not cpf_raw.startswith(_ENC_PREFIX) else cpf_raw
+
+            # Reconstrói cpf_hash: decripta para obter valor limpo, aplica HMAC
+            cpf_limpo = _decrypt_field(novo_cpf) if novo_cpf else None
+            novo_hash = _cpf_hash(cpf_limpo) if cpf_limpo else None
+
             novo_end = _encrypt_field(end_raw) if end_raw and not end_raw.startswith(_ENC_PREFIX) else end_raw
-            if novo_cpf != cpf_raw or novo_end != end_raw:
+
+            if novo_cpf != cpf_raw or novo_end != end_raw or novo_hash != hash_atual:
                 conn.execute(
-                    "UPDATE paciente SET cpf = ?, endereco = ? WHERE id = ?",
-                    (novo_cpf, novo_end, row["id"]),
+                    "UPDATE paciente SET cpf = ?, cpf_hash = ?, endereco = ? WHERE id = ?",
+                    (novo_cpf, novo_hash, novo_end, row["id"]),
                 )
                 atualizados += 1
         if atualizados:
             conn.commit()
-            logger.info("_migrar_criptografar_pii: %d paciente(s) com CPF/endereço criptografado(s)", atualizados)
+            logger.info("_migrar_criptografar_pii: %d paciente(s) com PII criptografado/hash populado", atualizados)
 
 
 def _migrar_config_usuario():
