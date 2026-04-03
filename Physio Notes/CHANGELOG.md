@@ -4,6 +4,20 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.250 — 2026-04-02
+
+### Segurança
+
+**Criptografia de CPF e endereço em repouso (LGPD)**
+- Campos `cpf` e `endereco` da tabela `paciente` agora são criptografados com Fernet (AES-128-CBC + HMAC)
+- Chave configurável via `FIELD_ENCRYPTION_KEY` no `.env`
+- Prefixo `enc:` permite detectar campos já criptografados (migração transparente)
+- Migração automática: na primeira inicialização com a chave configurada, criptografa todos os dados plaintext existentes
+- Índice único em CPF removido (incompatível com criptografia não-determinística)
+- Se `FIELD_ENCRYPTION_KEY` não estiver configurada, dados continuam em plaintext com aviso no log
+
+---
+
 ## Beta-0.249 — 2026-04-02
 
 ### Segurança
