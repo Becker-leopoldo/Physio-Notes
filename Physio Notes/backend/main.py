@@ -192,6 +192,13 @@ class NotaFiscalCreate(BaseModel):
 
 # ---------- Helper de autenticação ----------
 
+def _client_ip(request: Request) -> str | None:
+    ff = request.headers.get("x-forwarded-for")
+    if ff:
+        return ff.split(",")[0].strip()
+    return request.client.host if request.client else None
+
+
 def _owner_email(request: Request) -> str | None:
     """Extrai email do JWT. Retorna None para sessões WebAuthn (legado)."""
     auth = request.headers.get("authorization", "")
@@ -238,7 +245,9 @@ def criar_paciente(body: PacienteCreate, request: Request):
     try:
         paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
     except (sqlite3.IntegrityError, ValueError):
+        db.registrar_audit(owner, "paciente_criar_cpf_duplicado", f"nome={body.nome}", _client_ip(request))
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
+    db.registrar_audit(owner, "paciente_criar", f"id={paciente['id']} nome={paciente['nome']}", _client_ip(request))
     return paciente
 
 
@@ -267,23 +276,28 @@ class PacienteUpdate(BaseModel):
 
 @app.delete("/pacientes/{paciente_id}", status_code=204)
 def deletar_paciente(paciente_id: int, request: Request):
+    owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    _verificar_dono(paciente, _owner_email(request))
+    _verificar_dono(paciente, owner)
     db.deletar_paciente(paciente_id)
+    db.registrar_audit(owner, "paciente_deletar", f"id={paciente_id} nome={paciente['nome']}", _client_ip(request))
 
 
 @app.put("/pacientes/{paciente_id}")
 def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request):
+    owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    _verificar_dono(paciente, _owner_email(request))
+    _verificar_dono(paciente, owner)
     try:
-        return db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
+        resultado = db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
     except (sqlite3.IntegrityError, ValueError):
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
+    db.registrar_audit(owner, "paciente_atualizar", f"id={paciente_id}", _client_ip(request))
+    return resultado
 
 
 @app.post("/pacientes/{paciente_id}/complementar-anamnese")
@@ -445,7 +459,8 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
 # ---------- Sessoes ----------
 
 @app.post("/sessoes", status_code=201)
-def criar_sessao(body: SessaoCreate):
+def criar_sessao(body: SessaoCreate, request: Request):
+    owner = _owner_email(request)
     paciente = db.get_paciente(body.paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
@@ -457,7 +472,9 @@ def criar_sessao(body: SessaoCreate):
             detail="Já existe uma sessão aberta para este paciente. Encerre-a antes de iniciar uma nova.",
         )
 
-    return db.criar_sessao(body.paciente_id)
+    sessao = db.criar_sessao(body.paciente_id)
+    db.registrar_audit(owner, "sessao_criar", f"id={sessao['id']} paciente_id={body.paciente_id}", _client_ip(request))
+    return sessao
 
 
 @app.get("/sessoes/{sessao_id}")
@@ -503,29 +520,34 @@ class CancelamentoBody(BaseModel):
 
 @app.post("/sessoes/{sessao_id}/cancelar-com-cobranca")
 def cancelar_com_cobranca(sessao_id: int, body: CancelamentoBody, request: Request):
+    owner = _owner_email(request)
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
-    _verificar_dono_sessao(sessao, _owner_email(request))
+    _verificar_dono_sessao(sessao, owner)
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão não está aberta")
-    db.registrar_cancelamento(sessao_id, body.cobrar, body.valor, body.complemento, _owner_email(request))
+    db.registrar_cancelamento(sessao_id, body.cobrar, body.valor, body.complemento, owner)
+    db.registrar_audit(owner, "sessao_cancelar", f"id={sessao_id} cobrar={body.cobrar}", _client_ip(request))
     return {"status": "cancelada", "sessao_id": sessao_id}
 
 
 @app.delete("/sessoes/{sessao_id}")
 def cancelar_sessao(sessao_id: int, request: Request):
+    owner = _owner_email(request)
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
-    _verificar_dono_sessao(sessao, _owner_email(request))
+    _verificar_dono_sessao(sessao, owner)
     chunks = db.get_chunks_sessao(sessao_id)
     # Sessão aberta sem áudio → cancela (hard delete)
     if sessao["status"] == "aberta" and not chunks:
         db.cancelar_sessao(sessao_id)
+        db.registrar_audit(owner, "sessao_deletar", f"id={sessao_id} tipo=hard_delete", _client_ip(request))
         return {"status": "cancelada", "sessao_id": sessao_id}
     # Qualquer outro caso → soft delete
     db.deletar_sessao(sessao_id)
+    db.registrar_audit(owner, "sessao_deletar", f"id={sessao_id} tipo=soft_delete", _client_ip(request))
     return {"status": "deletada", "sessao_id": sessao_id}
 
 
@@ -638,6 +660,7 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
     except Exception as e:
         logger.warning("encerrar_sessao: falha ao notificar pacote sessao_id=%s: %s", sessao_id, e)
 
+    db.registrar_audit(owner, "sessao_encerrar", f"id={sessao_id} cobrar={body.cobrar} valor={valor_override}", _client_ip(request))
     return {
         "consolidado": consolidado,
         "sessao_id": sessao_id,
@@ -749,6 +772,7 @@ async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), re
             logger.warning("upload_documento: falha ao gerar resumo IA paciente_id=%s: %s", paciente_id, e)
 
     doc = db.salvar_documento(paciente_id, arquivo.filename, nome_arquivo, resumo)
+    db.registrar_audit(_owner_email(request), "documento_upload", f"id={doc['id']} paciente_id={paciente_id} nome={arquivo.filename}", _client_ip(request))
     return doc
 
 
@@ -775,11 +799,13 @@ def servir_documento(doc_id: int, request: Request):
 
 @app.delete("/documentos/{doc_id}", status_code=204)
 def deletar_documento(doc_id: int, request: Request):
+    owner = _owner_email(request)
     doc = db.get_documento(doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Documento não encontrado")
-    _verificar_dono_documento(doc, _owner_email(request))
+    _verificar_dono_documento(doc, owner)
     db.deletar_documento(doc_id)
+    db.registrar_audit(owner, "documento_deletar", f"id={doc_id} nome={doc.get('nome_original')}", _client_ip(request))
     import os as _os
     caminho_fisico = _os.path.join(db.DOCS_DIR, doc["caminho"])
     try:
@@ -793,11 +819,14 @@ def deletar_documento(doc_id: int, request: Request):
 
 @app.post("/pacientes/{paciente_id}/pacotes", status_code=201)
 def criar_pacote(paciente_id: int, body: PacoteCreate, request: Request):
+    owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    _verificar_dono(paciente, _owner_email(request))
-    return db.criar_pacote(paciente_id, body.total_sessoes, body.valor_pago, body.data_pagamento, body.descricao)
+    _verificar_dono(paciente, owner)
+    pacote = db.criar_pacote(paciente_id, body.total_sessoes, body.valor_pago, body.data_pagamento, body.descricao)
+    db.registrar_audit(owner, "pacote_criar", f"id={pacote['id']} paciente_id={paciente_id} sessoes={body.total_sessoes}", _client_ip(request))
+    return pacote
 
 
 @app.get("/pacientes/{paciente_id}/pacotes")
@@ -810,8 +839,9 @@ def listar_pacotes(paciente_id: int, request: Request):
 
 
 @app.delete("/pacotes/{pacote_id}", status_code=204)
-def deletar_pacote(pacote_id: int):
+def deletar_pacote(pacote_id: int, request: Request):
     db.deletar_pacote(pacote_id)
+    db.registrar_audit(_owner_email(request), "pacote_deletar", f"id={pacote_id}", _client_ip(request))
 
 
 # ---------- Notas Fiscais de Serviço (demo) ----------
@@ -852,6 +882,7 @@ def emitir_nota_fiscal(body: NotaFiscalCreate, request: Request):
         "observacoes": "NOTA FISCAL DEMONSTRATIVA — dados fictícios para fins de demonstração",
     }
 
+    owner = _owner_email(request)
     nf = db.emitir_nota_fiscal(
         paciente_id=body.paciente_id,
         paciente_nome=body.paciente_nome,
@@ -859,8 +890,9 @@ def emitir_nota_fiscal(body: NotaFiscalCreate, request: Request):
         descricao=body.descricao,
         competencia=body.competencia,
         dados_json=_json.dumps(dados, ensure_ascii=False),
-        owner_email=_owner_email(request),
+        owner_email=owner,
     )
+    db.registrar_audit(owner, "nota_fiscal_emitir", f"id={nf['id']} valor={body.valor_servico} paciente={body.paciente_nome}", _client_ip(request))
     return {**nf, "dados": dados}
 
 
@@ -917,11 +949,12 @@ def buscar_nota_fiscal(nf_id: int):
 
 
 @app.delete("/notas-fiscais/{nf_id}", status_code=204)
-def cancelar_nota_fiscal(nf_id: int):
+def cancelar_nota_fiscal(nf_id: int, request: Request):
     nf = db.get_nota_fiscal(nf_id)
     if not nf:
         raise HTTPException(status_code=404, detail="Nota fiscal não encontrada")
     db.cancelar_nota_fiscal(nf_id)
+    db.registrar_audit(_owner_email(request), "nota_fiscal_cancelar", f"id={nf_id}", _client_ip(request))
 
 
 # ---------- Web Push ----------
@@ -1001,6 +1034,7 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     try:
         info = google_auth.verificar_google_token(body.credential)
     except Exception as e:
+        db.registrar_audit(None, "login_falhou", f"erro={e}", _client_ip(request))
         raise HTTPException(status_code=401, detail=f"Token Google inválido: {e}")
     email = info.get("email")
     nome  = info.get("name", email)
@@ -1010,8 +1044,10 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     admin_email = os.environ.get("ADMIN_EMAIL", "")
     usuario = db.upsert_usuario(email, nome, foto, admin_email)
     if not usuario.get("ativo"):
+        db.registrar_audit(email, "login_negado", "acesso pendente de aprovação", _client_ip(request))
         raise HTTPException(status_code=403, detail="Acesso pendente de aprovação do administrador.")
     token = google_auth.criar_jwt(email, nome, foto)
+    db.registrar_audit(email, "login", None, _client_ip(request))
     return {"token": token, "nome": nome, "email": email, "foto": foto}
 
 
@@ -1034,6 +1070,7 @@ def admin_listar_usuarios(request: Request):
 def admin_aprovar_usuario(email: str, request: Request):
     _verificar_admin(request)
     db.aprovar_usuario(email)
+    db.registrar_audit(_owner_email(request), "admin_aprovar_usuario", f"target={email}", _client_ip(request))
     return {"ok": True}
 
 
@@ -1041,7 +1078,14 @@ def admin_aprovar_usuario(email: str, request: Request):
 def admin_revogar_usuario(email: str, request: Request):
     _verificar_admin(request)
     db.revogar_usuario(email)
+    db.registrar_audit(_owner_email(request), "admin_revogar_usuario", f"target={email}", _client_ip(request))
     return {"ok": True}
+
+
+@app.get("/admin/audit-log")
+def admin_audit_log(owner: str | None = None, limit: int = 200, request: Request = None):
+    _verificar_admin(request)
+    return db.get_audit_log(owner_email=owner, limit=min(limit, 1000))
 
 
 @app.get("/admin/billing")

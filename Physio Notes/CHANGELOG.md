@@ -4,6 +4,19 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.252 — 2026-04-02
+
+### Segurança
+
+**Logging de auditoria**
+- Tabela `audit_log` no banco: `criado_em`, `owner_email`, `acao`, `detalhe`, `ip`
+- Eventos registrados: login (sucesso/falha/negado), criar/atualizar/deletar paciente, criar/encerrar/cancelar/deletar sessão, upload/deletar documento, criar/deletar pacote, emitir/cancelar nota fiscal, admin aprovar/revogar usuário
+- IP extraído do header `X-Forwarded-For` (proxy reverso) com fallback para `request.client.host`
+- Endpoint admin `GET /admin/audit-log?owner=&limit=` para visualização
+- Fire-and-forget: falha no log nunca interrompe a operação principal
+
+---
+
 ## Beta-0.251 — 2026-04-02
 
 ### Segurança

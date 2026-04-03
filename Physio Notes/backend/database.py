@@ -271,6 +271,18 @@ def _migrate():
             )
         """)
 
+        # Audit log
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                criado_em   TEXT    NOT NULL,
+                owner_email TEXT,
+                acao        TEXT    NOT NULL,
+                detalhe     TEXT,
+                ip          TEXT
+            )
+        """)
+
         conn.executescript("""
             CREATE INDEX IF NOT EXISTS idx_sessao_paciente_id ON sessao(paciente_id);
             CREATE INDEX IF NOT EXISTS idx_sessao_criado_em ON sessao(criado_em);
@@ -280,6 +292,8 @@ def _migrate():
             CREATE INDEX IF NOT EXISTS idx_api_uso_criado_em ON api_uso(criado_em);
             CREATE INDEX IF NOT EXISTS idx_api_uso_owner_email ON api_uso(owner_email);
             CREATE INDEX IF NOT EXISTS idx_documento_paciente_id ON documento(paciente_id);
+            CREATE INDEX IF NOT EXISTS idx_audit_log_criado_em ON audit_log(criado_em);
+            CREATE INDEX IF NOT EXISTS idx_audit_log_owner_email ON audit_log(owner_email);
         """)
         conn.commit()
 
@@ -292,6 +306,36 @@ def _now() -> str:
 
 def _row_to_dict(row) -> dict:
     return dict(row) if row else None
+
+
+# ---------- Audit Log ----------
+
+def registrar_audit(owner_email: str | None, acao: str, detalhe: str | None = None, ip: str | None = None):
+    """Registra um evento de auditoria. Fire-and-forget — nunca levanta exceção."""
+    try:
+        with get_conn() as conn:
+            conn.execute(
+                "INSERT INTO audit_log (criado_em, owner_email, acao, detalhe, ip) VALUES (?, ?, ?, ?, ?)",
+                (_now(), owner_email, acao, detalhe, ip),
+            )
+            conn.commit()
+    except Exception as exc:
+        logger.warning("registrar_audit: falha ao gravar acao=%s: %s", acao, exc)
+
+
+def get_audit_log(owner_email: str | None = None, limit: int = 200) -> list[dict]:
+    with get_conn() as conn:
+        if owner_email:
+            rows = conn.execute(
+                "SELECT * FROM audit_log WHERE owner_email = ? ORDER BY criado_em DESC LIMIT ?",
+                (owner_email, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM audit_log ORDER BY criado_em DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [_row_to_dict(r) for r in rows]
 
 
 # ---------- Paciente ----------
