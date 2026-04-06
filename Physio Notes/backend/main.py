@@ -1057,6 +1057,64 @@ async def _gerar_sugestoes_gcal(access_token: str, data: str, hora_ini: str, hor
     return sugestoes
 
 
+@app.get("/agenda/buscar")
+async def agenda_buscar(q: str = "", request: Request = None):
+    """Busca eventos por nome em sessões Physio + Google Calendar (todos os períodos)."""
+    import httpx
+    owner = _owner_email(request)
+    q = q.strip()
+    if not q:
+        return {"physio": [], "gcal": []}
+
+    # ── Physio Notes: busca em todas as sessões do owner ──
+    todas = db.get_agenda_owner(owner, ano_mes=None)
+    q_n = _normalizar_nome(q)
+    physio = [
+        s for s in todas
+        if q_n in _normalizar_nome(s.get("paciente_nome") or "")
+    ]
+
+    # ── Google Calendar: usa o parâmetro q da API ──
+    gcal = []
+    refresh_token = db.get_google_refresh_token(owner)
+    if refresh_token:
+        try:
+            access_token = await calendar_service._obter_access_token(refresh_token)
+            async with httpx.AsyncClient() as c:
+                resp = await c.get(
+                    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                    params={
+                        "q": q,
+                        "singleEvents": "true",
+                        "orderBy": "startTime",
+                        "maxResults": 50,
+                        "timeMin": "2020-01-01T00:00:00Z",
+                    },
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=10.0,
+                )
+            if resp.status_code == 200:
+                for ev in resp.json().get("items", []):
+                    start = ev.get("start", {})
+                    end   = ev.get("end", {})
+                    data_str     = start.get("date") or (start.get("dateTime") or "")[:10]
+                    hora_inicio  = (start.get("dateTime") or "")[11:16]
+                    hora_fim     = (end.get("dateTime") or "")[11:16]
+                    gcal.append({
+                        "id":          ev.get("id"),
+                        "titulo":      ev.get("summary") or "(sem título)",
+                        "data":        data_str,
+                        "hora_inicio": hora_inicio,
+                        "hora_fim":    hora_fim,
+                        "dia_inteiro": "date" in start,
+                        "color_id":    ev.get("colorId"),
+                    })
+        except Exception:
+            pass
+
+    return {"physio": physio, "gcal": gcal}
+
+
 class AgendaInterpretarBody(BaseModel):
     texto: str
 

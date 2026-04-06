@@ -1383,6 +1383,19 @@
     <div class="section-body" id="agenda-body" style="padding:0;max-width:600px;margin:0 auto;position:relative;">
     </div>
 
+    <!-- Bottom sheet: busca na agenda -->
+    <div id="ag-search-overlay" style="display:none;"></div>
+    <div id="ag-search-sheet" style="display:none;">
+      <div id="ag-search-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="color:var(--color-text-muted);flex-shrink:0;"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="ag-search-input" type="search" placeholder="Buscar paciente ou evento…" autocomplete="off">
+        <button id="ag-search-cancel">Fechar</button>
+      </div>
+      <div id="ag-search-results">
+        <div style="font-size:13px;color:var(--color-text-muted);text-align:center;padding:var(--space-8) 0;">Digite o nome para buscar</div>
+      </div>
+    </div>
+
     <!-- Bottom sheet: novo agendamento -->
     <div id="ag-sheet-overlay" style="display:none;"></div>
     <div id="ag-sheet" style="display:none;">
@@ -1573,7 +1586,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.271'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.272'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5562,6 +5575,7 @@
   async function openAgenda() {
     showSection('sec-agenda');
     _agSheetInit();
+    _agSearchInit();
     await _agendaCarregar();
   }
 
@@ -5806,6 +5820,34 @@
         }
         #ag-confirmar-btn:disabled { opacity:.6; }
         .ag-sheet-loading { display:flex; align-items:center; gap:10px; padding:20px 0; color:var(--color-text-secondary); font-size:14px; justify-content:center; }
+        /* ── Busca ── */
+        #ag-search-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; animation:agFadeIn .2s; }
+        #ag-search-sheet {
+          position:fixed; bottom:0; left:0; right:0;
+          background:var(--color-surface); border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+          box-shadow:var(--shadow-lg); z-index:401;
+          width:100%; max-width:480px; margin:0 auto;
+          padding:var(--space-5) var(--space-6) var(--space-6);
+          padding-bottom:calc(var(--space-6) + env(safe-area-inset-bottom,0px));
+          animation:agSlideUp .25s cubic-bezier(.32,1,.35,1);
+          max-height:88vh; overflow-y:auto;
+        }
+        #ag-search-header { display:flex; align-items:center; gap:10px; margin-bottom:var(--space-4); }
+        #ag-search-input {
+          flex:1; height:44px; border:1.5px solid var(--color-border); border-radius:var(--radius-md);
+          padding:0 14px; font-family:var(--font-body); font-size:16px; color:var(--color-text);
+          background:var(--color-bg); outline:none;
+        }
+        #ag-search-input:focus { border-color:var(--color-border-strong); }
+        #ag-search-cancel { border:none; background:none; font-family:var(--font-body); font-size:14px; color:var(--color-text-secondary); cursor:pointer; white-space:nowrap; padding:0 2px; }
+        #ag-search-results { margin-top:4px; }
+        .ag-sr-date-header { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-text-muted); padding:12px 0 4px; }
+        .ag-sr-item { display:flex; align-items:center; gap:12px; padding:11px 14px; background:var(--color-surface); border:var(--border); border-radius:var(--radius-md); margin-bottom:6px; cursor:pointer; transition:background .1s; }
+        .ag-sr-item:hover { background:var(--color-accent-light); }
+        .ag-sr-strip { width:4px; min-height:32px; border-radius:2px; flex-shrink:0; }
+        .ag-sr-body { flex:1; min-width:0; }
+        .ag-sr-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ag-sr-sub { font-size:11px; color:var(--color-text-muted); margin-top:2px; }
       `;
       document.head.appendChild(style);
     }
@@ -5815,8 +5857,8 @@
       : `<span style="color:var(--color-text-muted);">○ Google Calendar desconectado</span>`;
 
     body.innerHTML = `
-      <!-- Cabeçalho: nav mês + badge gcal -->
-      <div id="ag-mes-header">
+      <!-- Cabeçalho: nav mês + badge gcal + busca -->
+      <div id="ag-mes-header" style="position:relative;">
         <button id="agenda-prev" class="ag-nav-btn">
           <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -5826,6 +5868,9 @@
         </div>
         <button id="agenda-next" class="ag-nav-btn">
           <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button id="ag-search-open-btn" class="ag-nav-btn" title="Buscar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
       </div>
 
@@ -5872,6 +5917,7 @@
       _agendaMes++; if (_agendaMes > 11) { _agendaMes = 0; _agendaAno++; }
       _agendaCarregar();
     });
+    document.getElementById('ag-search-open-btn').addEventListener('click', _agSearchOpen);
   }
 
   function _agendaRenderizarLista(porDia, totalDias) {
@@ -6208,6 +6254,118 @@
     });
     document.getElementById('ag-texto').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _agSheetAnalisar(); }
+    });
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     AGENDA — Busca de eventos/pacientes
+  ──────────────────────────────────────────────────────────── */
+  let _agSearchInited = false;
+  let _agSearchTimer  = null;
+
+  function _agSearchOpen() {
+    document.getElementById('ag-search-overlay').style.display = 'block';
+    document.getElementById('ag-search-sheet').style.display = 'block';
+    document.getElementById('ag-search-input').value = '';
+    document.getElementById('ag-search-results').innerHTML =
+      '<div style="font-size:13px;color:var(--color-text-muted);text-align:center;padding:var(--space-8) 0;">Digite o nome para buscar</div>';
+    setTimeout(() => document.getElementById('ag-search-input').focus(), 200);
+  }
+
+  function _agSearchClose() {
+    document.getElementById('ag-search-overlay').style.display = 'none';
+    document.getElementById('ag-search-sheet').style.display = 'none';
+    clearTimeout(_agSearchTimer);
+  }
+
+  async function _agSearchRun(q) {
+    const res = document.getElementById('ag-search-results');
+    if (!q) {
+      res.innerHTML = '<div style="font-size:13px;color:var(--color-text-muted);text-align:center;padding:var(--space-8) 0;">Digite o nome para buscar</div>';
+      return;
+    }
+    res.innerHTML = '<div class="ag-sheet-loading"><span class="spinner"></span> Buscando…</div>';
+    try {
+      const data = await apiFetch(`/agenda/buscar?q=${encodeURIComponent(q)}`);
+      _agSearchRenderResults(data, q);
+    } catch (e) {
+      res.innerHTML = `<div style="font-size:13px;color:var(--color-danger);padding:var(--space-4) 0;">${e.message}</div>`;
+    }
+  }
+
+  function _agSearchRenderResults({ physio = [], gcal = [] }, q) {
+    const res = document.getElementById('ag-search-results');
+    const total = physio.length + gcal.length;
+    if (!total) {
+      res.innerHTML = `<div style="font-size:13px;color:var(--color-text-muted);text-align:center;padding:var(--space-8) 0;">Nenhum resultado para "<strong>${escHtml(q)}</strong>"</div>`;
+      return;
+    }
+
+    // Junta e ordena por data desc
+    const todos = [
+      ...physio.map(s => ({ _tipo:'physio', titulo: s.paciente_nome, data: s.data,
+        hora: '', paciente_id: s.paciente_id, status: s.status })),
+      ...gcal.map(ev => ({ _tipo:'google', titulo: ev.titulo, data: ev.data,
+        hora: ev.dia_inteiro ? 'Dia inteiro' : (ev.hora_inicio ? `${ev.hora_inicio}${ev.hora_fim ? ' – '+ev.hora_fim : ''}` : ''),
+        color_id: ev.color_id })),
+    ].sort((a, b) => b.data.localeCompare(a.data));
+
+    // Agrupa por mês para header
+    let html = `<div style="font-size:12px;color:var(--color-text-muted);margin-bottom:var(--space-3);">${total} resultado${total !== 1 ? 's' : ''} para "<strong style="color:var(--color-text);">${escHtml(q)}</strong>"</div>`;
+    let mesAtual = '';
+    todos.forEach(item => {
+      const mes = item.data ? item.data.slice(0, 7) : '';
+      if (mes !== mesAtual) {
+        mesAtual = mes;
+        const [a, m] = mes.split('-');
+        const label = new Date(+a, +m - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        html += `<div class="ag-sr-date-header">${label}</div>`;
+      }
+      const [a2, m2, d2] = (item.data || '').split('-');
+      const diaFmt = item.data
+        ? new Date(+a2, +m2-1, +d2).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric' })
+        : '';
+
+      if (item._tipo === 'physio') {
+        const cor = item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F';
+        const badge = item.status === 'aberta' ? 'Em aberto' : 'Encerrada';
+        html += `<div class="ag-sr-item ag-sr-physio" data-pid="${item.paciente_id}">
+          <div class="ag-sr-strip" style="background:${cor};"></div>
+          <div class="ag-sr-body">
+            <div class="ag-sr-titulo">${escHtml(item.titulo)}</div>
+            <div class="ag-sr-sub">${diaFmt} · Sessão · ${badge}</div>
+          </div>
+        </div>`;
+      } else {
+        const cor = _gcalCores[item.color_id] || '#4285F4';
+        html += `<div class="ag-sr-item">
+          <div class="ag-sr-strip" style="background:${cor};"></div>
+          <div class="ag-sr-body">
+            <div class="ag-sr-titulo">${escHtml(item.titulo)}</div>
+            <div class="ag-sr-sub">${diaFmt}${item.hora ? ' · ' + item.hora : ''}</div>
+          </div>
+        </div>`;
+      }
+    });
+    res.innerHTML = html;
+
+    // Click em sessão physio → abre paciente
+    res.querySelectorAll('.ag-sr-physio[data-pid]').forEach(el => {
+      el.addEventListener('click', () => {
+        _agSearchClose();
+        openPaciente(parseInt(el.dataset.pid));
+      });
+    });
+  }
+
+  function _agSearchInit() {
+    if (_agSearchInited) return;
+    _agSearchInited = true;
+    document.getElementById('ag-search-cancel').addEventListener('click', _agSearchClose);
+    document.getElementById('ag-search-overlay').addEventListener('click', _agSearchClose);
+    document.getElementById('ag-search-input').addEventListener('input', e => {
+      clearTimeout(_agSearchTimer);
+      _agSearchTimer = setTimeout(() => _agSearchRun(e.target.value.trim()), 400);
     });
   }
 
