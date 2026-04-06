@@ -4,6 +4,20 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.260 — 2026-04-06
+
+### Melhorias
+
+**Agenda — UX mobile redesenhada (v2)**
+- Grid: células agora mostram apenas dots coloridos (sem texto), muito mais limpas em mobile
+- Painel do dia selecionado: cabeçalho com nome do dia + contador de eventos; strip lateral colorida por tipo; badge de status (Em aberto / Encerrada)
+- Lista de agenda abaixo: cabeçalho de data no estilo Google Calendar (número grande + dia/mês/semana); strip lateral colorida; badge inline de status
+- Remoção de todos os elementos com texto no grid que causavam overflow no mobile
+- Animação suave `fadeSlideIn` ao abrir painel do dia
+- Botões de navegação de mês com efeito hover em círculo
+
+---
+
 ## Beta-0.259 — 2026-04-06
 
 ### Funcionalidades

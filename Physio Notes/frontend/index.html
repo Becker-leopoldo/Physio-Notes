@@ -1526,7 +1526,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.259'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.260'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5550,22 +5550,23 @@
 
   function _agendaItemHtml(item) {
     if (item._tipo === 'physio') {
-      const cor = item.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
-      const bg  = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
+      const cor   = item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F';
+      const bgBadge = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
       const label = item.status === 'aberta' ? 'Em aberto' : 'Encerrada';
       return `<div class="ag-item ag-item-physio" data-paciente-id="${item.paciente_id}">
-        <div class="ag-item-dot" style="background:${cor};"></div>
+        <div class="ag-item-strip" style="background:${cor};"></div>
         <div class="ag-item-body">
           <div class="ag-item-titulo">${item.paciente_nome}</div>
-          <div class="ag-item-sub">Sessão fisioterapia · <span style="color:${cor};">${label}</span></div>
+          <div class="ag-item-sub">Sessão de fisioterapia</div>
         </div>
+        <span class="ag-item-badge" style="background:${bgBadge};color:${cor};">${label}</span>
       </div>`;
     } else {
       const cor  = _gcalCores[item.color_id] || '#4285F4';
       const hora = item.dia_inteiro ? 'Dia inteiro'
         : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – ' + item.hora_fim : ''}` : '';
-      return `<div class="ag-item ag-item-google">
-        <div class="ag-item-dot" style="background:${cor};"></div>
+      return `<div class="ag-item">
+        <div class="ag-item-strip" style="background:${cor};"></div>
         <div class="ag-item-body">
           <div class="ag-item-titulo">${item.titulo}</div>
           ${hora ? `<div class="ag-item-sub">${hora}</div>` : ''}
@@ -5577,16 +5578,21 @@
   function _agendaRenderizarDia(dataKey, porDia) {
     const painel = document.getElementById('ag-painel-dia');
     if (!painel) return;
+    if (!dataKey) { painel.innerHTML = ''; return; }
     const itens = _agendaEventosDia(dataKey, porDia);
     const [ano, mes, dia] = dataKey.split('-');
+    const hoje = new Date().toISOString().slice(0, 10);
+    const isHoje = dataKey === hoje;
     const nomeDia = new Date(+ano, +mes - 1, +dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const count = itens.length;
     painel.innerHTML = `
-      <div style="padding:var(--space-3) var(--space-4);border-bottom:var(--border);background:var(--color-bg);">
-        <span style="font-size:var(--text-sm);font-weight:600;text-transform:capitalize;color:var(--color-text);">${nomeDia}</span>
+      <div class="ag-painel-header">
+        <span class="ag-painel-titulo">${nomeDia}${isHoje ? ' · Hoje' : ''}</span>
+        ${count ? `<span class="ag-painel-count">${count} evento${count !== 1 ? 's' : ''}</span>` : ''}
       </div>
-      ${itens.length
+      ${count
         ? itens.map(i => _agendaItemHtml(i)).join('')
-        : `<div style="padding:var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum evento neste dia.</div>`}
+        : `<div style="padding:10px 16px 14px;font-size:var(--text-sm);color:var(--color-text-muted);border-top:var(--border);">Nenhum evento neste dia.</div>`}
     `;
     painel.querySelectorAll('.ag-item-physio[data-paciente-id]').forEach(el => {
       el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
@@ -5632,26 +5638,19 @@
       const diaItens = porDia[dataKey] || [];
       const isHoje   = dataKey === hoje;
 
-      let eventosHtml = '';
+      // Dots: máx 3, coloridos por tipo
+      let dotsHtml = '';
       diaItens.slice(0, 3).forEach(item => {
-        if (item._tipo === 'physio') {
-          const cor = item.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
-          const bg  = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
-          eventosHtml += `<div class="cal-evento" style="background:${bg};color:${cor};" data-paciente-id="${item.paciente_id}" title="${item.paciente_nome}">${item.paciente_nome.split(' ')[0]}</div>`;
-        } else {
-          const cor = _gcalCores[item.color_id] || '#4285F4';
-          const hora = item.hora_inicio ? ` ${item.hora_inicio}` : '';
-          eventosHtml += `<div class="cal-evento cal-evento-google" style="background:${cor}20;color:${cor};border-left:2px solid ${cor};" title="${item.titulo}${hora}">${item.titulo}</div>`;
-        }
+        const cor = item._tipo === 'physio'
+          ? (item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F')
+          : (_gcalCores[item.color_id] || '#4285F4');
+        dotsHtml += `<span class="cal-dot" style="background:${cor};"></span>`;
       });
-      if (diaItens.length > 3) {
-        eventosHtml += `<div style="font-size:10px;color:var(--color-text-muted);padding:0 2px;">+${diaItens.length - 3} mais</div>`;
-      }
 
       celulas += `
-        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}${diaItens.length ? ' cal-cell-com-evento' : ''}" data-data="${dataKey}">
+        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}" data-data="${dataKey}">
           <span class="cal-dia-num">${d}</span>
-          <div class="cal-eventos-wrap">${eventosHtml}</div>
+          ${dotsHtml ? `<div class="cal-dots">${dotsHtml}</div>` : ''}
         </div>`;
     }
 
@@ -5666,66 +5665,90 @@
       const style = document.createElement('style');
       style.id = 'cal-style';
       style.textContent = `
+        /* ── Cabeçalho mês ── */
+        #ag-mes-header { display:flex; align-items:center; justify-content:space-between; padding:12px 8px 10px; background:var(--color-surface); }
+        .ag-nav-btn { width:40px; height:40px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); transition:background .15s; }
+        .ag-nav-btn:hover { background:var(--color-accent-light); }
+        .ag-mes-titulo { font-size:15px; font-weight:600; color:var(--color-text); text-transform:capitalize; }
+        .ag-gcal-badge { font-size:10px; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:4px; }
         /* ── Grid ── */
-        .cal-grid-header { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; font-weight:600; color:var(--color-text-muted); padding:0 4px 6px; }
-        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
-        .cal-cell { display:flex; flex-direction:column; align-items:center; padding:6px 2px 8px; cursor:pointer; border-radius:var(--radius-sm); min-width:0; transition:background 0.1s; position:relative; }
+        .cal-grid-header { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; font-weight:600; color:var(--color-text-muted); padding:0 0 4px; }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); row-gap:2px; }
+        .cal-cell { display:flex; flex-direction:column; align-items:center; padding:2px 0 6px; cursor:pointer; border-radius:var(--radius-sm); min-width:0; transition:background .1s; }
         .cal-cell:hover { background:var(--color-accent-light); }
         .cal-cell-empty { cursor:default; pointer-events:none; }
         .cal-cell-empty:hover { background:transparent; }
-        .cal-dia-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:13px; font-weight:500; color:var(--color-text-secondary); flex-shrink:0; }
+        .cal-dia-num { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:13px; font-weight:500; color:var(--color-text-secondary); flex-shrink:0; transition:background .15s; }
         .cal-cell-hoje .cal-dia-num { background:var(--color-accent); color:#fff; font-weight:700; }
-        .cal-cell-selecionado .cal-dia-num { background:var(--color-accent-light); color:var(--color-text); }
-        .cal-cell-hoje.cal-cell-selecionado .cal-dia-num { background:var(--color-accent); color:#fff; }
-        .cal-dots { display:flex; gap:2px; margin-top:3px; justify-content:center; flex-wrap:wrap; max-width:28px; }
+        .cal-cell-selecionado:not(.cal-cell-hoje) .cal-dia-num { background:var(--color-accent-light); color:var(--color-text); font-weight:600; }
+        .cal-dots { display:flex; gap:3px; margin-top:2px; justify-content:center; }
         .cal-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-        /* ── Painel dia ── */
-        #ag-painel-dia { background:var(--color-surface); border-top:var(--border); border-bottom:var(--border); }
-        .ag-item { display:flex; align-items:flex-start; gap:12px; padding:12px 16px; border-bottom:var(--border); cursor:default; transition:background 0.1s; }
-        .ag-item:last-child { border-bottom:none; }
+        /* ── Painel dia (aparece abaixo do grid) ── */
+        #ag-painel-dia { background:var(--color-surface); border-top:2px solid var(--color-accent); animation: fadeSlideIn .15s ease; }
+        @keyframes fadeSlideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .ag-painel-header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px 8px; }
+        .ag-painel-titulo { font-size:13px; font-weight:600; color:var(--color-text); text-transform:capitalize; }
+        .ag-painel-count { font-size:11px; color:var(--color-text-muted); }
+        .ag-item { display:flex; align-items:center; gap:12px; padding:10px 16px; border-top:var(--border); transition:background .1s; }
         .ag-item-physio { cursor:pointer; }
         .ag-item-physio:hover { background:var(--color-accent-light); }
-        .ag-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+        .ag-item-strip { width:4px; min-height:36px; border-radius:2px; flex-shrink:0; }
         .ag-item-body { flex:1; min-width:0; }
-        .ag-item-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .ag-item-sub { font-size:var(--text-xs); color:var(--color-text-muted); margin-top:2px; }
-        /* ── Agenda list ── */
-        .ag-date-header { padding:12px 16px 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--color-text-muted); background:var(--color-bg); }
-        .ag-list-item { display:flex; align-items:flex-start; gap:12px; padding:10px 16px; border-bottom:var(--border); transition:background .1s; }
-        .ag-list-item:last-child { border-bottom:none; }
+        .ag-item-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ag-item-sub { font-size:11px; color:var(--color-text-muted); margin-top:2px; }
+        .ag-item-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:var(--radius-full); flex-shrink:0; }
+        /* ── Separador ── */
+        .ag-section-sep { height:8px; background:var(--color-bg); border-top:var(--border); border-bottom:var(--border); }
+        /* ── Lista agenda ── */
+        .ag-date-row { display:flex; align-items:baseline; gap:8px; padding:14px 16px 4px; background:var(--color-bg); }
+        .ag-date-num { font-size:22px; font-weight:300; color:var(--color-text-muted); line-height:1; min-width:28px; }
+        .ag-date-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--color-text-muted); }
+        .ag-date-row.ag-date-hoje .ag-date-num { color:var(--color-accent); font-weight:600; }
+        .ag-date-row.ag-date-hoje .ag-date-label { color:var(--color-accent); }
+        .ag-list-item { display:flex; align-items:center; gap:12px; padding:10px 16px; border-top:var(--border); background:var(--color-surface); transition:background .1s; }
         .ag-list-physio { cursor:pointer; } .ag-list-physio:hover { background:var(--color-accent-light); }
+        .ag-list-strip { width:4px; min-height:32px; border-radius:2px; flex-shrink:0; }
+        .ag-list-body { flex:1; min-width:0; }
+        .ag-list-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ag-list-sub { font-size:11px; color:var(--color-text-muted); margin-top:2px; }
+        .ag-list-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:var(--radius-full); flex-shrink:0; }
       `;
       document.head.appendChild(style);
     }
 
+    const gcalBadge = _agendaGoogleConectado
+      ? `<span style="color:var(--color-success);">●</span> <span style="color:var(--color-text-muted);">Google Calendar · ${totalGcal} evento${totalGcal !== 1 ? 's' : ''}</span>`
+      : `<span style="color:var(--color-text-muted);">○ Google Calendar desconectado</span>`;
+
     body.innerHTML = `
-      <!-- Cabeçalho: nav mês + status gcal -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-surface);border-bottom:var(--border);">
-        <button id="agenda-prev" style="width:36px;height:36px;border:none;border-radius:50%;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);">
+      <!-- Cabeçalho: nav mês + badge gcal -->
+      <div id="ag-mes-header">
+        <button id="agenda-prev" class="ag-nav-btn">
           <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div style="text-align:center;">
-          <div style="font-size:var(--text-base);font-weight:600;text-transform:capitalize;">${nomeMes}</div>
-          <div style="font-size:10px;color:${_agendaGoogleConectado ? 'var(--color-success)' : 'var(--color-text-muted)'};margin-top:1px;">
-            ${_agendaGoogleConectado ? `● Google Calendar · ${totalGcal} evento${totalGcal !== 1 ? 's' : ''}` : '○ Google Calendar desconectado'}
-          </div>
+          <div class="ag-mes-titulo">${nomeMes}</div>
+          <div class="ag-gcal-badge">${gcalBadge}</div>
         </div>
-        <button id="agenda-next" style="width:36px;height:36px;border:none;border-radius:50%;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);">
+        <button id="agenda-next" class="ag-nav-btn">
           <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
 
       <!-- Grid -->
-      <div style="background:var(--color-surface);padding:var(--space-2) var(--space-2) 0;">
+      <div style="background:var(--color-surface);padding:0 8px 8px;">
         <div class="cal-grid-header"><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div><div>D</div></div>
         <div class="cal-grid" id="ag-grid">${celulas}</div>
       </div>
 
-      <!-- Painel do dia selecionado -->
+      <!-- Painel do dia selecionado (aparece ao clicar um dia) -->
       <div id="ag-painel-dia"></div>
 
-      <!-- Lista agenda (todos os eventos do mês agrupados por data) -->
-      <div id="ag-lista" style="background:var(--color-surface);margin-top:var(--space-2);border-top:var(--border);border-bottom:var(--border);"></div>
+      <!-- Separador visual -->
+      <div class="ag-section-sep"></div>
+
+      <!-- Lista agenda (todos os eventos do mês) -->
+      <div id="ag-lista"></div>
     `;
 
     // Renderiza painel e lista
@@ -5773,28 +5796,35 @@
     lista.innerHTML = diasComEvento.map(dataKey => {
       const [ano, mes, dia] = dataKey.split('-');
       const isHoje = dataKey === hoje;
-      const nomeDia = new Date(+ano, +mes - 1, +dia).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
-      const itens = _agendaEventosDia(dataKey, porDia);
-      return `<div class="ag-date-header" style="${isHoje ? 'color:var(--color-accent);' : ''}">${nomeDia}${isHoje ? ' · Hoje' : ''}</div>
+      const dtObj  = new Date(+ano, +mes - 1, +dia);
+      const numDia = dtObj.toLocaleDateString('pt-BR', { day: 'numeric' });
+      const nomeSem = dtObj.toLocaleDateString('pt-BR', { weekday: 'short', month: 'short' });
+      const itens  = _agendaEventosDia(dataKey, porDia);
+      return `<div class="ag-date-row${isHoje ? ' ag-date-hoje' : ''}">
+          <span class="ag-date-num">${numDia}</span>
+          <span class="ag-date-label">${nomeSem}${isHoje ? ' · Hoje' : ''}</span>
+        </div>
         ${itens.map(item => {
           if (item._tipo === 'physio') {
-            const cor = item.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
+            const cor = item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F';
+            const bgBadge = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
             const label = item.status === 'aberta' ? 'Em aberto' : 'Encerrada';
             return `<div class="ag-list-item ag-list-physio" data-paciente-id="${item.paciente_id}">
-              <div style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;margin-top:4px;"></div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text);">${item.paciente_nome}</div>
-                <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Sessão · <span style="color:${cor};">${label}</span></div>
+              <div class="ag-list-strip" style="background:${cor};"></div>
+              <div class="ag-list-body">
+                <div class="ag-list-titulo">${item.paciente_nome}</div>
+                <div class="ag-list-sub">Sessão de fisioterapia</div>
               </div>
+              <span class="ag-list-badge" style="background:${bgBadge};color:${cor};">${label}</span>
             </div>`;
           } else {
-            const cor = _gcalCores[item.color_id] || '#4285F4';
+            const cor  = _gcalCores[item.color_id] || '#4285F4';
             const hora = item.dia_inteiro ? 'Dia inteiro' : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – ' + item.hora_fim : ''}` : '';
             return `<div class="ag-list-item">
-              <div style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;margin-top:4px;"></div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.titulo}</div>
-                ${hora ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);">${hora}</div>` : ''}
+              <div class="ag-list-strip" style="background:${cor};"></div>
+              <div class="ag-list-body">
+                <div class="ag-list-titulo">${item.titulo}</div>
+                ${hora ? `<div class="ag-list-sub">${hora}</div>` : ''}
               </div>
             </div>`;
           }
