@@ -1490,29 +1490,38 @@
 <div id="at-sheet" style="display:none;">
   <div class="modal-drag-handle"></div>
 
-  <!-- Etapa 1: voz / texto -->
+  <!-- Etapa 1: voz -->
   <div id="at-input-area" style="padding:var(--space-4) var(--space-6) var(--space-6);">
     <h2 class="modal-title">Gerar Atestado</h2>
-    <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);text-align:center;">
-      Diga ou escreva: data, horário, motivo e conduta aplicada
-    </p>
+    <div class="ai-bubble" style="margin-bottom:var(--space-5);">
+      Grave um áudio com a <strong>data</strong>, <strong>horário</strong>, <strong>motivo</strong> e <strong>conduta</strong> aplicada.
+    </div>
     <div class="record-btn-wrap" style="padding:var(--space-2) 0;">
       <button class="record-btn" id="at-mic-btn" title="Gravar por voz">
-        <svg id="at-mic-icon" width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="10" y="2" width="12" height="18" rx="6" fill="currentColor"/><path d="M6 16a10 10 0 0020 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="26" x2="16" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <svg id="at-stop-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" style="display:none;"><rect x="5" y="5" width="18" height="18" rx="4" fill="currentColor"/></svg>
+        <svg id="at-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg id="at-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
       </button>
-      <div id="at-mic-label" class="record-label">Toque para gravar</div>
+      <span id="at-mic-label" class="record-label">Toque para gravar</span>
     </div>
-    <div style="display:flex;align-items:center;gap:var(--space-3);margin:var(--space-4) 0;color:var(--color-text-muted);font-size:var(--text-sm);">
-      <div style="flex:1;height:1px;background:var(--color-border);"></div>
-      ou
-      <div style="flex:1;height:1px;background:var(--color-border);"></div>
+    <div id="at-rec-feedback" style="margin-bottom:var(--space-3);"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);margin-top:var(--space-4);">
+      <button id="at-interpretar-btn" class="btn btn-primary btn-full" style="display:none;">Interpretar</button>
+      <button id="at-digitar-btn" class="btn btn-secondary btn-sm" style="gap:var(--space-2);display:inline-flex;align-items:center;">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2V4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5 8h.01M8 8h.01M11 8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Prefiro digitar
+      </button>
+      <button id="at-input-cancel-btn" class="btn btn-ghost btn-sm">Cancelar</button>
     </div>
-    <textarea id="at-texto" class="form-textarea" rows="3" placeholder="Ex: Atestado para Érica, dia 5 de abril, das 8h às 9h, por lombalgia, fiz TENS e mobilização..." style="font-size:16px;resize:none;"></textarea>
-    <button id="at-interpretar-btn" class="btn btn-primary btn-full" style="margin-top:var(--space-4);height:52px;border-radius:var(--radius-lg);font-size:var(--text-base);">
+  </div>
+
+  <!-- Etapa 1b: texto (quando clica "Prefiro digitar") -->
+  <div id="at-texto-area" style="display:none;padding:var(--space-4) var(--space-6) var(--space-6);">
+    <h2 class="modal-title">Gerar Atestado</h2>
+    <textarea id="at-texto" class="form-textarea" rows="4" placeholder="Ex: Atestado para Érica, dia 5 de abril, das 8h às 9h, por lombalgia, fiz TENS e mobilização..." style="font-size:16px;resize:none;margin-bottom:var(--space-4);"></textarea>
+    <button id="at-interpretar-texto-btn" class="btn btn-primary btn-full" style="height:52px;border-radius:var(--radius-lg);font-size:var(--text-base);">
       Interpretar
     </button>
-    <button id="at-input-cancel-btn" class="btn btn-ghost btn-full" style="margin-top:var(--space-2);">Cancelar</button>
+    <button id="at-texto-voltar-btn" class="btn btn-ghost btn-full" style="margin-top:var(--space-2);">Voltar</button>
   </div>
 
   <!-- Etapa 2: formulário revisão -->
@@ -1681,7 +1690,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.277'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.278'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -7604,16 +7613,18 @@
 
   function _atOpen(paciente) {
     _atPaciente = paciente;
-    // Restaura etapa 1
-    document.getElementById('at-input-area').style.display = 'block';
-    document.getElementById('at-form-area').style.display  = 'none';
+    _atStopRec();
+    // Restaura etapa voz
+    document.getElementById('at-input-area').style.display  = 'block';
+    document.getElementById('at-texto-area').style.display  = 'none';
+    document.getElementById('at-form-area').style.display   = 'none';
     document.getElementById('at-texto').value = '';
     document.getElementById('at-mic-label').textContent = 'Toque para gravar';
-    document.getElementById('at-mic-icon').style.display  = '';
-    document.getElementById('at-stop-icon').style.display = 'none';
-    document.getElementById('at-mic-btn').style.background = '';
-    document.getElementById('at-interpretar-btn').disabled = false;
-    document.getElementById('at-interpretar-btn').textContent = 'Interpretar';
+    document.getElementById('at-mic-icon').style.display    = '';
+    document.getElementById('at-stop-icon').style.display   = 'none';
+    document.getElementById('at-mic-btn').classList.remove('recording');
+    document.getElementById('at-interpretar-btn').style.display = 'none';
+    document.getElementById('at-rec-feedback').innerHTML = '';
     document.getElementById('at-overlay').style.display = 'block';
     document.getElementById('at-sheet').style.display   = 'block';
     _atInitListeners();
@@ -7627,24 +7638,19 @@
   }
 
   function _atShowForm(parsed) {
-    document.getElementById('at-input-area').style.display = 'none';
-    document.getElementById('at-form-area').style.display  = 'block';
-    document.getElementById('at-data').value      = parsed.data || new Date().toISOString().slice(0,10);
-    document.getElementById('at-hora-ini').value  = parsed.hora_inicio || '';
-    document.getElementById('at-hora-fim').value  = parsed.hora_fim    || '';
-    document.getElementById('at-motivo').value    = parsed.motivo  || '';
-    document.getElementById('at-conduta').value   = parsed.conduta || '';
-    // CREFITO: tenta recuperar do localStorage
-    const user = JSON.parse(localStorage.getItem('physio_user') || '{}');
-    const crefito = localStorage.getItem('physio_crefito') || '';
-    document.getElementById('at-crefito').value = crefito;
+    document.getElementById('at-input-area').style.display  = 'none';
+    document.getElementById('at-texto-area').style.display  = 'none';
+    document.getElementById('at-form-area').style.display   = 'block';
+    document.getElementById('at-data').value     = parsed.data || new Date().toISOString().slice(0,10);
+    document.getElementById('at-hora-ini').value = parsed.hora_inicio || '';
+    document.getElementById('at-hora-fim').value = parsed.hora_fim    || '';
+    document.getElementById('at-motivo').value   = parsed.motivo  || '';
+    document.getElementById('at-conduta').value  = parsed.conduta || '';
+    document.getElementById('at-crefito').value  = localStorage.getItem('physio_crefito') || '';
   }
 
-  async function _atInterpretar() {
-    const texto = document.getElementById('at-texto').value.trim();
+  async function _atInterpretar(texto) {
     if (!texto) return;
-    const btn = document.getElementById('at-interpretar-btn');
-    btn.disabled = true; btn.textContent = 'Interpretando…';
     try {
       const parsed = await apiFetch('/atestado/interpretar', {
         method: 'POST',
@@ -7652,7 +7658,6 @@
       });
       _atShowForm(parsed);
     } catch (e) {
-      btn.disabled = false; btn.textContent = 'Interpretar';
       alert('Erro: ' + e.message);
     }
   }
@@ -7735,7 +7740,7 @@
     _atRecording = false;
     const btn = document.getElementById('at-mic-btn');
     if (btn) {
-      btn.style.background = '';
+      btn.classList.remove('recording');
       document.getElementById('at-mic-icon').style.display  = '';
       document.getElementById('at-stop-icon').style.display = 'none';
       document.getElementById('at-mic-label').textContent   = 'Toque para gravar';
@@ -7753,6 +7758,7 @@
         stream.getTracks().forEach(t => t.stop());
         const blob = new Blob(chunks, { type: 'audio/webm' });
         document.getElementById('at-mic-label').textContent = 'Transcrevendo…';
+        document.getElementById('at-rec-feedback').innerHTML = '';
         try {
           const fd = new FormData();
           fd.append('audio', blob, 'atestado.webm');
@@ -7762,16 +7768,22 @@
           const { texto } = await res.json();
           document.getElementById('at-texto').value = texto;
           document.getElementById('at-mic-label').textContent = 'Gravação concluída';
+          document.getElementById('at-rec-feedback').innerHTML =
+            `<div class="ai-bubble" style="margin-top:var(--space-3);font-size:var(--text-sm);">"${escHtml(texto)}"</div>`;
+          const btn = document.getElementById('at-interpretar-btn');
+          btn.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Interpretar';
         } catch (e2) {
           document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
         }
       };
       _atRec.start();
       _atRecording = true;
-      document.getElementById('at-mic-btn').style.background = 'var(--color-danger)';
-      document.getElementById('at-mic-icon').style.display   = 'none';
-      document.getElementById('at-stop-icon').style.display  = '';
-      document.getElementById('at-mic-label').textContent    = 'Gravando… toque para parar';
+      document.getElementById('at-mic-btn').classList.add('recording');
+      document.getElementById('at-mic-icon').style.display  = 'none';
+      document.getElementById('at-stop-icon').style.display = '';
+      document.getElementById('at-mic-label').textContent   = 'Gravando… toque para parar';
     } catch (e) {
       alert('Microfone não disponível: ' + e.message);
     }
@@ -7783,10 +7795,37 @@
     document.getElementById('at-overlay').addEventListener('click', _atClose);
     document.getElementById('at-input-cancel-btn').addEventListener('click', _atClose);
     document.getElementById('at-mic-btn').addEventListener('click', _atToggleRec);
-    document.getElementById('at-interpretar-btn').addEventListener('click', _atInterpretar);
+    // Interpretar após gravação
+    document.getElementById('at-interpretar-btn').addEventListener('click', async () => {
+      const texto = document.getElementById('at-texto').value.trim();
+      const btn = document.getElementById('at-interpretar-btn');
+      btn.disabled = true; btn.textContent = 'Interpretando…';
+      await _atInterpretar(texto);
+      btn.disabled = false; btn.textContent = 'Interpretar';
+    });
+    // Prefiro digitar
+    document.getElementById('at-digitar-btn').addEventListener('click', () => {
+      document.getElementById('at-input-area').style.display = 'none';
+      document.getElementById('at-texto-area').style.display = 'block';
+      setTimeout(() => document.getElementById('at-texto').focus(), 100);
+    });
+    // Tela de texto
+    document.getElementById('at-interpretar-texto-btn').addEventListener('click', async () => {
+      const texto = document.getElementById('at-texto').value.trim();
+      if (!texto) return;
+      const btn = document.getElementById('at-interpretar-texto-btn');
+      btn.disabled = true; btn.textContent = 'Interpretando…';
+      await _atInterpretar(texto);
+      btn.disabled = false; btn.textContent = 'Interpretar';
+    });
+    document.getElementById('at-texto-voltar-btn').addEventListener('click', () => {
+      document.getElementById('at-texto-area').style.display  = 'none';
+      document.getElementById('at-input-area').style.display  = 'block';
+    });
+    // Formulário revisão
     document.getElementById('at-voltar-btn').addEventListener('click', () => {
-      document.getElementById('at-input-area').style.display = 'block';
       document.getElementById('at-form-area').style.display  = 'none';
+      document.getElementById('at-input-area').style.display = 'block';
     });
     document.getElementById('at-gerar-btn').addEventListener('click', _atGerarPDF);
   }
