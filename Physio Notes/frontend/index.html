@@ -1397,7 +1397,7 @@
         </div>
 
         <!-- Mic -->
-        <div class="record-btn-wrap">
+        <div class="record-btn-wrap" style="padding:var(--space-2) 0;">
           <button class="record-btn" id="ag-mic-btn" aria-label="Gravar por voz">
             <svg id="ag-mic-icon-mic" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
             <svg id="ag-mic-icon-stop" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
@@ -1573,7 +1573,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.265'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.266'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
