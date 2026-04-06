@@ -602,6 +602,8 @@
     .ask-chip:hover { background: var(--color-border-strong); color: var(--color-text); }
     .ask-chip-ia { background: var(--color-info-bg); color: var(--color-info); border-color: #bfcfe8; }
     .ask-chip-ia:hover { background: #d0e4f7; color: var(--color-info); }
+    .ask-chip-feedback { background: var(--color-warning-bg); color: var(--color-warning); border-color: #e8d5a3; }
+    .ask-chip-feedback:hover { background: #fdedc7; color: var(--color-warning); }
     .ask-row {
       display: flex;
       gap: var(--space-3);
@@ -1208,6 +1210,7 @@
         <div class="ask-chips" id="ask-chips">
           <button class="ask-chip ask-chip-ia" id="chip-sugestao-dia">✦ Sugestão do Dia</button>
           <button class="ask-chip ask-chip-ia" id="chip-sugestao-ia">✦ Check clínico</button>
+          <button class="ask-chip ask-chip-feedback" id="chip-feedback">✦ Feedback</button>
           <button class="ask-chip" data-q="Qual foi a última conduta aplicada?">Última conduta</button>
           <button class="ask-chip" data-q="Como o paciente evoluiu desde o início do tratamento?">Evolução geral</button>
           <button class="ask-chip" data-q="Quais são as queixas mais frequentes do paciente?">Queixas frequentes</button>
@@ -1373,7 +1376,7 @@
       </button>
       <span class="top-bar-title">Agenda</span>
     </div>
-    <div class="section-body" id="agenda-body" style="padding:var(--space-5);max-width:820px;margin:0 auto;">
+    <div class="section-body" id="agenda-body" style="padding:0;max-width:600px;margin:0 auto;">
     </div>
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
@@ -1523,7 +1526,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.257'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.259'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -4375,6 +4378,7 @@
     if (!chip) return;
     if (chip.id === 'chip-sugestao-ia')  { askSugestaoIa();    return; }
     if (chip.id === 'chip-sugestao-dia') { askSugestaoDodia(); return; }
+    if (chip.id === 'chip-feedback')     { askFeedback();      return; }
     document.getElementById('ask-input').value = chip.dataset.q;
     askQuestion();
   });
@@ -4449,6 +4453,45 @@
                   ${(sug[s.key] || []).map(item => `<li style="font-size:var(--text-sm);color:var(--color-text);line-height:1.6;">${item}</li>`).join('')}
                 </ul>
               </div>`).join('')}
+          </div>
+        </div>`;
+      const clearBtn = el('button', { className: 'btn btn-ghost btn-sm', textContent: 'Limpar' });
+      clearBtn.addEventListener('click', () => { result.innerHTML = ''; });
+      result.appendChild(clearBtn);
+    } catch (err) {
+      result.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    } finally {
+      chip.disabled = false;
+    }
+  }
+
+  async function askFeedback() {
+    const result = document.getElementById('ask-result');
+    const chip = document.getElementById('chip-feedback');
+    chip.disabled = true;
+    result.innerHTML = '<div class="loading-message"><span class="spinner"></span> Analisando histórico clínico...</div>';
+    try {
+      const data = await apiFetch(`/pacientes/${currentPacienteId}/feedback-clinico`, { method: 'POST' });
+      const fb = data.feedback;
+      const secoes = [
+        { key: 'pendencias', label: 'Itens ainda não registrados nas sessões', cor: '#92600A', bg: 'var(--color-warning-bg)', border: '#e8d5a3' },
+        { key: 'atencao',    label: 'Vale revisitar no plano',                  cor: '#92600A', bg: 'var(--color-warning-bg)', border: '#e8d5a3' },
+        { key: 'positivo',   label: 'Bem conduzido',                            cor: '#2D6A4F', bg: 'var(--color-success-bg)', border: '#a8d5bc' },
+      ];
+      result.innerHTML = `
+        <div style="border:1px solid #e8d5a3;border-radius:var(--radius-md);overflow:hidden;margin-bottom:var(--space-2);">
+          <div style="padding:var(--space-2) var(--space-4);background:#fdedc7;border-bottom:1px solid #e8d5a3;display:flex;align-items:center;gap:var(--space-2);">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-warning);flex:1;">✦ Feedback clínico</span>
+            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${new Date().toLocaleDateString('pt-BR')}</span>
+          </div>
+          <div style="padding:var(--space-4);display:grid;gap:var(--space-4);">
+            ${secoes.map(s => (fb[s.key] && fb[s.key].length) ? `
+              <div style="background:${s.bg};border:1px solid ${s.border};border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);">
+                <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:${s.cor};margin-bottom:var(--space-2);">${s.label}</div>
+                <ul style="margin:0;padding-left:var(--space-5);display:flex;flex-direction:column;gap:var(--space-1);">
+                  ${fb[s.key].map(item => `<li style="font-size:var(--text-sm);color:var(--color-text);line-height:1.6;">${item}</li>`).join('')}
+                </ul>
+              </div>` : '').join('')}
           </div>
         </div>`;
       const clearBtn = el('button', { className: 'btn btn-ghost btn-sm', textContent: 'Limpar' });
@@ -5463,9 +5506,10 @@
 
   let _agendaMes = new Date().getMonth();
   let _agendaAno = new Date().getFullYear();
-  let _agendaSessoes = [];       // sessões reais da API
-  let _agendaDemo = [];          // sessões demo geradas no frontend
-  let _agendaListaExpandida = false;
+  let _agendaSessoes = [];
+  let _agendaGoogle  = [];
+  let _agendaGoogleConectado = false;
+  let _agendaDiaSelecionado  = new Date().toISOString().slice(0, 10);
   const AGENDA_PAGE = 20;
 
   async function openAgenda() {
@@ -5473,63 +5517,18 @@
     await _agendaCarregar();
   }
 
-  // LCG simples para pseudo-aleatório determinístico por seed
-  function _lcg(seed) {
-    let s = seed;
-    return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-  }
-
-  // Gera sessões demo a partir dos pacientes do owner (já filtrados pela API).
-  // Usa ID do paciente como seed → mesmos resultados a cada reload.
-  function _gerarDemoSessoes(pacientes) {
-    const hoje = new Date();
-    const fimAno = new Date(2026, 11, 31); // 31 dez 2026
-    const dias = Math.floor((fimAno - hoje) / 86400000);
-    const resultado = [];
-
-    pacientes.forEach(p => {
-      const rng = _lcg(p.id * 31337);
-      // 8-18 sessões por paciente distribuídas até dezembro
-      const total = 8 + Math.floor(rng() * 11);
-      // Frequência em dias (1-2x por semana → intervalo 3-7 dias)
-      let cursor = new Date(hoje);
-      cursor.setDate(cursor.getDate() + Math.floor(rng() * 5)); // offset inicial
-      for (let i = 0; i < total; i++) {
-        const intervalo = 3 + Math.floor(rng() * 5);
-        cursor = new Date(cursor);
-        cursor.setDate(cursor.getDate() + intervalo);
-        if (cursor > fimAno) break;
-        const data = cursor.toISOString().slice(0, 10);
-        // Sessões no futuro = 'agendada' (demo), no passado = 'encerrada'
-        const status = cursor > hoje ? 'agendada' : 'encerrada';
-        resultado.push({
-          id: null,
-          paciente_id: p.id,
-          paciente_nome: p.nome,
-          data,
-          status,
-          _demo: true,
-        });
-      }
-    });
-
-    return resultado;
-  }
-
   async function _agendaCarregar() {
     const body = document.getElementById('agenda-body');
     const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
     body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
     try {
-      const [sessoes, pacientes] = await Promise.all([
+      const [sessoes, gcal] = await Promise.all([
         apiFetch(`/agenda?mes=${mesStr}`),
-        apiFetch('/pacientes'),
+        apiFetch(`/agenda/google?mes=${mesStr}`).catch(() => ({ conectado: false, eventos: [] })),
       ]);
       _agendaSessoes = sessoes;
-      // Gera demo apenas uma vez por sessão de navegação
-      if (!_agendaDemo.length) {
-        _agendaDemo = _gerarDemoSessoes(pacientes);
-      }
+      _agendaGoogleConectado = gcal.conectado;
+      _agendaGoogle = gcal.eventos || [];
     } catch (e) {
       body.innerHTML = `<div class="alert alert-error">Erro ao carregar agenda: ${e.message}</div>`;
       return;
@@ -5538,201 +5537,272 @@
     _agendaRenderizar();
   }
 
+  // Paleta de cores do Google Calendar (colorId → hex)
+  const _gcalCores = {
+    '1':'#a4bdfc','2':'#7ae7bf','3':'#dbadff','4':'#ff887c',
+    '5':'#fbd75b','6':'#ffb878','7':'#46d6db','8':'#e1e1e1',
+    '9':'#5484ed','10':'#51b749','11':'#dc2127',
+  };
+
+  function _agendaEventosDia(dataKey, porDia) {
+    return (porDia[dataKey] || []).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+  }
+
+  function _agendaItemHtml(item) {
+    if (item._tipo === 'physio') {
+      const cor = item.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
+      const bg  = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
+      const label = item.status === 'aberta' ? 'Em aberto' : 'Encerrada';
+      return `<div class="ag-item ag-item-physio" data-paciente-id="${item.paciente_id}">
+        <div class="ag-item-dot" style="background:${cor};"></div>
+        <div class="ag-item-body">
+          <div class="ag-item-titulo">${item.paciente_nome}</div>
+          <div class="ag-item-sub">Sessão fisioterapia · <span style="color:${cor};">${label}</span></div>
+        </div>
+      </div>`;
+    } else {
+      const cor  = _gcalCores[item.color_id] || '#4285F4';
+      const hora = item.dia_inteiro ? 'Dia inteiro'
+        : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – ' + item.hora_fim : ''}` : '';
+      return `<div class="ag-item ag-item-google">
+        <div class="ag-item-dot" style="background:${cor};"></div>
+        <div class="ag-item-body">
+          <div class="ag-item-titulo">${item.titulo}</div>
+          ${hora ? `<div class="ag-item-sub">${hora}</div>` : ''}
+        </div>
+      </div>`;
+    }
+  }
+
+  function _agendaRenderizarDia(dataKey, porDia) {
+    const painel = document.getElementById('ag-painel-dia');
+    if (!painel) return;
+    const itens = _agendaEventosDia(dataKey, porDia);
+    const [ano, mes, dia] = dataKey.split('-');
+    const nomeDia = new Date(+ano, +mes - 1, +dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    painel.innerHTML = `
+      <div style="padding:var(--space-3) var(--space-4);border-bottom:var(--border);background:var(--color-bg);">
+        <span style="font-size:var(--text-sm);font-weight:600;text-transform:capitalize;color:var(--color-text);">${nomeDia}</span>
+      </div>
+      ${itens.length
+        ? itens.map(i => _agendaItemHtml(i)).join('')
+        : `<div style="padding:var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum evento neste dia.</div>`}
+    `;
+    painel.querySelectorAll('.ag-item-physio[data-paciente-id]').forEach(el => {
+      el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
+    });
+  }
+
   function _agendaRenderizar() {
     const body = document.getElementById('agenda-body');
     const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
     const nomeMes = new Date(_agendaAno, _agendaMes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-    // Demo filtradas pelo mês atual
-    const demoMes = _agendaDemo.filter(s => s.data.startsWith(mesStr));
-    // Combina reais + demo, reais têm prioridade visual
-    const todasMes = [..._agendaSessoes, ...demoMes];
+    // Normaliza sessões Physio como itens de calendário
+    const itensSessoes = _agendaSessoes.map(s => ({
+      ...s, _tipo: 'physio',
+      titulo: s.paciente_nome,
+    }));
 
-    // Mapeia por dia
+    // Normaliza eventos Google Calendar
+    const itensGoogle = _agendaGoogle.map(ev => ({
+      ...ev, _tipo: 'google',
+      paciente_id: null,
+    }));
+
+    // Junta e mapeia por dia
+    const todosMes = [...itensSessoes, ...itensGoogle];
     const porDia = {};
-    todasMes.forEach(s => {
-      if (!porDia[s.data]) porDia[s.data] = [];
-      porDia[s.data].push(s);
+    todosMes.forEach(item => {
+      const d = item.data;
+      if (!d) return;
+      if (!porDia[d]) porDia[d] = [];
+      porDia[d].push(item);
     });
 
     const primeiroDia = new Date(_agendaAno, _agendaMes, 1).getDay();
-    const totalDias = new Date(_agendaAno, _agendaMes + 1, 0).getDate();
-    const hoje = new Date().toISOString().slice(0, 10);
-    const offset = (primeiroDia + 6) % 7;
+    const totalDias   = new Date(_agendaAno, _agendaMes + 1, 0).getDate();
+    const hoje        = new Date().toISOString().slice(0, 10);
+    const offset      = (primeiroDia + 6) % 7;
 
     let celulas = '';
     for (let i = 0; i < offset; i++) celulas += `<div class="cal-cell cal-cell-empty"></div>`;
     for (let d = 1; d <= totalDias; d++) {
       const dataKey = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const sessoesDia = porDia[dataKey] || [];
-      const isHoje = dataKey === hoje;
+      const diaItens = porDia[dataKey] || [];
+      const isHoje   = dataKey === hoje;
 
-      let eventos = '';
-      sessoesDia.slice(0, 3).forEach(s => {
-        const isDemo = s._demo;
-        const cor = isDemo ? 'var(--color-text-muted)' : (s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)');
-        const bg  = isDemo ? 'var(--color-border)' : (s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)');
-        const pid = s.paciente_id ? `data-paciente-id="${s.paciente_id}"` : '';
-        eventos += `<div class="cal-evento${isDemo ? ' cal-evento-demo' : ''}" style="background:${bg};color:${cor};" ${pid} title="${s.paciente_nome}">${s.paciente_nome.split(' ')[0]}</div>`;
+      let eventosHtml = '';
+      diaItens.slice(0, 3).forEach(item => {
+        if (item._tipo === 'physio') {
+          const cor = item.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
+          const bg  = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
+          eventosHtml += `<div class="cal-evento" style="background:${bg};color:${cor};" data-paciente-id="${item.paciente_id}" title="${item.paciente_nome}">${item.paciente_nome.split(' ')[0]}</div>`;
+        } else {
+          const cor = _gcalCores[item.color_id] || '#4285F4';
+          const hora = item.hora_inicio ? ` ${item.hora_inicio}` : '';
+          eventosHtml += `<div class="cal-evento cal-evento-google" style="background:${cor}20;color:${cor};border-left:2px solid ${cor};" title="${item.titulo}${hora}">${item.titulo}</div>`;
+        }
       });
-      if (sessoesDia.length > 3) {
-        eventos += `<div style="font-size:10px;color:var(--color-text-muted);padding:0 2px;">+${sessoesDia.length - 3} mais</div>`;
+      if (diaItens.length > 3) {
+        eventosHtml += `<div style="font-size:10px;color:var(--color-text-muted);padding:0 2px;">+${diaItens.length - 3} mais</div>`;
       }
 
       celulas += `
-        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}${sessoesDia.length ? ' cal-cell-com-evento' : ''}" data-data="${dataKey}">
+        <div class="cal-cell${isHoje ? ' cal-cell-hoje' : ''}${diaItens.length ? ' cal-cell-com-evento' : ''}" data-data="${dataKey}">
           <span class="cal-dia-num">${d}</span>
-          <div class="cal-eventos-wrap">${eventos}</div>
+          <div class="cal-eventos-wrap">${eventosHtml}</div>
         </div>`;
     }
 
-    const totalReal = _agendaSessoes.length;
-    const totalDemo = demoMes.length;
-    const totalMes = totalReal + totalDemo;
-    const abertas = _agendaSessoes.filter(s => s.status === 'aberta').length;
-    const encerradas = _agendaSessoes.filter(s => s.status === 'encerrada').length + demoMes.filter(s => s.status === 'encerrada').length;
-
-    // Lista do mês com paginação
-    const listaOrdenada = [...todasMes].sort((a, b) => a.data.localeCompare(b.data));
-    const listaVisiveis = _agendaListaExpandida ? listaOrdenada : listaOrdenada.slice(0, AGENDA_PAGE);
-    const temMais = listaOrdenada.length > AGENDA_PAGE && !_agendaListaExpandida;
-
-    const listaHTML = listaVisiveis.map(s => {
-      const [,, dia] = s.data.split('-'); const [ano2, mes2] = s.data.split('-');
-      const dataFmt = `${dia}/${mes2}`;
-      const isDemo = s._demo;
-      const cor = isDemo ? 'var(--color-text-muted)' : (s.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)');
-      const bg  = isDemo ? 'var(--color-border)' : (s.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)');
-      const label = isDemo ? (s.status === 'agendada' ? 'Agendada' : 'Encerrada') : (s.status === 'aberta' ? 'Aberta' : 'Encerrada');
-      const pid = s.paciente_id ? `data-paciente-id="${s.paciente_id}"` : '';
-      return `<div class="agenda-lista-item${isDemo ? '' : ' agenda-lista-real'}" ${pid} style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2);border-radius:var(--radius-sm);cursor:${s.paciente_id ? 'pointer' : 'default'};transition:background 0.1s;">
-        <span style="font-size:var(--text-sm);color:var(--color-text-muted);width:40px;flex-shrink:0;">${dataFmt}</span>
-        <span style="flex:1;font-size:var(--text-sm);color:${isDemo ? 'var(--color-text-muted)' : 'var(--color-text)'};">${s.paciente_nome}</span>
-        <span style="font-size:var(--text-xs);padding:2px 8px;border-radius:var(--radius-full);background:${bg};color:${cor};">${label}</span>
-      </div>`;
-    }).join('');
-
-    body.innerHTML = `
-      <!-- Banner Google Calendar -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-surface);border:var(--border);border-radius:var(--radius-lg);margin-bottom:var(--space-5);gap:var(--space-3);">
-        <div style="display:flex;align-items:center;gap:var(--space-3);">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <rect x="2" y="4" width="20" height="18" rx="3" stroke="#4285F4" stroke-width="1.6"/>
-            <path d="M7 2v4M17 2v4M2 9h20" stroke="#4285F4" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M8 14l2 2 4-4" stroke="#34A853" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <div>
-            <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);">Integração com Google Calendar</div>
-            <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Sincronize suas sessões automaticamente</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:var(--space-2);">
-          <span style="font-size:var(--text-xs);font-weight:600;padding:3px 8px;background:#EFF6FF;color:#1E3A5F;border-radius:var(--radius-full);white-space:nowrap;">Em breve</span>
-          <button disabled style="padding:7px 14px;border:var(--border);background:var(--color-surface);color:var(--color-text-muted);border-radius:var(--radius-md);font-size:var(--text-sm);font-family:var(--font-body);cursor:not-allowed;white-space:nowrap;">Conectar</button>
-        </div>
-      </div>
-
-      <!-- KPIs do mês -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3);margin-bottom:var(--space-5);">
-        <div class="card" style="padding:var(--space-4);text-align:center;">
-          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-text);">${totalMes}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Sessões no mês</div>
-        </div>
-        <div class="card" style="padding:var(--space-4);text-align:center;">
-          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-info);">${abertas + demoMes.filter(s => s.status === 'agendada').length}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Agendadas</div>
-        </div>
-        <div class="card" style="padding:var(--space-4);text-align:center;">
-          <div style="font-size:var(--text-2xl);font-weight:600;color:var(--color-success);">${encerradas}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Encerradas</div>
-        </div>
-      </div>
-
-      <!-- Calendário -->
-      <div class="card" style="padding:var(--space-4);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
-          <button id="agenda-prev" style="width:32px;height:32px;border:var(--border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <span style="font-size:var(--text-base);font-weight:600;text-transform:capitalize;">${nomeMes}</span>
-          <button id="agenda-next" style="width:32px;height:32px;border:var(--border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-        <div class="cal-grid-header">
-          <div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div>
-        </div>
-        <div class="cal-grid">${celulas}</div>
-        <div style="display:flex;align-items:center;gap:var(--space-3);margin-top:var(--space-3);padding-top:var(--space-3);border-top:var(--border);">
-          <span style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);"><span style="width:10px;height:10px;border-radius:2px;background:var(--color-success-bg);border:1px solid var(--color-success);display:inline-block;"></span>Encerrada</span>
-          <span style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);"><span style="width:10px;height:10px;border-radius:2px;background:var(--color-info-bg);border:1px solid var(--color-info);display:inline-block;"></span>Em aberto</span>
-          <span style="display:flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);"><span style="width:10px;height:10px;border-radius:2px;background:var(--color-border);border:1px solid var(--color-border-strong);display:inline-block;"></span>Agendada</span>
-        </div>
-      </div>
-
-      <!-- Lista do mês -->
-      ${totalMes > 0 ? `
-      <div class="card" style="margin-top:var(--space-4);padding:var(--space-4);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
-          <span style="font-size:var(--text-sm);font-weight:600;">Sessões de ${nomeMes}</span>
-          <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${totalMes} sessão${totalMes !== 1 ? 'ões' : ''}</span>
-        </div>
-        <div id="agenda-lista">${listaHTML}</div>
-        ${temMais ? `<button id="agenda-ver-mais" style="width:100%;margin-top:var(--space-3);padding:var(--space-2);border:var(--border);border-radius:var(--radius-md);background:transparent;color:var(--color-text-secondary);font-size:var(--text-sm);font-family:var(--font-body);cursor:pointer;">Ver mais ${listaOrdenada.length - AGENDA_PAGE} sessões</button>` : ''}
-      </div>` : ''}
-    `;
+    const totalPhysio = _agendaSessoes.length;
+    const totalGcal   = _agendaGoogle.length;
+    const totalMes    = totalPhysio + totalGcal;
+    const abertas     = _agendaSessoes.filter(s => s.status === 'aberta').length;
+    const encerradas  = _agendaSessoes.filter(s => s.status === 'encerrada').length;
 
     // CSS (injetado uma vez)
     if (!document.getElementById('cal-style')) {
       const style = document.createElement('style');
       style.id = 'cal-style';
       style.textContent = `
-        .cal-grid-header { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:var(--text-xs); font-weight:600; color:var(--color-text-muted); margin-bottom:var(--space-2); }
-        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
-        .cal-cell { min-height:72px; border-radius:var(--radius-sm); padding:4px; background:var(--color-bg); position:relative; }
-        .cal-cell-empty { background:transparent; }
-        .cal-cell-hoje { background:#F0EFED; outline:2px solid var(--color-accent); outline-offset:-2px; }
-        .cal-dia-num { font-size:var(--text-xs); font-weight:600; color:var(--color-text-secondary); display:block; margin-bottom:2px; }
-        .cal-cell-hoje .cal-dia-num { color:var(--color-text); }
-        .cal-eventos-wrap { display:flex; flex-direction:column; gap:2px; }
-        .cal-evento { font-size:10px; padding:2px 4px; border-radius:3px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; transition:opacity 0.1s; }
-        .cal-evento:hover { opacity:0.75; }
-        .cal-evento-demo { cursor:default; opacity:0.8; }
-        .agenda-lista-item:hover { background:var(--color-accent-light); }
-        .agenda-lista-real:hover { background:var(--color-accent-light); }
+        /* ── Grid ── */
+        .cal-grid-header { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; font-weight:600; color:var(--color-text-muted); padding:0 4px 6px; }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+        .cal-cell { display:flex; flex-direction:column; align-items:center; padding:6px 2px 8px; cursor:pointer; border-radius:var(--radius-sm); min-width:0; transition:background 0.1s; position:relative; }
+        .cal-cell:hover { background:var(--color-accent-light); }
+        .cal-cell-empty { cursor:default; pointer-events:none; }
+        .cal-cell-empty:hover { background:transparent; }
+        .cal-dia-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:13px; font-weight:500; color:var(--color-text-secondary); flex-shrink:0; }
+        .cal-cell-hoje .cal-dia-num { background:var(--color-accent); color:#fff; font-weight:700; }
+        .cal-cell-selecionado .cal-dia-num { background:var(--color-accent-light); color:var(--color-text); }
+        .cal-cell-hoje.cal-cell-selecionado .cal-dia-num { background:var(--color-accent); color:#fff; }
+        .cal-dots { display:flex; gap:2px; margin-top:3px; justify-content:center; flex-wrap:wrap; max-width:28px; }
+        .cal-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+        /* ── Painel dia ── */
+        #ag-painel-dia { background:var(--color-surface); border-top:var(--border); border-bottom:var(--border); }
+        .ag-item { display:flex; align-items:flex-start; gap:12px; padding:12px 16px; border-bottom:var(--border); cursor:default; transition:background 0.1s; }
+        .ag-item:last-child { border-bottom:none; }
+        .ag-item-physio { cursor:pointer; }
+        .ag-item-physio:hover { background:var(--color-accent-light); }
+        .ag-item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+        .ag-item-body { flex:1; min-width:0; }
+        .ag-item-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ag-item-sub { font-size:var(--text-xs); color:var(--color-text-muted); margin-top:2px; }
+        /* ── Agenda list ── */
+        .ag-date-header { padding:12px 16px 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--color-text-muted); background:var(--color-bg); }
+        .ag-list-item { display:flex; align-items:flex-start; gap:12px; padding:10px 16px; border-bottom:var(--border); transition:background .1s; }
+        .ag-list-item:last-child { border-bottom:none; }
+        .ag-list-physio { cursor:pointer; } .ag-list-physio:hover { background:var(--color-accent-light); }
       `;
       document.head.appendChild(style);
     }
 
+    body.innerHTML = `
+      <!-- Cabeçalho: nav mês + status gcal -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:var(--color-surface);border-bottom:var(--border);">
+        <button id="agenda-prev" style="width:36px;height:36px;border:none;border-radius:50%;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);">
+          <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div style="text-align:center;">
+          <div style="font-size:var(--text-base);font-weight:600;text-transform:capitalize;">${nomeMes}</div>
+          <div style="font-size:10px;color:${_agendaGoogleConectado ? 'var(--color-success)' : 'var(--color-text-muted)'};margin-top:1px;">
+            ${_agendaGoogleConectado ? `● Google Calendar · ${totalGcal} evento${totalGcal !== 1 ? 's' : ''}` : '○ Google Calendar desconectado'}
+          </div>
+        </div>
+        <button id="agenda-next" style="width:36px;height:36px;border:none;border-radius:50%;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);">
+          <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Grid -->
+      <div style="background:var(--color-surface);padding:var(--space-2) var(--space-2) 0;">
+        <div class="cal-grid-header"><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div><div>D</div></div>
+        <div class="cal-grid" id="ag-grid">${celulas}</div>
+      </div>
+
+      <!-- Painel do dia selecionado -->
+      <div id="ag-painel-dia"></div>
+
+      <!-- Lista agenda (todos os eventos do mês agrupados por data) -->
+      <div id="ag-lista" style="background:var(--color-surface);margin-top:var(--space-2);border-top:var(--border);border-bottom:var(--border);"></div>
+    `;
+
+    // Renderiza painel e lista
+    _agendaRenderizarDia(_agendaDiaSelecionado, porDia);
+    _agendaRenderizarLista(porDia, totalDias);
+
+    // Marca célula selecionada
+    const selCell = body.querySelector(`.cal-cell[data-data="${_agendaDiaSelecionado}"]`);
+    if (selCell) selCell.classList.add('cal-cell-selecionado');
+
+    // Clicks no grid
+    body.querySelectorAll('.cal-cell:not(.cal-cell-empty)').forEach(el => {
+      el.addEventListener('click', () => {
+        body.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('cal-cell-selecionado'));
+        el.classList.add('cal-cell-selecionado');
+        _agendaDiaSelecionado = el.dataset.data;
+        _agendaRenderizarDia(_agendaDiaSelecionado, porDia);
+        document.getElementById('ag-painel-dia').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+
     document.getElementById('agenda-prev').addEventListener('click', () => {
       _agendaMes--; if (_agendaMes < 0) { _agendaMes = 11; _agendaAno--; }
-      _agendaListaExpandida = false; _agendaCarregar();
+      _agendaCarregar();
     });
     document.getElementById('agenda-next').addEventListener('click', () => {
       _agendaMes++; if (_agendaMes > 11) { _agendaMes = 0; _agendaAno++; }
-      _agendaListaExpandida = false; _agendaCarregar();
+      _agendaCarregar();
     });
+  }
 
-    const verMaisBtn = document.getElementById('agenda-ver-mais');
-    if (verMaisBtn) {
-      verMaisBtn.addEventListener('click', () => {
-        _agendaListaExpandida = true;
-        _agendaRenderizar();
-      });
+  function _agendaRenderizarLista(porDia, totalDias) {
+    const lista = document.getElementById('ag-lista');
+    if (!lista) return;
+    const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    // Agrupa por dia, só dias com eventos, ordenados
+    const diasComEvento = Object.keys(porDia).filter(d => d.startsWith(mesStr) && porDia[d].length).sort();
+    if (!diasComEvento.length) {
+      lista.innerHTML = `<div style="padding:var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);text-align:center;">Nenhum evento este mês.</div>`;
+      return;
     }
 
-    body.querySelectorAll('.cal-evento:not(.cal-evento-demo)').forEach(el => {
-      el.addEventListener('click', e => {
-        e.stopPropagation();
-        const pid = parseInt(el.dataset.pacienteId);
-        if (pid) openPaciente(pid);
-      });
-    });
-    body.querySelectorAll('.agenda-lista-item[data-paciente-id]').forEach(el => {
-      el.addEventListener('click', () => {
-        const pid = parseInt(el.dataset.pacienteId);
-        if (pid) openPaciente(pid);
-      });
+    lista.innerHTML = diasComEvento.map(dataKey => {
+      const [ano, mes, dia] = dataKey.split('-');
+      const isHoje = dataKey === hoje;
+      const nomeDia = new Date(+ano, +mes - 1, +dia).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
+      const itens = _agendaEventosDia(dataKey, porDia);
+      return `<div class="ag-date-header" style="${isHoje ? 'color:var(--color-accent);' : ''}">${nomeDia}${isHoje ? ' · Hoje' : ''}</div>
+        ${itens.map(item => {
+          if (item._tipo === 'physio') {
+            const cor = item.status === 'aberta' ? 'var(--color-info)' : 'var(--color-success)';
+            const label = item.status === 'aberta' ? 'Em aberto' : 'Encerrada';
+            return `<div class="ag-list-item ag-list-physio" data-paciente-id="${item.paciente_id}">
+              <div style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;margin-top:4px;"></div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text);">${item.paciente_nome}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Sessão · <span style="color:${cor};">${label}</span></div>
+              </div>
+            </div>`;
+          } else {
+            const cor = _gcalCores[item.color_id] || '#4285F4';
+            const hora = item.dia_inteiro ? 'Dia inteiro' : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – ' + item.hora_fim : ''}` : '';
+            return `<div class="ag-list-item">
+              <div style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;margin-top:4px;"></div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.titulo}</div>
+                ${hora ? `<div style="font-size:var(--text-xs);color:var(--color-text-muted);">${hora}</div>` : ''}
+              </div>
+            </div>`;
+          }
+        }).join('')}`;
+    }).join('');
+
+    lista.querySelectorAll('.ag-list-physio[data-paciente-id]').forEach(el => {
+      el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
     });
   }
 

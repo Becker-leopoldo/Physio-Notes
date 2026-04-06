@@ -18,6 +18,7 @@ import transcribe
 import ai
 import google_auth
 import notifications
+import calendar_service
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("physio_notes")
@@ -463,6 +464,24 @@ async def sugestao_do_dia(paciente_id: int, request: Request):
     return {"sugestao": sugestao}
 
 
+@app.post("/pacientes/{paciente_id}/feedback-clinico")
+async def feedback_clinico(paciente_id: int, request: Request):
+    """Gera feedback clínico sutil ao fisio sobre pendências e itens não abordados."""
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    owner = _owner_email(request)
+    _verificar_dono(paciente, owner)
+    sessoes = db.get_historico_paciente(paciente_id)
+    feedback = await ai.feedback_clinico(
+        paciente.get("anamnese") or "",
+        paciente.get("conduta_tratamento"),
+        sessoes,
+        owner,
+    )
+    return {"feedback": feedback}
+
+
 @app.post("/transcrever")
 @limiter.limit("20/minute")
 async def transcrever_audio_avulso(request: Request, audio: UploadFile = File(...)):
@@ -710,7 +729,7 @@ class EncerrarBody(BaseModel):
 
 @app.post("/sessoes/{sessao_id}/encerrar")
 @limiter.limit("10/minute")
-async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Request = None):
+async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Request = None, background_tasks: BackgroundTasks = None):
     if body is None:
         body = EncerrarBody()
     sessao = db.get_sessao(sessao_id)
@@ -778,6 +797,19 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
         logger.warning("encerrar_sessao: falha ao notificar pacote sessao_id=%s: %s", sessao_id, e)
 
     db.registrar_audit(owner, "sessao_encerrar", f"id={sessao_id} cobrar={body.cobrar} valor={valor_override}", _client_ip(request))
+
+    # Cria evento no Google Calendar do fisio (fire-and-forget)
+    if owner and background_tasks:
+        paciente_info = db.get_paciente(sessao["paciente_id"])
+        resumo_notas = dados_consolidados.get("nota") or dados_consolidados.get("conduta") or ""
+        background_tasks.add_task(
+            calendar_service.criar_evento_sessao,
+            owner,
+            paciente_info["nome"] if paciente_info else "Paciente",
+            sessao.get("criado_em") or "",
+            resumo_notas[:500] if resumo_notas else None,
+        )
+
     return {
         "consolidado": consolidado,
         "sessao_id": sessao_id,
@@ -819,6 +851,78 @@ def billing(mes: str | None = None, request: Request = None):
 def get_agenda(mes: str | None = None, request: Request = None):
     owner = _owner_email(request)
     return db.get_agenda_owner(owner, ano_mes=mes)
+
+
+@app.get("/agenda/google")
+async def get_agenda_google(mes: str | None = None, request: Request = None):
+    """Retorna eventos do Google Calendar primário do fisio para o mês solicitado."""
+    from datetime import date, timezone, timedelta
+    import calendar as _cal
+
+    owner = _owner_email(request)
+    refresh_token = db.get_google_refresh_token(owner)
+    if not refresh_token:
+        return {"conectado": False, "eventos": []}
+
+    # Período do mês
+    hoje = date.today()
+    if mes:
+        ano, m = int(mes.split("-")[0]), int(mes.split("-")[1])
+    else:
+        ano, m = hoje.year, hoje.month
+
+    ultimo_dia = _cal.monthrange(ano, m)[1]
+    time_min = f"{ano:04d}-{m:02d}-01T00:00:00Z"
+    time_max = f"{ano:04d}-{m:02d}-{ultimo_dia:02d}T23:59:59Z"
+
+    try:
+        access_token = await calendar_service._obter_access_token(refresh_token)
+    except Exception as exc:
+        logger.warning("get_agenda_google: falha ao obter access_token: %s", exc)
+        return {"conectado": True, "eventos": [], "erro": "Falha ao autenticar com Google Calendar"}
+
+    try:
+        async with __import__("httpx").AsyncClient() as client:
+            resp = await client.get(
+                "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                params={
+                    "timeMin": time_min,
+                    "timeMax": time_max,
+                    "singleEvents": "true",
+                    "orderBy": "startTime",
+                    "maxResults": 250,
+                },
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10.0,
+            )
+        if resp.status_code != 200:
+            return {"conectado": True, "eventos": [], "erro": f"Google Calendar API: {resp.status_code}"}
+
+        items = resp.json().get("items", [])
+        eventos = []
+        for ev in items:
+            start = ev.get("start", {})
+            end   = ev.get("end", {})
+            data_str = start.get("date") or (start.get("dateTime") or "")[:10]
+            hora_inicio = start.get("dateTime", "")
+            hora_fim    = end.get("dateTime", "")
+            hora_inicio_fmt = hora_inicio[11:16] if len(hora_inicio) > 10 else ""
+            hora_fim_fmt    = hora_fim[11:16]    if len(hora_fim) > 10    else ""
+            eventos.append({
+                "id":          ev.get("id"),
+                "titulo":      ev.get("summary") or "(sem título)",
+                "data":        data_str,
+                "hora_inicio": hora_inicio_fmt,
+                "hora_fim":    hora_fim_fmt,
+                "dia_inteiro": "date" in start,
+                "descricao":   (ev.get("description") or "")[:200],
+                "color_id":    ev.get("colorId"),
+                "html_link":   ev.get("htmlLink"),
+            })
+        return {"conectado": True, "eventos": eventos}
+    except Exception as exc:
+        logger.warning("get_agenda_google: exceção: %s", exc)
+        return {"conectado": True, "eventos": [], "erro": str(exc)}
 
 
 @app.get("/pacientes/{paciente_id}/resumo")
@@ -1138,11 +1242,11 @@ async def put_configuracoes(body: ConfigBody, request: Request):
 # ---------- Auth Google SSO ----------
 
 class GoogleLoginBody(BaseModel):
-    credential: str
+    code: str  # authorization code do popup OAuth2 (inclui scope de Calendar)
 
 @app.get("/auth/config")
 async def auth_config():
-    """Retorna o Google Client ID para o frontend inicializar o GIS."""
+    """Retorna o Google Client ID para o frontend inicializar o OAuth2."""
     return {
         "google_client_id": google_auth.GOOGLE_CLIENT_ID,
         "admin_email": os.environ.get("ADMIN_EMAIL", ""),
@@ -1151,24 +1255,44 @@ async def auth_config():
 @app.post("/auth/google-login")
 @limiter.limit("20/minute")
 async def auth_google_login(request: Request, body: GoogleLoginBody):
-    """Verifica o credential do Google, cria/atualiza usuário e retorna JWT."""
-    if not google_auth.GOOGLE_CLIENT_ID:
+    """
+    Recebe o authorization code do popup OAuth2, troca por tokens,
+    extrai identidade do id_token, salva refresh_token e retorna JWT de sessão.
+    """
+    if not google_auth.GOOGLE_CLIENT_ID or not google_auth.GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=501, detail="Google SSO não configurado no servidor.")
     try:
-        info = google_auth.verificar_google_token(body.credential)
+        tokens = await google_auth.trocar_code_por_tokens(body.code)
     except Exception as e:
-        db.registrar_audit(None, "login_falhou", f"erro={e}", _client_ip(request))
-        raise HTTPException(status_code=401, detail=f"Token Google inválido: {e}")
+        db.registrar_audit(None, "login_falhou", f"troca_code={e}", _client_ip(request))
+        raise HTTPException(status_code=401, detail=f"Falha ao autenticar com Google: {e}")
+
+    id_token_str = tokens.get("id_token")
+    if not id_token_str:
+        raise HTTPException(status_code=401, detail="Google não retornou id_token.")
+
+    try:
+        info = google_auth.decodificar_id_token(id_token_str)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"id_token inválido: {e}")
+
     email = info.get("email")
     nome  = info.get("name", email)
     foto  = info.get("picture")
     if not email:
         raise HTTPException(status_code=401, detail="E-mail não disponível no token Google.")
+
     admin_email = os.environ.get("ADMIN_EMAIL", "")
     usuario = db.upsert_usuario(email, nome, foto, admin_email)
     if not usuario.get("ativo"):
         db.registrar_audit(email, "login_negado", "acesso pendente de aprovação", _client_ip(request))
         raise HTTPException(status_code=403, detail="Acesso pendente de aprovação do administrador.")
+
+    # Salva refresh_token (só presente no primeiro login ou quando acesso é revogado)
+    refresh_token = tokens.get("refresh_token")
+    if refresh_token:
+        db.salvar_google_refresh_token(email, refresh_token)
+
     token = google_auth.criar_jwt(email, nome, foto)
     db.registrar_audit(email, "login", None, _client_ip(request))
     return {"token": token, "nome": nome, "email": email, "foto": foto}

@@ -4,6 +4,49 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.259 — 2026-04-06
+
+### Funcionalidades
+
+**Integração com Google Calendar**
+- Login agora solicita permissão de acesso ao Google Calendar (escopo `calendar`) via OAuth2 popup
+- `refresh_token` salvo por usuário no banco, trocado por `access_token` a cada uso
+- Ao encerrar uma sessão, evento é criado automaticamente no Google Calendar primário do fisio: título "Physio — {paciente}", duração 1 hora, cor verde, descrição com resumo da sessão
+- Novo endpoint `GET /agenda/google?mes=YYYY-MM` busca eventos do mês no Google Calendar do usuário logado
+- Novo arquivo `calendar_service.py` (fire-and-forget, nunca quebra o fluxo principal)
+
+**Agenda redesenhada — UX mobile-first estilo Google Calendar**
+- Eventos demo/fictícios removidos completamente
+- Agenda exibe todos os eventos reais do Google Calendar do fisio + sessões internas do Physio Notes
+- Grid do mês com indicadores de ponto coloridos (dots) no lugar de labels de texto
+- Seleção de dia: tocar na data exibe painel com os eventos daquele dia
+- Lista abaixo do grid agrupada por data com cabeçalhos, horário e ponto colorido por tipo
+- Cores dos eventos do Google Calendar mapeadas pelo `colorId` (11 cores)
+- Badge de conexão com Google Calendar na barra do mês
+
+### Melhorias
+
+- `google_auth.py` reescrito para fluxo de código de autorização (substitui o fluxo de ID token que não concedia escopo de Calendar)
+- `login.html` usa `initCodeClient` com `ux_mode: 'popup'` — sem redirecionamento de página
+- `database.py`: coluna `google_refresh_token` adicionada via migração automática
+- `requirements.txt`: adicionado `httpx`
+
+---
+
+## Beta-0.258 — 2026-04-03
+
+### Funcionalidades
+
+**Chip "Feedback clínico" no Perguntar ao histórico**
+- Novo chip "✦ Feedback" em destaque âmbar, diferenciado dos chips de IA azuis
+- Analisa a conduta de tratamento planejada versus o que foi registrado nas evoluções diárias (últimas 10 sessões)
+- Retorna 3 seções: itens da conduta ainda não registrados nas sessões, pontos das evoluções que merecem revisão no plano, e aspectos bem conduzidos
+- Tom sutil e construtivo — usa "ainda não registrado", "vale considerar", nunca linguagem acusatória
+- Novo endpoint `POST /pacientes/{id}/feedback-clinico` no backend
+- Novo prompt `feedback_clinico` no `ai.py` com sliding window de 10 sessões
+
+---
+
 ## Beta-0.257 — 2026-04-03
 
 ### Funcionalidades

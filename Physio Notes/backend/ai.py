@@ -722,6 +722,82 @@ Regras:
     return result
 
 
+async def feedback_clinico(
+    anamnese: str,
+    conduta: str | None,
+    sessoes_recentes: list[dict],
+    owner_email: str | None = None,
+) -> dict:
+    """
+    Analisa a conduta planejada versus o que foi registrado nas evoluções diárias
+    e gera um feedback sutil ao fisioterapeuta sobre itens pendentes ou negligenciados.
+    Retorna dict com: pendencias, atencao, positivo.
+    """
+    sessoes_texto = []
+    for i, s in enumerate(sessoes_recentes[:10]):
+        nota = s.get("nota") or s.get("conduta") or s.get("queixa") or ""
+        data = s.get("data") or s.get("criado_em") or ""
+        if nota:
+            sessoes_texto.append(f"Sessão {i + 1} — {data}:\n{nota}")
+
+    historico_bloco = "\n\n---\n\n".join(sessoes_texto) if sessoes_texto else "Nenhuma sessão registrada ainda."
+    conduta_bloco = conduta or "Conduta de tratamento não registrada."
+
+    prompt = f"""Você é um supervisor clínico experiente em fisioterapia. Sua função é dar um retorno construtivo e discreto ao fisioterapeuta com base no histórico do paciente.
+
+Analise o plano de tratamento (conduta) em comparação com as evoluções diárias registradas. Identifique:
+1. Procedimentos ou objetivos da conduta que ainda não apareceram nas evoluções (podem estar pendentes)
+2. Queixas ou sinais registrados nas sessões que merecem atenção e ainda não foram abordados no plano
+3. Algo que esteja sendo bem executado (para equilibrar o feedback)
+
+ANAMNESE DO PACIENTE:
+{anamnese or "Não informada."}
+
+CONDUTA DE TRATAMENTO PLANEJADA:
+{conduta_bloco}
+
+EVOLUÇÕES DIÁRIAS (últimas 10 sessões, mais recente primeiro):
+{historico_bloco}
+
+Retorne APENAS um JSON válido com esta estrutura:
+{{
+  "pendencias": ["item pendente ou não registrado nas sessões", ...],
+  "atencao": ["observação clínica que merece revisão no plano", ...],
+  "positivo": ["aspecto bem conduzido no tratamento", ...]
+}}
+
+Regras ESSENCIAIS:
+- Tom: profissional, respeitoso e construtivo — nunca crítico ou acusatório. Use "ainda não registrado", "pode valer revisar", "vale considerar" ao invés de "deixou de fazer" ou "esqueceu"
+- Máximo 3 itens por lista — seja específico e baseado nos dados
+- Se não houver pendências claras, coloque [] em "pendencias"
+- Baseie-se EXCLUSIVAMENTE nas informações fornecidas — nunca invente procedimentos
+- Use linguagem clínica técnica da fisioterapia brasileira
+- Responda APENAS com o JSON, sem texto adicional"""
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("feedback_clinico", message, owner_email)
+
+    raw_text = message.content[0].text.strip()
+    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    if json_match:
+        raw_text = json_match.group(0)
+
+    try:
+        result = json.loads(raw_text)
+    except json.JSONDecodeError:
+        result = {}
+
+    for chave in ("pendencias", "atencao", "positivo"):
+        if chave not in result or not isinstance(result[chave], list):
+            result[chave] = []
+
+    return result
+
+
 async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:
     """Tenta extrair valor monetário de sessão avulsa da transcrição. Retorna float ou None."""
     if not transcricao or not transcricao.strip():

@@ -14,3 +14,4 @@ pywebpush
 apscheduler
 slowapi
 cryptography
+httpx

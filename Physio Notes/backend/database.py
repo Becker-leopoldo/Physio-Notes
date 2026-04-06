@@ -1212,11 +1212,34 @@ def _migrar_config_usuario():
             conn.execute("ALTER TABLE usuario_google ADD COLUMN valor_sessao_avulsa REAL")
         if "cobrar_avulsa" not in cols:
             conn.execute("ALTER TABLE usuario_google ADD COLUMN cobrar_avulsa INTEGER NOT NULL DEFAULT 1")
+        if "google_refresh_token" not in cols:
+            conn.execute("ALTER TABLE usuario_google ADD COLUMN google_refresh_token TEXT")
         conn.execute(
             "UPDATE usuario_google SET valor_sessao_avulsa = ? WHERE valor_sessao_avulsa IS NULL",
             (VALOR_SESSAO_AVULSA_PADRAO,),
         )
         conn.commit()
+
+
+def salvar_google_refresh_token(email: str, refresh_token: str) -> None:
+    """Persiste o refresh token do Google Calendar para o usuário."""
+    _migrar_config_usuario()
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE usuario_google SET google_refresh_token = ? WHERE email = ?",
+            (refresh_token, email),
+        )
+        conn.commit()
+
+
+def get_google_refresh_token(email: str) -> str | None:
+    """Retorna o refresh token do Google Calendar do usuário, ou None se não houver."""
+    _migrar_config_usuario()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT google_refresh_token FROM usuario_google WHERE email = ?", (email,)
+        ).fetchone()
+        return row["google_refresh_token"] if row else None
 
 
 def get_config_usuario(owner_email: str) -> dict:
