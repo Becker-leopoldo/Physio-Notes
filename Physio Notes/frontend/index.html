@@ -1573,7 +1573,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.267'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.268'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -6089,7 +6089,8 @@
       }
     }
 
-    html += `<button id="ag-confirmar-btn">Confirmar agendamento</button>`;
+    html += `<button id="ag-confirmar-btn">Confirmar agendamento</button>
+    <button id="ag-cancelar-result-btn" class="btn btn-ghost btn-sm" style="width:100%;margin-top:var(--space-2);">Cancelar</button>`;
     resultArea.innerHTML = html;
 
     // Botão "Alterar pedido"
@@ -6108,6 +6109,7 @@
     });
 
     document.getElementById('ag-confirmar-btn').addEventListener('click', _agSheetConfirmar);
+    document.getElementById('ag-cancelar-result-btn').addEventListener('click', _agSheetClose);
   }
 
   async function _agSheetConfirmar() {
