@@ -1600,7 +1600,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.273'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.274'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -6450,21 +6450,7 @@
     try {
       await apiFetch(`/agenda/google/${encodeURIComponent(_agCancelEventId)}`, { method: 'DELETE' });
       _agCancelClose();
-      // Recarrega a agenda do mês atual para remover o evento
-      await _agendaCarregarGoogle(_agendaAno, _agendaMes);
-      _agendaRenderizar();
-      _agendaRenderizarDia(_agendaDiaSelecionado, (() => {
-        const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
-        const itensSessoes = _agendaSessoes.map(s => ({ ...s, _tipo: 'physio', titulo: s.paciente_nome }));
-        const itensGoogle  = _agendaGoogle.map(ev => ({ ...ev, _tipo: 'google', paciente_id: null }));
-        const porDia = {};
-        [...itensSessoes, ...itensGoogle].forEach(item => {
-          if (!item.data) return;
-          if (!porDia[item.data]) porDia[item.data] = [];
-          porDia[item.data].push(item);
-        });
-        return porDia;
-      })());
+      await _agendaCarregar();
     } catch (e) {
       btn.disabled    = false;
       btn.textContent = 'Cancelar agendamento';

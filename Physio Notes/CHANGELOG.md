@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.274 — 2026-04-06
+
+### Correções
+
+- Corrigido erro `_agendaCarregarGoogle is not defined` ao confirmar cancelamento de evento — substituído pela chamada correta `_agendaCarregar()`
+
+---
+
 ## Beta-0.273 — 2026-04-06
 
 ### Funcionalidades
