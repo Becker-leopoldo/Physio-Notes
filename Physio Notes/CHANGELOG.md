@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.262 — 2026-04-06
+
+### Melhorias
+
+- Botão "Novo" movido para a top-bar da agenda (ao lado do título), integrado ao design — removido o FAB fixo no canto da tela
+
+---
+
 ## Beta-0.261 — 2026-04-06
 
 ### Funcionalidades

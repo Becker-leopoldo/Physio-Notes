@@ -1375,14 +1375,13 @@
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <span class="top-bar-title">Agenda</span>
+      <button id="agenda-fab" class="top-bar-action" title="Novo evento" aria-label="Novo evento na agenda" style="display:flex;align-items:center;gap:6px;padding:6px 14px 6px 10px;background:var(--color-accent);color:#fff;border-color:transparent;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        Novo
+      </button>
     </div>
     <div class="section-body" id="agenda-body" style="padding:0;max-width:600px;margin:0 auto;position:relative;">
     </div>
-
-    <!-- FAB: adicionar evento -->
-    <button id="agenda-fab" title="Novo evento" aria-label="Novo evento na agenda">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-    </button>
 
     <!-- Bottom sheet: novo agendamento -->
     <div id="ag-sheet-overlay" style="display:none;"></div>
@@ -1558,7 +1557,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.261'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.262'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5745,10 +5744,8 @@
         .ag-list-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ag-list-sub { font-size:11px; color:var(--color-text-muted); margin-top:2px; }
         .ag-list-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:var(--radius-full); flex-shrink:0; }
-        /* ── FAB ── */
-        #agenda-fab { position:fixed; bottom:28px; right:20px; width:52px; height:52px; border-radius:50%; background:var(--color-accent); color:#fff; border:none; cursor:pointer; display:none; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.22); transition:transform .15s, box-shadow .15s; z-index:300; }
-        #agenda-fab:hover { transform:scale(1.07); box-shadow:0 6px 20px rgba(0,0,0,0.28); }
-        #sec-agenda.active #agenda-fab { display:flex; }
+        /* ── FAB (no top-bar) ── */
+        #agenda-fab:hover { background:var(--color-accent-hover) !important; }
         /* ── Bottom sheet ── */
         #ag-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:400; animation:fadeIn .2s; }
         @keyframes fadeIn { from{opacity:0} to{opacity:1} }
