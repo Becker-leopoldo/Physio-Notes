@@ -1389,7 +1389,7 @@
       <div class="modal-drag-handle"></div>
 
       <!-- Etapa: voz / texto -->
-      <div id="ag-sheet-input-area" style="padding:0 var(--space-6) var(--space-6);">
+      <div id="ag-sheet-input-area">
         <h2 class="modal-title">Novo evento</h2>
 
         <div class="ai-bubble" style="margin-bottom:var(--space-5);">
@@ -1422,7 +1422,7 @@
       </div>
 
       <!-- Resultado (aparece após análise) -->
-      <div id="ag-sheet-result" style="display:none;padding:0 var(--space-6) var(--space-6);"></div>
+      <div id="ag-sheet-result" style="display:none;"></div>
     </div>
 
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
@@ -1573,7 +1573,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.266'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.267'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5768,17 +5768,19 @@
         #ag-sheet {
           position:fixed; bottom:0; left:0; right:0;
           background:var(--color-surface);
-          border-radius:20px 20px 0 0;
-          box-shadow:0 -4px 24px rgba(0,0,0,0.15);
+          border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+          box-shadow:var(--shadow-lg);
           z-index:401;
-          padding-top:var(--space-5);
-          padding-bottom:max(env(safe-area-inset-bottom,0px), 8px);
+          width:100%; max-width:480px; margin:0 auto;
+          padding:var(--space-6);
+          padding-bottom:calc(var(--space-6) + env(safe-area-inset-bottom,0px));
           animation:agSlideUp .25s cubic-bezier(.32,1,.35,1);
-          max-height:90vh; overflow-y:auto;
+          max-height:92dvh; overflow-y:auto;
+          -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
         }
         @keyframes agSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
         /* ── Result area ── */
-        #ag-sheet-result { padding:0 16px 16px; }
+        #ag-sheet-result { padding:0; }
         .ag-result-card { border-radius:12px; padding:14px 16px; margin-bottom:10px; }
         .ag-result-card-ok { background:var(--color-success-bg); border:1px solid #b7dfca; }
         .ag-result-card-busy { background:var(--color-danger-bg); border:1px solid #f5c2c2; }
