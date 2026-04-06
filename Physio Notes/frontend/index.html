@@ -1387,25 +1387,46 @@
     <div id="ag-sheet-overlay" style="display:none;"></div>
     <div id="ag-sheet" style="display:none;">
       <div id="ag-sheet-handle"></div>
+
+      <!-- Cabeçalho -->
       <div id="ag-sheet-header">
         <span id="ag-sheet-title">Novo evento</span>
         <button id="ag-sheet-close" aria-label="Fechar">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 3l12 12M15 3L3 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
       </div>
 
       <!-- Input área -->
       <div id="ag-sheet-input-area">
-        <div id="ag-input-wrap">
-          <textarea id="ag-texto" rows="2" placeholder="Ex: Consulta com Ana Silva amanhã das 14h às 15h…"></textarea>
-          <button id="ag-mic-btn" title="Usar voz">
-            <svg id="ag-mic-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M5 11a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+
+        <!-- Mic hero -->
+        <div id="ag-mic-hero">
+          <button id="ag-mic-btn" aria-label="Gravar por voz">
+            <svg id="ag-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="2" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M5 11a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
           </button>
+          <span id="ag-mic-label">Toque para falar</span>
         </div>
-        <button id="ag-analisar-btn" class="btn btn-primary" style="width:100%;margin-top:10px;">Analisar disponibilidade</button>
+
+        <!-- Divisor -->
+        <div id="ag-or-divider"><span>ou</span></div>
+
+        <!-- Campo de texto -->
+        <div id="ag-input-wrap">
+          <textarea id="ag-texto" rows="2" placeholder="Ex: Consulta com Ana amanhã das 14h às 15h…"></textarea>
+        </div>
+
+        <!-- Botão analisar -->
+        <button id="ag-analisar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Verificar disponibilidade
+        </button>
       </div>
 
-      <!-- Resultado -->
+      <!-- Resultado (aparece após análise) -->
       <div id="ag-sheet-result" style="display:none;"></div>
     </div>
 
@@ -1557,7 +1578,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.262'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.263'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5747,45 +5768,87 @@
         /* ── FAB (no top-bar) ── */
         #agenda-fab:hover { background:var(--color-accent-hover) !important; }
         /* ── Bottom sheet ── */
-        #ag-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:400; animation:fadeIn .2s; }
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-        #ag-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--color-surface); border-radius:18px 18px 0 0; box-shadow:0 -4px 24px rgba(0,0,0,0.14); z-index:401; padding:0 0 env(safe-area-inset-bottom,0); animation:slideUp .25s cubic-bezier(.32,1,.35,1); max-height:92vh; overflow-y:auto; }
-        @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-        #ag-sheet-handle { width:36px; height:4px; border-radius:2px; background:var(--color-border-strong); margin:12px auto 0; }
-        #ag-sheet-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 10px; }
-        #ag-sheet-title { font-size:var(--text-base); font-weight:600; color:var(--color-text); }
-        #ag-sheet-close { width:32px; height:32px; border:none; background:var(--color-accent-light); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); }
-        #ag-sheet-input-area { padding:0 16px 16px; }
-        #ag-input-wrap { display:flex; align-items:flex-start; gap:8px; background:var(--color-bg); border:var(--border); border-radius:var(--radius-md); padding:10px 12px; }
-        #ag-texto { flex:1; border:none; background:transparent; resize:none; font-family:var(--font-body); font-size:var(--text-sm); color:var(--color-text); outline:none; line-height:1.5; }
+        #ag-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; animation:agFadeIn .2s; }
+        @keyframes agFadeIn { from{opacity:0} to{opacity:1} }
+        #ag-sheet {
+          position:fixed; bottom:0; left:0; right:0;
+          background:var(--color-surface);
+          border-radius:24px 24px 0 0;
+          box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+          z-index:401;
+          padding-bottom:max(env(safe-area-inset-bottom,0px), 16px);
+          animation:agSlideUp .3s cubic-bezier(.32,1,.35,1);
+          max-height:88vh; overflow-y:auto;
+        }
+        @keyframes agSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+        #ag-sheet-handle { width:40px; height:4px; border-radius:2px; background:var(--color-border-strong); margin:14px auto 0; }
+        #ag-sheet-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 8px; }
+        #ag-sheet-title { font-size:18px; font-weight:600; color:var(--color-text); }
+        #ag-sheet-close { width:36px; height:36px; border:none; background:var(--color-accent-light); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); flex-shrink:0; }
+        /* ── Input area ── */
+        #ag-sheet-input-area { padding:8px 20px 20px; }
+        /* Mic hero */
+        #ag-mic-hero { display:flex; flex-direction:column; align-items:center; gap:12px; padding:24px 0 20px; }
+        #ag-mic-btn {
+          width:80px; height:80px; border-radius:50%;
+          background:var(--color-accent); color:#fff; border:none; cursor:pointer;
+          display:flex; align-items:center; justify-content:center;
+          box-shadow:0 4px 20px rgba(0,0,0,0.18);
+          transition:transform .15s, box-shadow .15s;
+        }
+        #ag-mic-btn:active { transform:scale(.94); }
+        #ag-mic-btn.recording {
+          background:#dc2127;
+          box-shadow:0 0 0 12px rgba(220,33,39,.15), 0 4px 20px rgba(0,0,0,0.18);
+          animation:agPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes agPulse { 0%,100%{box-shadow:0 0 0 12px rgba(220,33,39,.15),0 4px 20px rgba(0,0,0,0.18)} 50%{box-shadow:0 0 0 20px rgba(220,33,39,.07),0 4px 20px rgba(0,0,0,0.18)} }
+        #ag-mic-label { font-size:13px; color:var(--color-text-muted); font-weight:500; letter-spacing:.01em; }
+        /* Or divider */
+        #ag-or-divider { display:flex; align-items:center; gap:12px; margin:4px 0 16px; color:var(--color-text-muted); font-size:12px; }
+        #ag-or-divider::before, #ag-or-divider::after { content:''; flex:1; height:1px; background:var(--color-border); }
+        /* Text input */
+        #ag-input-wrap { background:var(--color-bg); border:1.5px solid var(--color-border); border-radius:14px; padding:14px 16px; transition:border-color .15s; }
+        #ag-input-wrap:focus-within { border-color:var(--color-border-strong); }
+        #ag-texto { width:100%; border:none; background:transparent; resize:none; font-family:var(--font-body); font-size:16px; color:var(--color-text); outline:none; line-height:1.5; min-height:48px; }
         #ag-texto::placeholder { color:var(--color-text-muted); }
-        #ag-mic-btn { width:36px; height:36px; border:none; background:transparent; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); flex-shrink:0; transition:background .15s; }
-        #ag-mic-btn:hover { background:var(--color-accent-light); }
-        #ag-mic-btn.recording { color:#dc2127; animation:pulse 1s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        /* Analisar btn */
+        #ag-analisar-btn {
+          width:100%; margin-top:16px;
+          display:flex; align-items:center; justify-content:center; gap:8px;
+          padding:16px; border-radius:14px;
+          background:var(--color-accent); color:#fff; border:none; cursor:pointer;
+          font-family:var(--font-body); font-size:16px; font-weight:600;
+          transition:background .15s;
+        }
+        #ag-analisar-btn:active { background:var(--color-accent-hover); }
         /* ── Result area ── */
-        #ag-sheet-result { padding:0 16px 20px; }
-        .ag-result-card { border-radius:var(--radius-md); padding:14px 16px; margin-bottom:10px; }
-        .ag-result-card-ok { background:var(--color-success-bg); border:1px solid #b7dfca; }
-        .ag-result-card-busy { background:var(--color-danger-bg); border:1px solid #f5c2c2; }
-        .ag-result-card-info { background:var(--color-info-bg); border:1px solid #b8cfe8; }
-        .ag-result-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+        #ag-sheet-result { padding:0 20px 20px; }
+        .ag-result-card { border-radius:14px; padding:16px 18px; margin-bottom:12px; }
+        .ag-result-card-ok { background:var(--color-success-bg); border:1.5px solid #b7dfca; }
+        .ag-result-card-busy { background:var(--color-danger-bg); border:1.5px solid #f5c2c2; }
+        .ag-result-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
         .ag-result-label-ok { color:var(--color-success); }
         .ag-result-label-busy { color:var(--color-danger); }
-        .ag-result-label-info { color:var(--color-info); }
-        .ag-result-nome { font-size:var(--text-base); font-weight:600; color:var(--color-text); }
-        .ag-result-when { font-size:var(--text-sm); color:var(--color-text-secondary); margin-top:2px; }
-        .ag-sug-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-text-muted); margin:14px 0 6px; }
-        .ag-sug-item { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--color-surface); border:var(--border); border-radius:var(--radius-md); cursor:pointer; margin-bottom:6px; transition:background .1s; }
-        .ag-sug-item:hover { background:var(--color-accent-light); }
-        .ag-sug-dot { width:8px; height:8px; border-radius:50%; background:var(--color-text-muted); flex-shrink:0; }
-        .ag-sug-body { flex:1; }
-        .ag-sug-when { font-size:var(--text-sm); font-weight:500; color:var(--color-text); }
-        .ag-sug-date { font-size:11px; color:var(--color-text-muted); margin-top:1px; }
+        .ag-result-nome { font-size:18px; font-weight:600; color:var(--color-text); }
+        .ag-result-when { font-size:14px; color:var(--color-text-secondary); margin-top:4px; }
+        .ag-sug-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--color-text-muted); margin:16px 0 8px; }
+        .ag-sug-item { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--color-surface); border:1.5px solid var(--color-border); border-radius:14px; cursor:pointer; margin-bottom:8px; transition:background .1s; min-height:60px; }
+        .ag-sug-item.ag-sug-sel { border-color:var(--color-accent); background:var(--color-accent-light); }
+        .ag-sug-dot { width:10px; height:10px; border-radius:50%; background:var(--color-border-strong); flex-shrink:0; }
         .ag-sug-sel .ag-sug-dot { background:var(--color-accent); }
-        .ag-sug-sel { border-color:var(--color-accent); background:var(--color-accent-light); }
-        .ag-confirm-btn { width:100%; margin-top:14px; }
-        .ag-sheet-loading { display:flex; align-items:center; gap:10px; padding:16px 0; color:var(--color-text-secondary); font-size:var(--text-sm); }
+        .ag-sug-body { flex:1; }
+        .ag-sug-when { font-size:15px; font-weight:500; color:var(--color-text); }
+        .ag-sug-date { font-size:12px; color:var(--color-text-muted); margin-top:2px; }
+        #ag-confirmar-btn {
+          width:100%; margin-top:16px;
+          padding:16px; border-radius:14px;
+          background:var(--color-accent); color:#fff; border:none; cursor:pointer;
+          font-family:var(--font-body); font-size:16px; font-weight:600;
+          transition:background .15s;
+        }
+        #ag-confirmar-btn:disabled { opacity:.6; }
+        .ag-sheet-loading { display:flex; align-items:center; gap:12px; padding:24px 0; color:var(--color-text-secondary); font-size:15px; justify-content:center; }
       `;
       document.head.appendChild(style);
     }
@@ -5930,8 +5993,9 @@
     document.getElementById('ag-sheet-result').style.display = 'none';
     document.getElementById('ag-sheet-input-area').style.display = 'block';
     document.getElementById('ag-texto').value = '';
+    document.getElementById('ag-mic-label').textContent = 'Toque para falar';
+    document.getElementById('ag-mic-btn').classList.remove('recording');
     _agSheetPendente = null;
-    setTimeout(() => document.getElementById('ag-texto').focus(), 300);
   }
 
   function _agSheetClose() {
@@ -5954,21 +6018,27 @@
         stream.getTracks().forEach(t => t.stop());
         _agSheetRecording = false;
         document.getElementById('ag-mic-btn').classList.remove('recording');
+        document.getElementById('ag-mic-label').textContent = 'Processando…';
         const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
         const fd = new FormData();
         fd.append('audio', blob, 'ag.webm');
         try {
           const tj = await apiFetch('/transcrever', { method: 'POST', body: fd });
           const txt = (tj.transcricao || '').trim();
+          document.getElementById('ag-mic-label').textContent = 'Toque para falar';
           if (txt) {
             document.getElementById('ag-texto').value = txt;
             _agSheetAnalisar();
           }
-        } catch (e) { console.warn('transcrição falhou', e); }
+        } catch (e) {
+          document.getElementById('ag-mic-label').textContent = 'Toque para falar';
+          console.warn('transcrição falhou', e);
+        }
       };
       _agSheetRec.start();
       _agSheetRecording = true;
       document.getElementById('ag-mic-btn').classList.add('recording');
+      document.getElementById('ag-mic-label').textContent = 'Gravando… toque para parar';
     } catch (e) { console.warn('mic error', e); }
   }
 
@@ -5982,9 +6052,11 @@
     const texto = (document.getElementById('ag-texto').value || '').trim();
     if (!texto) return;
 
+    // Esconde input, mostra loading
+    document.getElementById('ag-sheet-input-area').style.display = 'none';
     const resultArea = document.getElementById('ag-sheet-result');
     resultArea.style.display = 'block';
-    resultArea.innerHTML = `<div class="ag-sheet-loading"><span class="spinner"></span> Analisando disponibilidade…</div>`;
+    resultArea.innerHTML = `<div class="ag-sheet-loading"><span class="spinner"></span> Verificando disponibilidade…</div>`;
 
     try {
       const data = await apiFetch('/agenda/interpretar', {
@@ -5994,7 +6066,8 @@
       });
       _agSheetRenderResult(data);
     } catch (e) {
-      resultArea.innerHTML = `<div class="ag-result-card ag-result-card-busy"><div class="ag-result-label ag-result-label-busy">Erro</div><div class="ag-result-when">${e.message}</div></div>`;
+      document.getElementById('ag-sheet-input-area').style.display = 'block';
+      resultArea.innerHTML = `<div class="ag-result-card ag-result-card-busy" style="margin-bottom:0;"><div class="ag-result-label ag-result-label-busy">Não consegui interpretar</div><div class="ag-result-when">${e.message}</div></div>`;
     }
   }
 
@@ -6006,14 +6079,18 @@
     const dataFmt = _agSheetFmtData(parsed.data);
     const horaFmt = _agSheetFmtHora(parsed.hora_inicio, parsed.hora_fim);
 
-    let html = '';
+    // Link para voltar e editar
+    let html = `<button id="ag-voltar-btn" style="background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;color:var(--color-text-muted);padding:0 0 12px;display:flex;align-items:center;gap:4px;">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Alterar pedido
+    </button>`;
 
     if (disponivel) {
       html += `<div class="ag-result-card ag-result-card-ok">
         <div class="ag-result-label ag-result-label-ok">● Horário disponível</div>
         <div class="ag-result-nome">${escHtml(parsed.nome)}</div>
         <div class="ag-result-when">${dataFmt} · ${horaFmt}</div>
-        ${aviso ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">${aviso}</div>` : ''}
+        ${aviso ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:6px;">${aviso}</div>` : ''}
         ${!gcal_conectado ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Google Calendar não conectado — evento não será criado no calendário.</div>` : ''}
       </div>`;
     } else {
@@ -6045,8 +6122,14 @@
       }
     }
 
-    html += `<button class="btn btn-primary ag-confirm-btn" id="ag-confirmar-btn">Confirmar agendamento</button>`;
+    html += `<button id="ag-confirmar-btn">Confirmar agendamento</button>`;
     resultArea.innerHTML = html;
+
+    // Botão "Alterar pedido"
+    document.getElementById('ag-voltar-btn').addEventListener('click', () => {
+      resultArea.style.display = 'none';
+      document.getElementById('ag-sheet-input-area').style.display = 'block';
+    });
 
     // Click nas sugestões
     resultArea.querySelectorAll('.ag-sug-item').forEach(el => {

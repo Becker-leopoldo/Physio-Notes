@@ -4,6 +4,22 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.263 — 2026-04-06
+
+### Melhorias
+
+**Bottom sheet "Novo evento" — redesign mobile-first**
+- Sheet ocupa ≥60% da tela, bordas arredondadas 24px, animação fluida
+- Microfone como herói central (80px, pulsante quando gravando, label dinâmico: "Gravando…" / "Processando…")
+- Campo de texto abaixo como alternativa, fonte 16px (evita zoom automático do iOS)
+- Botão "Verificar disponibilidade" de toque fácil (56px de altura, borda 14px)
+- Após análise: área de input colapsa, resultado ocupa toda a tela — botão "Alterar pedido" para voltar
+- Resultado: card 18px, sugestões com área de toque mínimo 60px
+- Botão "Confirmar agendamento" centralizado, 56px altura
+- Sem zoom/scroll desnecessário — tudo cabe na tela sem rolagem extra
+
+---
+
 ## Beta-0.262 — 2026-04-06
 
 ### Melhorias
