@@ -1690,7 +1690,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.280'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.281'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -7764,10 +7764,7 @@
         try {
           const fd = new FormData();
           fd.append('audio', blob, 'atestado.webm');
-          const token = localStorage.getItem('physio_token');
-          const res = await fetch('/transcrever', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
-          if (!res.ok) throw new Error('Falha na transcrição');
-          const { texto } = await res.json();
+          const { texto } = await apiFetch('/transcrever', { method: 'POST', body: fd });
           if (!texto || !texto.trim()) {
             resetMic('Nada gravado — tente novamente');
             return;
