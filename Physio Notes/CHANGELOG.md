@@ -4,6 +4,42 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.284 — 2026-04-06
+
+### Funcionalidades
+
+**Módulo Secretaria — MVP (Fase 1)**
+
+_Backend_
+- Tabela `secretaria_link`: vínculo 1:1 entre e-mail da secretaria e o fisio
+- JWT com campo `role` (`fisio` ou `secretaria`) e `fisio_email` para secretaria
+- Login Google auto-detecta secretaria vinculada → emite token com role correto
+- `POST /admin/secretaria/vincular` — fisio vincula e-mail da secretaria
+- `DELETE /admin/secretaria/desvincular` — remove vínculo
+- `GET /admin/secretaria` — consulta secretaria vinculada
+- `GET /sec/pacientes` — lista nomes + IDs (sem dados clínicos)
+- `GET /sec/agenda` — agenda do fisio (sessões + Google Calendar)
+- `POST /sec/agendamento/interpretar` — IA interpreta pedido de agendamento
+- `POST /sec/agendamento/confirmar` — cria evento no GCal do fisio
+- `DELETE /sec/agendamento/{id}` — cancela evento no GCal do fisio
+- `POST /sec/atestado/interpretar` — IA interpreta atestado em nome do fisio
+
+_Frontend — `/secretaria/login.html`_
+- Login Google com verificação de role (`secretaria`)
+- Redireciona para o app principal após autenticação
+
+_Frontend — `/secretaria/index.html`_
+- App web responsivo mobile-first (não PWA)
+- Bottom navigation: **Agenda** + **Atestado**
+- Agenda: calendário mensal com dots coloridos + painel do dia + cancelar evento Google Calendar
+- Novo agendamento: voz (microfone) ou texto → IA interpreta → confirma/sugestões alternativas
+- Atestado: seletor de paciente + voz ou texto → IA interpreta → revisão → gera PDF
+
+_App do fisio_
+- Drawer → item "Secretaria" → painel inline para vincular/desvincular e-mail da secretaria
+
+---
+
 ## Beta-0.283 — 2026-04-06
 
 ### Correções

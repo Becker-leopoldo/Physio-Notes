@@ -95,7 +95,7 @@ _ROTAS_PUBLICAS = {
     "/auth/login/begin", "/auth/login/complete", "/auth/status",
     "/push/vapid-public-key",
 }
-_PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known")
+_PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known", "/secretaria/")
 
 @app.middleware("http")
 async def verificar_autenticacao(request: Request, call_next):
@@ -214,6 +214,20 @@ def _owner_email(request: Request) -> str | None:
         except Exception as e:
             logger.info("_owner_email: JWT inválido: %s", e)
     return None
+
+
+def _sec_context(request: Request) -> tuple[str, str]:
+    """Extrai (secretaria_email, fisio_email) do JWT de secretaria.
+    Lança 403 se o token não for de secretaria."""
+    auth = request.headers.get("authorization", "")
+    if auth.startswith("Bearer "):
+        try:
+            payload = google_auth.verificar_jwt(auth.split(" ", 1)[1])
+            if payload.get("role") == "secretaria" and payload.get("fisio_email"):
+                return payload["sub"], payload["fisio_email"]
+        except Exception:
+            pass
+    raise HTTPException(status_code=403, detail="Acesso restrito à secretaria")
 
 
 def _verificar_dono(paciente: dict, owner: str | None):
@@ -1603,6 +1617,14 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     if not email:
         raise HTTPException(status_code=401, detail="E-mail não disponível no token Google.")
 
+    # Verifica se é secretaria vinculada
+    fisio_email = db.get_fisio_da_secretaria(email)
+    if fisio_email:
+        token = google_auth.criar_jwt(email, nome, foto, role="secretaria", fisio_email=fisio_email)
+        db.registrar_audit(email, "login_secretaria", f"fisio={fisio_email}", _client_ip(request))
+        return {"token": token, "nome": nome, "email": email, "foto": foto, "role": "secretaria"}
+
+    # Login normal do fisioterapeuta
     admin_email = os.environ.get("ADMIN_EMAIL", "")
     usuario = db.upsert_usuario(email, nome, foto, admin_email)
     if not usuario.get("ativo"):
@@ -1614,9 +1636,9 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     if refresh_token:
         db.salvar_google_refresh_token(email, refresh_token)
 
-    token = google_auth.criar_jwt(email, nome, foto)
+    token = google_auth.criar_jwt(email, nome, foto, role="fisio")
     db.registrar_audit(email, "login", None, _client_ip(request))
-    return {"token": token, "nome": nome, "email": email, "foto": foto}
+    return {"token": token, "nome": nome, "email": email, "foto": foto, "role": "fisio"}
 
 
 # ---------- Admin ----------
@@ -1858,6 +1880,208 @@ async def atestado_interpretar(body: AtestadoInterpretarBody, request: Request =
             paciente["nome"],
             owner,
         )
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
+    return parsed
+
+
+# ─────────────────────────────────────────────────────────────
+# ADMIN — Secretaria (vínculo)
+# ─────────────────────────────────────────────────────────────
+
+class SecretariaVincularBody(BaseModel):
+    secretaria_email: str
+
+@app.post("/admin/secretaria/vincular", status_code=200)
+def admin_vincular_secretaria(body: SecretariaVincularBody, request: Request = None):
+    """Fisio vincula o e-mail da secretaria ao próprio e-mail."""
+    fisio_email = _owner_email(request)
+    if not fisio_email:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    db.vincular_secretaria(body.secretaria_email, fisio_email)
+    db.registrar_audit(fisio_email, "vincular_secretaria", body.secretaria_email, _client_ip(request))
+    return {"ok": True, "secretaria_email": body.secretaria_email, "fisio_email": fisio_email}
+
+@app.delete("/admin/secretaria/desvincular", status_code=200)
+def admin_desvincular_secretaria(request: Request = None):
+    """Fisio remove o vínculo com a secretaria."""
+    fisio_email = _owner_email(request)
+    link = db.get_secretaria_do_fisio(fisio_email)
+    if link:
+        db.desvincular_secretaria(link["secretaria_email"])
+        db.registrar_audit(fisio_email, "desvincular_secretaria", link["secretaria_email"], _client_ip(request))
+    return {"ok": True}
+
+@app.get("/admin/secretaria")
+def admin_get_secretaria(request: Request = None):
+    """Retorna a secretaria vinculada ao fisio logado (ou null)."""
+    fisio_email = _owner_email(request)
+    link = db.get_secretaria_do_fisio(fisio_email)
+    return {"secretaria": link}
+
+
+# ─────────────────────────────────────────────────────────────
+# SECRETARIA — Endpoints (usa token com role=secretaria)
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/sec/pacientes")
+def sec_listar_pacientes(request: Request = None):
+    """Lista pacientes do fisio vinculado (apenas nome e id — sem dados clínicos)."""
+    _, fisio_email = _sec_context(request)
+    pacientes = db.get_pacientes(fisio_email)
+    return [{"id": p["id"], "nome": p["nome"]} for p in pacientes]
+
+
+@app.get("/sec/agenda")
+async def sec_agenda(ano: int, mes: int, request: Request = None):
+    """Retorna agenda do fisio (sessões Physio + Google Calendar)."""
+    import httpx
+    _, fisio_email = _sec_context(request)
+    ano_mes = f"{ano}-{str(mes).zfill(2)}"
+
+    # Sessões Physio Notes
+    sessoes = db.get_agenda_owner(fisio_email, ano_mes=ano_mes)
+
+    # Google Calendar
+    gcal_eventos = []
+    refresh_token = db.get_google_refresh_token(fisio_email)
+    if refresh_token:
+        try:
+            access_token = await calendar_service._obter_access_token(refresh_token)
+            from datetime import date as _date
+            primeiro = f"{ano}-{str(mes).zfill(2)}-01T00:00:00-03:00"
+            import calendar as _cal
+            ultimo_dia = _cal.monthrange(ano, mes)[1]
+            ultimo = f"{ano}-{str(mes).zfill(2)}-{ultimo_dia}T23:59:59-03:00"
+            async with httpx.AsyncClient() as c:
+                resp = await c.get(
+                    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                    params={"singleEvents": "true", "orderBy": "startTime",
+                            "timeMin": primeiro, "timeMax": ultimo, "maxResults": 100},
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=10.0,
+                )
+            if resp.status_code == 200:
+                for ev in resp.json().get("items", []):
+                    start = ev.get("start", {})
+                    end   = ev.get("end", {})
+                    gcal_eventos.append({
+                        "id": ev.get("id"), "titulo": ev.get("summary") or "(sem título)",
+                        "data": start.get("date") or (start.get("dateTime") or "")[:10],
+                        "hora_inicio": (start.get("dateTime") or "")[11:16],
+                        "hora_fim":    (end.get("dateTime") or "")[11:16],
+                        "dia_inteiro": "date" in start, "color_id": ev.get("colorId"),
+                    })
+        except Exception:
+            pass
+
+    return {"sessoes": sessoes, "gcal": gcal_eventos, "gcal_conectado": refresh_token is not None}
+
+
+class SecAgendamentoInterpretarBody(BaseModel):
+    texto: str
+
+@app.post("/sec/agendamento/interpretar")
+async def sec_agendamento_interpretar(body: SecAgendamentoInterpretarBody, request: Request = None):
+    """IA interpreta pedido de agendamento da secretaria."""
+    from datetime import date
+    sec_email, fisio_email = _sec_context(request)
+    refresh_token = db.get_google_refresh_token(fisio_email)
+    if not refresh_token:
+        return {"parsed": await ai.interpretar_agendamento(body.texto, date.today().isoformat(), sec_email),
+                "disponivel": True, "gcal_conectado": False, "sugestoes": []}
+    try:
+        parsed = await ai.interpretar_agendamento(body.texto, date.today().isoformat(), sec_email)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
+    try:
+        access_token = await calendar_service._obter_access_token(refresh_token)
+        disponivel = await _verificar_disponibilidade_gcal(access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"])
+        sugestoes  = [] if disponivel else await _gerar_sugestoes_gcal(access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"])
+    except Exception:
+        disponivel = True; sugestoes = []
+
+    # Match de paciente
+    pacientes = db.get_pacientes(fisio_email)
+    match_result = _buscar_paciente_por_nome(parsed.get("nome", ""), pacientes)
+    paciente_match    = match_result.get("paciente") if match_result.get("tipo") == "exato" else None
+    paciente_sugestoes = match_result.get("candidatos") if match_result.get("tipo") == "sugestoes" else []
+
+    return {"parsed": parsed, "disponivel": disponivel, "gcal_conectado": True,
+            "sugestoes": sugestoes, "paciente_match": paciente_match,
+            "paciente_sugestoes": paciente_sugestoes}
+
+
+class SecAgendamentoConfirmarBody(BaseModel):
+    nome: str
+    data: str
+    hora_inicio: str
+    hora_fim: str
+    paciente_id: int | None = None
+
+@app.post("/sec/agendamento/confirmar")
+async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: Request = None):
+    """Cria evento no Google Calendar do fisio."""
+    import httpx
+    _, fisio_email = _sec_context(request)
+    refresh_token = db.get_google_refresh_token(fisio_email)
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="Google Calendar do fisio não conectado")
+    access_token = await calendar_service._obter_access_token(refresh_token)
+    nome_evento = body.nome
+    if body.paciente_id:
+        pac = db.get_paciente(body.paciente_id)
+        if pac:
+            nome_evento = pac["nome"]
+    event = {
+        "summary": f"Physio — {nome_evento}",
+        "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": "America/Sao_Paulo"},
+        "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": "America/Sao_Paulo"},
+    }
+    async with httpx.AsyncClient() as c:
+        resp = await c.post(
+            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+            json=event, headers={"Authorization": f"Bearer {access_token}"}, timeout=10.0,
+        )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
+    return {"ok": True, "event_id": resp.json().get("id")}
+
+
+@app.delete("/sec/agendamento/{event_id}")
+async def sec_agendamento_cancelar(event_id: str, request: Request = None):
+    """Cancela evento do Google Calendar do fisio."""
+    import httpx
+    _, fisio_email = _sec_context(request)
+    refresh_token = db.get_google_refresh_token(fisio_email)
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="Google Calendar do fisio não conectado")
+    access_token = await calendar_service._obter_access_token(refresh_token)
+    async with httpx.AsyncClient() as c:
+        resp = await c.delete(
+            f"https://www.googleapis.com/calendar/v3/calendars/primary/events/{event_id}",
+            headers={"Authorization": f"Bearer {access_token}"}, timeout=10.0,
+        )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
+    return {"ok": True}
+
+
+class SecAtestadoInterpretarBody(BaseModel):
+    texto: str
+    paciente_id: int | None = None
+
+@app.post("/sec/atestado/interpretar")
+async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Request = None):
+    """IA interpreta pedido de atestado feito pela secretaria."""
+    from datetime import date
+    _, fisio_email = _sec_context(request)
+    paciente_nome = ""
+    if body.paciente_id:
+        pac = db.get_paciente(body.paciente_id)
+        paciente_nome = pac["nome"] if pac else ""
+    try:
+        parsed = await ai.interpretar_atestado(body.texto, date.today().isoformat(), paciente_nome, fisio_email)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
     return parsed

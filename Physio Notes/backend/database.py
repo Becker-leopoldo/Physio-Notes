@@ -1164,6 +1164,61 @@ def revogar_usuario(email: str):
         conn.commit()
 
 
+# ---------- Secretaria ----------
+
+def _init_secretaria_table():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS secretaria_link (
+                secretaria_email TEXT PRIMARY KEY,
+                fisio_email      TEXT NOT NULL,
+                criado_em        TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+
+
+def vincular_secretaria(secretaria_email: str, fisio_email: str):
+    _init_secretaria_table()
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO secretaria_link (secretaria_email, fisio_email, criado_em)
+            VALUES (?, ?, ?)
+            ON CONFLICT(secretaria_email) DO UPDATE SET fisio_email = excluded.fisio_email
+        """, (secretaria_email.lower().strip(), fisio_email.lower().strip(),
+              datetime.now(timezone.utc).isoformat()))
+        conn.commit()
+
+
+def get_fisio_da_secretaria(secretaria_email: str) -> str | None:
+    _init_secretaria_table()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT fisio_email FROM secretaria_link WHERE secretaria_email = ?",
+            (secretaria_email.lower().strip(),)
+        ).fetchone()
+        return row[0] if row else None
+
+
+def desvincular_secretaria(secretaria_email: str):
+    _init_secretaria_table()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM secretaria_link WHERE secretaria_email = ?",
+                     (secretaria_email.lower().strip(),))
+        conn.commit()
+
+
+def get_secretaria_do_fisio(fisio_email: str) -> dict | None:
+    """Retorna o registro da secretaria vinculada ao fisio, ou None."""
+    _init_secretaria_table()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM secretaria_link WHERE fisio_email = ?",
+            (fisio_email.lower().strip(),)
+        ).fetchone()
+        return _row_to_dict(row) if row else None
+
+
 # ---------- Configurações do usuário ----------
 
 VALOR_SESSAO_AVULSA_PADRAO = 280.0

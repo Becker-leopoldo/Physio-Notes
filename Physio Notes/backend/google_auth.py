@@ -47,15 +47,22 @@ def decodificar_id_token(id_token_str: str) -> dict:
     return _json.loads(base64.urlsafe_b64decode(payload))
 
 
-def criar_jwt(email: str, nome: str, foto: str | None = None) -> str:
-    """Cria um JWT de sessão para o app."""
+def criar_jwt(email: str, nome: str, foto: str | None = None,
+              role: str = "fisio", fisio_email: str | None = None) -> str:
+    """Cria um JWT de sessão para o app.
+    role: 'fisio' (padrão) ou 'secretaria'
+    fisio_email: preenchido quando role='secretaria' — indica o fisio vinculado
+    """
     import jwt
     payload = {
         "sub": email,
         "nome": nome,
         "foto": foto,
+        "role": role,
         "exp": datetime.now(timezone.utc) + timedelta(hours=TOKEN_HOURS),
     }
+    if fisio_email:
+        payload["fisio_email"] = fisio_email
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 

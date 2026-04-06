@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    if (!localStorage.getItem('sec_token')) {
+      window.location.replace('/secretaria/login.html');
+    }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Secretaria — Physio Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-bg:            #F9F8F6;
+      --color-surface:       #FFFFFF;
+      --color-border:        #E8E6E1;
+      --color-border-strong: #D0CEC9;
+      --color-text:          #1A1A1A;
+      --color-text-secondary:#6B6860;
+      --color-text-muted:    #A09D97;
+      --color-accent:        #1A1A1A;
+      --color-accent-light:  #F0EFED;
+      --color-success:       #2D6A4F;
+      --color-success-bg:    #EDF7F2;
+      --color-warning:       #92600A;
+      --color-warning-bg:    #FEF7EC;
+      --color-danger:        #9B1C1C;
+      --color-danger-bg:     #FEF2F2;
+      --color-info:          #1E3A5F;
+      --color-info-bg:       #EFF6FF;
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --text-xs:   0.75rem;
+      --text-sm:   0.875rem;
+      --text-base: 1rem;
+      --text-lg:   1.125rem;
+      --text-xl:   1.25rem;
+      --text-2xl:  1.5rem;
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+      --space-4: 1rem;    --space-5: 1.25rem; --space-6: 1.5rem;
+      --space-8: 2rem;    --space-10: 2.5rem; --space-12: 3rem;
+      --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+      --radius-xl: 16px; --radius-full: 9999px;
+      --border: 1px solid var(--color-border);
+      --border-strong: 1px solid var(--color-border-strong);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.07);
+      --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-4) var(--space-5);
+      background: var(--color-surface);
+      border-bottom: var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .top-bar-title { font-family: var(--font-display); font-size: var(--text-xl); flex: 1; }
+    .top-bar-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      background: var(--color-accent-light); color: var(--color-text-secondary);
+      padding: 3px 10px; border-radius: var(--radius-full);
+    }
+    .top-bar-avatar {
+      width: 32px; height: 32px; border-radius: var(--radius-full);
+      background: var(--color-accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+      border: none;
+    }
+
+    /* ── Content ── */
+    .content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 600px;
+      background: var(--color-surface);
+      border-top: var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      z-index: 20;
+    }
+    .nav-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; padding: 10px 0;
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font-body); font-size: 11px; color: var(--color-text-muted);
+      transition: color 0.15s;
+    }
+    .nav-tab svg { width: 22px; height: 22px; }
+    .nav-tab.active { color: var(--color-accent); font-weight: 600; }
+
+    /* ── Agenda ── */
+    .mes-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      border-bottom: var(--border);
+    }
+    .mes-nome {
+      font-family: var(--font-display); font-size: var(--text-lg); text-transform: capitalize;
+    }
+    .mes-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-full);
+      border: var(--border); background: var(--color-surface);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: background 0.1s;
+    }
+    .mes-btn:hover { background: var(--color-accent-light); }
+
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      padding: var(--space-3) var(--space-4);
+      gap: 2px;
+    }
+    .cal-dow {
+      text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--color-text-muted);
+      padding: var(--space-2) 0 var(--space-1);
+    }
+    .cal-cell {
+      aspect-ratio: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding-top: 5px; border-radius: var(--radius-md);
+      cursor: pointer; position: relative; transition: background 0.1s;
+      gap: 2px;
+    }
+    .cal-cell:hover { background: var(--color-accent-light); }
+    .cal-cell.hoje .cal-num { background: var(--color-accent); color: #fff; border-radius: var(--radius-full); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+    .cal-cell.selecionado { background: var(--color-accent-light); }
+    .cal-cell.outro-mes .cal-num { color: var(--color-text-muted); }
+    .cal-num { font-size: 13px; font-weight: 500; line-height: 1; }
+    .cal-dots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; padding: 0 2px; }
+    .cal-dot { width: 5px; height: 5px; border-radius: var(--radius-full); flex-shrink: 0; }
+
+    .dia-painel {
+      margin: 0 var(--space-4) var(--space-4);
+      background: var(--color-surface); border: var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .dia-header {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dia-titulo { font-size: var(--text-sm); font-weight: 600; text-transform: capitalize; }
+    .dia-count { font-size: 11px; color: var(--color-text-muted); }
+
+    .ag-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4); border-top: var(--border);
+      transition: background 0.1s;
+    }
+    .ag-item:hover { background: var(--color-accent-light); }
+    .ag-item-strip { width: 3px; min-height: 28px; border-radius: 2px; flex-shrink: 0; }
+    .ag-item-body { flex: 1; min-width: 0; }
+    .ag-item-titulo { font-size: var(--text-sm); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ag-item-sub { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+    .ag-item-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; flex-shrink: 0; }
+
+    /* novo agendamento btn */
+    .fab-novo {
+      display: flex; align-items: center; gap: var(--space-2);
+      background: var(--color-accent); color: #fff;
+      border: none; border-radius: var(--radius-full);
+      padding: 8px 18px 8px 12px;
+      font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .fab-novo:hover { background: #333; }
+
+    /* ── Atestado ── */
+    .at-page { padding: var(--space-5); }
+    .at-page h2 { font-family: var(--font-display); font-size: var(--text-xl); margin-bottom: var(--space-2); }
+    .at-page .desc { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-6); }
+
+    /* ── Record button ── */
+    .record-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-4) 0; }
+    .record-btn {
+      width: 80px; height: 80px; border-radius: var(--radius-full);
+      background: var(--color-accent); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-md); transition: background 0.15s, transform 0.1s;
+    }
+    .record-btn:active { transform: scale(0.96); }
+    .record-btn.recording { background: var(--color-danger); animation: pulse 1.4s ease-out infinite; }
+    @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(155,28,28,.35)} 70%{box-shadow:0 0 0 16px rgba(155,28,28,0)} 100%{box-shadow:0 0 0 0 rgba(155,28,28,0)} }
+    .record-label { font-size: var(--text-sm); color: var(--color-text-secondary); font-weight: 500; }
+
+    /* ── AI bubble ── */
+    .ai-bubble {
+      background: var(--color-accent-light); border-radius: var(--radius-lg);
+      padding: var(--space-4); font-size: var(--text-sm); color: var(--color-text);
+      line-height: 1.6; position: relative;
+    }
+    .ai-bubble::before {
+      content: 'IA'; position: absolute; top: var(--space-2); left: var(--space-3);
+      font-size: 9px; font-weight: 700; letter-spacing: .08em; color: var(--color-text-muted);
+    }
+    .ai-bubble p { margin-top: var(--space-4); }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: var(--space-4); }
+    .form-label { display: block; font-size: var(--text-sm); font-weight: 500; margin-bottom: var(--space-2); }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; padding: 10px 14px;
+      border: var(--border-strong); border-radius: var(--radius-md);
+      font-family: var(--font-body); font-size: var(--text-sm); color: var(--color-text);
+      background: var(--color-surface); outline: none; transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--color-accent); }
+    .form-textarea { resize: none; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+      font-family: var(--font-body); font-size: var(--text-sm); font-weight: 500;
+      border-radius: var(--radius-md); padding: 10px 18px; border: none; cursor: pointer;
+      transition: background 0.15s, opacity 0.15s; text-decoration: none;
+    }
+    .btn:disabled { opacity: .55; pointer-events: none; }
+    .btn-primary { background: var(--color-accent); color: #fff; }
+    .btn-primary:hover { background: #333; }
+    .btn-secondary { background: transparent; color: var(--color-text); border: var(--border-strong); }
+    .btn-secondary:hover { background: var(--color-accent-light); }
+    .btn-ghost { background: none; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-accent-light); }
+    .btn-danger { background: var(--color-danger); color: #fff; }
+    .btn-full { width: 100%; }
+    .btn-lg { height: 52px; font-size: var(--text-base); border-radius: var(--radius-lg); }
+    .btn-sm { padding: 6px 12px; font-size: var(--text-xs); }
+
+    /* ── Sheets ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100;
+      animation: fadeIn .2s;
+    }
+    .sheet {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 600px;
+      background: var(--color-surface);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      box-shadow: var(--shadow-lg); z-index: 101;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      animation: slideUp .25s cubic-bezier(.32,1,.35,1);
+      max-height: 92dvh; overflow-y: auto;
+    }
+    .drag-handle {
+      width: 40px; height: 4px; background: var(--color-border-strong);
+      border-radius: var(--radius-full); margin: var(--space-4) auto var(--space-2);
+    }
+    .sheet-body { padding: var(--space-2) var(--space-6) var(--space-6); }
+    .sheet-title { font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-5); }
+
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{transform:translateX(-50%) translateY(100%)} to{transform:translateX(-50%) translateY(0)} }
+
+    /* sugestoes */
+    .sug-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4); border: var(--border);
+      border-radius: var(--radius-md); cursor: pointer; margin-bottom: var(--space-2);
+      transition: background 0.1s;
+    }
+    .sug-item:hover { background: var(--color-accent-light); }
+    .sug-hora { font-size: var(--text-sm); font-weight: 600; color: var(--color-text); min-width: 90px; }
+    .sug-label { font-size: var(--text-sm); color: var(--color-text-secondary); }
+
+    /* spinner */
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid var(--color-border);
+      border-top-color: var(--color-accent); border-radius: var(--radius-full);
+      animation: spin .6s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* divider */
+    .divider {
+      display: flex; align-items: center; gap: var(--space-3);
+      color: var(--color-text-muted); font-size: var(--text-sm);
+      margin: var(--space-4) 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--color-border);
+    }
+
+    /* logout menu */
+    .user-menu-overlay { position: fixed; inset: 0; z-index: 200; }
+    .user-menu {
+      position: fixed; top: 60px; right: 12px;
+      background: var(--color-surface); border: var(--border-strong);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+      padding: var(--space-2); z-index: 201; min-width: 160px;
+    }
+    .user-menu-item {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+      font-size: var(--text-sm); cursor: pointer; background: none; border: none;
+      width: 100%; font-family: var(--font-body); color: var(--color-text);
+      transition: background 0.1s;
+    }
+    .user-menu-item:hover { background: var(--color-accent-light); }
+    .user-menu-item.danger { color: var(--color-danger); }
+    .user-menu-item.danger:hover { background: var(--color-danger-bg); }
+
+    /* paciente picker list */
+    .pac-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) 0; border-bottom: var(--border); cursor: pointer;
+    }
+    .pac-item:hover .pac-nome { color: var(--color-accent); }
+    .pac-avatar {
+      width: 36px; height: 36px; border-radius: var(--radius-full);
+      background: var(--color-accent-light); color: var(--color-text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+    .pac-nome { font-size: var(--text-sm); font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <span class="top-bar-title">Physio Notes</span>
+    <span class="top-bar-badge">Secretaria</span>
+    <button class="top-bar-avatar" id="btn-user-menu">??</button>
+  </div>
+
+  <!-- User menu -->
+  <div class="user-menu-overlay" id="user-menu-overlay" style="display:none;"></div>
+  <div class="user-menu" id="user-menu" style="display:none;">
+    <button class="user-menu-item danger" id="btn-logout">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Sair
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ABA: AGENDA -->
+    <div id="tab-agenda">
+
+      <!-- Nav mês -->
+      <div class="mes-nav">
+        <button class="mes-btn" id="btn-mes-prev">
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span class="mes-nome" id="mes-nome-label"></span>
+        <button class="mes-btn" id="btn-mes-next">
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Grade do calendário -->
+      <div class="cal-grid" id="cal-grid"></div>
+
+      <!-- Painel do dia selecionado -->
+      <div class="dia-painel" id="dia-painel" style="display:none;">
+        <div class="dia-header">
+          <span class="dia-titulo" id="dia-titulo"></span>
+          <span class="dia-count" id="dia-count"></span>
+        </div>
+        <div id="dia-itens"></div>
+      </div>
+
+      <!-- Botão novo agendamento -->
+      <div style="padding:var(--space-4) var(--space-4) 0;display:flex;justify-content:flex-end;">
+        <button class="fab-novo" id="btn-novo-ag">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Novo agendamento
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ABA: ATESTADO -->
+    <div id="tab-atestado" style="display:none;" class="at-page">
+      <h2>Gerar Atestado</h2>
+      <p class="desc">Selecione o paciente e dite ou escreva o atestado.</p>
+
+      <!-- Picker de paciente -->
+      <div class="form-group">
+        <label class="form-label">Paciente</label>
+        <button class="btn btn-secondary btn-full" id="btn-escolher-pac" style="justify-content:space-between;text-align:left;">
+          <span id="pac-escolhido-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Voz -->
+      <div class="record-wrap">
+        <button class="record-btn" id="at-mic-btn">
+          <svg id="at-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg id="at-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
+        </button>
+        <span id="at-mic-label" class="record-label">Toque para gravar</span>
+      </div>
+
+      <div id="at-rec-feedback"></div>
+
+      <div class="divider">ou escreva</div>
+
+      <div class="form-group">
+        <textarea id="at-texto" class="form-textarea" rows="3"
+          placeholder="Ex: Atestado para hoje, das 9h às 10h, por lombalgia, realizei TENS e mobilização..."
+          style="font-size:16px;"></textarea>
+      </div>
+
+      <button id="at-interpretar-btn" class="btn btn-primary btn-full btn-lg">
+        Gerar atestado
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-tab active" id="nav-agenda" data-tab="agenda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Agenda
+    </button>
+    <button class="nav-tab" id="nav-atestado" data-tab="atestado">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+      </svg>
+      Atestado
+    </button>
+  </nav>
+
+  <!-- SHEET: Novo agendamento -->
+  <div class="overlay" id="ag-overlay" style="display:none;"></div>
+  <div class="sheet" id="ag-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+
+      <!-- Etapa 1: voz / texto -->
+      <div id="ag-input-area">
+        <h2 class="sheet-title">Novo agendamento</h2>
+        <div class="ai-bubble" style="margin-bottom:var(--space-5);">
+          <p>Diga o <strong>nome</strong>, a <strong>data</strong> e o <strong>horário</strong>.<br>
+          Ex: "Consulta para Ana amanhã às 9h por 1 hora"</p>
+        </div>
+        <div class="record-wrap" style="padding:var(--space-2) 0;">
+          <button class="record-btn" id="ag-mic-btn">
+            <svg id="ag-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg id="ag-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
+          </button>
+          <span id="ag-mic-label" class="record-label">Toque para gravar</span>
+        </div>
+        <div id="ag-rec-feedback"></div>
+        <div class="divider">ou escreva</div>
+        <textarea id="ag-texto" class="form-textarea" rows="2"
+          placeholder="Ex: Ana Silva amanhã das 14h às 15h" style="font-size:16px;margin-bottom:var(--space-4);"></textarea>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <button id="ag-verificar-btn" class="btn btn-primary btn-full btn-lg">Verificar disponibilidade</button>
+          <button id="ag-input-cancel" class="btn btn-ghost btn-full">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Etapa 2: resultado da IA -->
+      <div id="ag-result-area" style="display:none;">
+        <h2 class="sheet-title">Confirmar agendamento</h2>
+        <div id="ag-result-content"></div>
+        <div style="margin-top:var(--space-5);display:flex;flex-direction:column;gap:var(--space-2);">
+          <button id="ag-confirmar-btn" class="btn btn-primary btn-full btn-lg">Confirmar agendamento</button>
+          <button id="ag-result-voltar" class="btn btn-secondary btn-full">Alterar pedido</button>
+          <button id="ag-result-cancel" class="btn btn-ghost btn-full">Cancelar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SHEET: Cancelar agendamento gcal -->
+  <div class="overlay" id="cancel-overlay" style="display:none;"></div>
+  <div class="sheet" id="cancel-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Cancelar agendamento</h2>
+      <div id="cancel-info" class="ai-bubble" style="margin-bottom:var(--space-5);"></div>
+      <button id="cancel-confirm-btn" class="btn btn-danger btn-full" style="margin-bottom:var(--space-3);">Cancelar agendamento</button>
+      <button id="cancel-close-btn" class="btn btn-secondary btn-full">Voltar</button>
+    </div>
+  </div>
+
+  <!-- SHEET: Escolher paciente (atestado) -->
+  <div class="overlay" id="pac-overlay" style="display:none;"></div>
+  <div class="sheet" id="pac-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Escolher paciente</h2>
+      <input id="pac-busca" class="form-input" type="search" placeholder="Buscar pelo nome..." style="margin-bottom:var(--space-4);">
+      <div id="pac-lista"></div>
+    </div>
+  </div>
+
+  <!-- SHEET: Revisão do atestado -->
+  <div class="overlay" id="at-form-overlay" style="display:none;"></div>
+  <div class="sheet" id="at-form-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Revisar atestado</h2>
+      <div class="form-group">
+        <label class="form-label">Data do atendimento</label>
+        <input class="form-input" type="date" id="rev-data">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div class="form-group">
+          <label class="form-label">Início</label>
+          <input class="form-input" type="time" id="rev-hora-ini">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fim</label>
+          <input class="form-input" type="time" id="rev-hora-fim">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <input class="form-input" type="text" id="rev-motivo" placeholder="Ex: lombalgia crônica">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Conduta realizada</label>
+        <textarea class="form-textarea" rows="3" id="rev-conduta" placeholder="Ex: TENS e mobilização articular..." style="resize:none;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">CREFITO do fisioterapeuta (opcional)</label>
+        <input class="form-input" type="text" id="rev-crefito" placeholder="Ex: 3-123456-F">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+        <button id="rev-gerar-btn" class="btn btn-primary btn-full btn-lg">Gerar PDF</button>
+        <button id="rev-voltar-btn" class="btn btn-ghost btn-full">Voltar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+'use strict';
+
+/* ── Helpers ── */
+const API_BASE = '';
+const secToken = () => localStorage.getItem('sec_token');
+const secUser  = () => JSON.parse(localStorage.getItem('sec_user') || '{}');
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function initials(name) {
+  return (name || '').split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase() || '?';
+}
+
+async function apiFetch(path, opts = {}) {
+  opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${secToken()}` };
+  const res = await fetch(API_BASE + path, opts);
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('sec_token');
+    window.location.replace('/secretaria/login.html');
+    return;
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `Erro ${res.status}`);
+  return data;
+}
+
+/* ── User menu ── */
+const user = secUser();
+const avatarBtn = document.getElementById('btn-user-menu');
+avatarBtn.textContent = initials(user.nome);
+avatarBtn.title = user.nome || user.email || '';
+
+avatarBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const menu = document.getElementById('user-menu');
+  const ov   = document.getElementById('user-menu-overlay');
+  const show = menu.style.display === 'none';
+  menu.style.display = show ? 'block' : 'none';
+  ov.style.display   = show ? 'block' : 'none';
+});
+document.getElementById('user-menu-overlay').addEventListener('click', () => {
+  document.getElementById('user-menu').style.display = 'none';
+  document.getElementById('user-menu-overlay').style.display = 'none';
+});
+document.getElementById('btn-logout').addEventListener('click', () => {
+  localStorage.removeItem('sec_token');
+  localStorage.removeItem('sec_user');
+  window.location.replace('/secretaria/login.html');
+});
+
+/* ── Bottom nav ── */
+function showTab(tab) {
+  document.getElementById('tab-agenda').style.display   = tab === 'agenda'   ? '' : 'none';
+  document.getElementById('tab-atestado').style.display = tab === 'atestado' ? '' : 'none';
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+}
+document.querySelectorAll('.nav-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+/* ══════════════════════════════════════════════
+   AGENDA
+══════════════════════════════════════════════ */
+const _gcalCores = {
+  '1':'#a4bdfc','2':'#7ae7bf','3':'#dbadff','4':'#ff887c',
+  '5':'#fbd75b','6':'#ffb878','7':'#46d6db','8':'#e1e1e1',
+  '9':'#5484ed','10':'#51b749','11':'#dc2127',
+};
+
+let _ano = new Date().getFullYear();
+let _mes = new Date().getMonth();
+let _diaSel = null;
+let _sessoes = [];
+let _gcal    = [];
+let _porDia  = {};
+let _loadingAgenda = false;
+
+document.getElementById('btn-mes-prev').addEventListener('click', () => {
+  if (_mes === 0) { _mes = 11; _ano--; } else _mes--;
+  _diaSel = null;
+  document.getElementById('dia-painel').style.display = 'none';
+  carregarAgenda();
+});
+document.getElementById('btn-mes-next').addEventListener('click', () => {
+  if (_mes === 11) { _mes = 0; _ano++; } else _mes++;
+  _diaSel = null;
+  document.getElementById('dia-painel').style.display = 'none';
+  carregarAgenda();
+});
+
+async function carregarAgenda() {
+  if (_loadingAgenda) return;
+  _loadingAgenda = true;
+  const label = document.getElementById('mes-nome-label');
+  label.innerHTML = `<span class="spinner"></span>`;
+  try {
+    const data = await apiFetch(`/sec/agenda?ano=${_ano}&mes=${_mes + 1}`);
+    _sessoes = data.sessoes || [];
+    _gcal    = data.gcal    || [];
+
+    const itensSessoes = _sessoes.map(s => ({ ...s, _tipo: 'physio', titulo: s.paciente_nome }));
+    const itensGoogle  = _gcal.map(ev => ({ ...ev, _tipo: 'google', paciente_id: null }));
+    _porDia = {};
+    [...itensSessoes, ...itensGoogle].forEach(item => {
+      if (!item.data) return;
+      if (!_porDia[item.data]) _porDia[item.data] = [];
+      _porDia[item.data].push(item);
+    });
+  } catch(e) {
+    console.error(e);
+  } finally {
+    _loadingAgenda = false;
+  }
+  renderCalendario();
+  if (_diaSel) renderDia(_diaSel);
+}
+
+function renderCalendario() {
+  const nomeMes = new Date(_ano, _mes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  document.getElementById('mes-nome-label').textContent = nomeMes;
+
+  const hoje       = new Date().toISOString().slice(0, 10);
+  const primDow    = new Date(_ano, _mes, 1).getDay();
+  const totalDias  = new Date(_ano, _mes + 1, 0).getDate();
+  const totalAntes = new Date(_ano, _mes, 0).getDate();
+
+  const DOWS = ['D','S','T','Q','Q','S','S'];
+  let html = DOWS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  // células antes
+  for (let i = primDow - 1; i >= 0; i--) {
+    html += `<div class="cal-cell outro-mes"><span class="cal-num">${totalAntes - i}</span></div>`;
+  }
+
+  for (let d = 1; d <= totalDias; d++) {
+    const key   = `${_ano}-${String(_mes + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const itens = _porDia[key] || [];
+    const isHoje = key === hoje;
+    const isSel  = key === _diaSel;
+
+    const dots = itens.slice(0,5).map(item => {
+      const cor = item._tipo === 'physio'
+        ? (item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F')
+        : (_gcalCores[item.color_id] || '#4285F4');
+      return `<span class="cal-dot" style="background:${cor};"></span>`;
+    }).join('');
+
+    html += `<div class="cal-cell${isHoje ? ' hoje' : ''}${isSel ? ' selecionado' : ''}" data-key="${key}">
+      <span class="cal-num">${d}</span>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+  document.querySelectorAll('.cal-cell[data-key]').forEach(el => {
+    el.addEventListener('click', () => {
+      _diaSel = el.dataset.key;
+      renderCalendario();
+      renderDia(_diaSel);
+    });
+  });
+}
+
+function renderDia(dataKey) {
+  const painel = document.getElementById('dia-painel');
+  const itens  = (_porDia[dataKey] || []).sort((a,b) => (a.hora_inicio||'').localeCompare(b.hora_inicio||''));
+  const [a, m, d] = dataKey.split('-');
+  const nome = new Date(+a, +m-1, +d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const hoje = new Date().toISOString().slice(0,10);
+
+  document.getElementById('dia-titulo').textContent = nome + (dataKey === hoje ? ' · Hoje' : '');
+  document.getElementById('dia-count').textContent  = itens.length ? `${itens.length} evento${itens.length !== 1 ? 's' : ''}` : '';
+
+  if (!itens.length) {
+    document.getElementById('dia-itens').innerHTML =
+      `<div style="padding:12px 16px;font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum evento.</div>`;
+  } else {
+    document.getElementById('dia-itens').innerHTML = itens.map(item => {
+      if (item._tipo === 'physio') {
+        const cor     = item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F';
+        const bgBadge = item.status === 'aberta' ? 'var(--color-info-bg)' : 'var(--color-success-bg)';
+        const label   = item.status === 'aberta' ? 'Em aberto' : 'Encerrada';
+        return `<div class="ag-item">
+          <div class="ag-item-strip" style="background:${cor};"></div>
+          <div class="ag-item-body">
+            <div class="ag-item-titulo">${escHtml(item.titulo)}</div>
+            <div class="ag-item-sub">Sessão de fisioterapia</div>
+          </div>
+          <span class="ag-item-badge" style="background:${bgBadge};color:${cor};">${label}</span>
+        </div>`;
+      } else {
+        const cor  = _gcalCores[item.color_id] || '#4285F4';
+        const hora = item.dia_inteiro ? 'Dia inteiro'
+          : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – '+item.hora_fim : ''}` : '';
+        const eid  = item.id ? ` data-gcal-id="${escHtml(item.id)}" data-gcal-titulo="${escHtml(item.titulo)}" data-gcal-hora="${escHtml(hora)}" data-gcal-data="${escHtml(dataKey)}"` : '';
+        return `<div class="ag-item ag-item-gcal" style="cursor:${item.id ? 'pointer':'default'};"${eid}>
+          <div class="ag-item-strip" style="background:${cor};"></div>
+          <div class="ag-item-body">
+            <div class="ag-item-titulo">${escHtml(item.titulo)}</div>
+            ${hora ? `<div class="ag-item-sub">${escHtml(hora)}</div>` : ''}
+          </div>
+          ${item.id ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="7" cy="4" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/></svg>` : ''}
+        </div>`;
+      }
+    }).join('');
+
+    // click gcal → cancelar
+    document.querySelectorAll('.ag-item-gcal[data-gcal-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        cancelOpen(el.dataset.gcalId, el.dataset.gcalTitulo, el.dataset.gcalData, el.dataset.gcalHora);
+      });
+    });
+  }
+  painel.style.display = 'block';
+}
+
+/* ── Cancelar agendamento gcal ── */
+let _cancelEventId = null;
+
+function cancelOpen(eventId, titulo, dataKey, hora) {
+  _cancelEventId = eventId;
+  const [a,m,d] = (dataKey||'').split('-');
+  const dataFmt = dataKey ? new Date(+a,+m-1,+d).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}) : '';
+  document.getElementById('cancel-info').innerHTML =
+    `<strong>${escHtml(titulo)}</strong><br>${escHtml(dataFmt)}${hora ? ' · '+escHtml(hora) : ''}`;
+  document.getElementById('cancel-overlay').style.display = 'block';
+  document.getElementById('cancel-sheet').style.display   = 'block';
+  const btn = document.getElementById('cancel-confirm-btn');
+  btn.disabled = false; btn.textContent = 'Cancelar agendamento';
+}
+function cancelClose() {
+  document.getElementById('cancel-overlay').style.display = 'none';
+  document.getElementById('cancel-sheet').style.display   = 'none';
+  _cancelEventId = null;
+}
+document.getElementById('cancel-overlay').addEventListener('click', cancelClose);
+document.getElementById('cancel-close-btn').addEventListener('click', cancelClose);
+document.getElementById('cancel-confirm-btn').addEventListener('click', async () => {
+  if (!_cancelEventId) return;
+  const btn = document.getElementById('cancel-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Cancelando…';
+  try {
+    await apiFetch(`/sec/agendamento/${encodeURIComponent(_cancelEventId)}`, { method: 'DELETE' });
+    cancelClose();
+    await carregarAgenda();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Cancelar agendamento';
+    alert('Erro: ' + e.message);
+  }
+});
+
+/* ── Novo agendamento ── */
+let _agPendente = null;
+let _agRec = null, _agRecording = false;
+
+function agSheetOpen() {
+  agStopRec();
+  document.getElementById('ag-input-area').style.display   = '';
+  document.getElementById('ag-result-area').style.display  = 'none';
+  document.getElementById('ag-texto').value = '';
+  document.getElementById('ag-mic-label').textContent = 'Toque para gravar';
+  document.getElementById('ag-mic-icon').style.display  = '';
+  document.getElementById('ag-stop-icon').style.display = 'none';
+  document.getElementById('ag-mic-btn').classList.remove('recording');
+  document.getElementById('ag-rec-feedback').innerHTML = '';
+  document.getElementById('ag-verificar-btn').disabled = false;
+  document.getElementById('ag-verificar-btn').textContent = 'Verificar disponibilidade';
+  document.getElementById('ag-overlay').style.display = 'block';
+  document.getElementById('ag-sheet').style.display   = 'block';
+}
+function agSheetClose() {
+  agStopRec();
+  document.getElementById('ag-overlay').style.display = 'none';
+  document.getElementById('ag-sheet').style.display   = 'none';
+  _agPendente = null;
+}
+
+document.getElementById('btn-novo-ag').addEventListener('click', agSheetOpen);
+document.getElementById('ag-overlay').addEventListener('click', agSheetClose);
+document.getElementById('ag-input-cancel').addEventListener('click', agSheetClose);
+document.getElementById('ag-result-cancel').addEventListener('click', agSheetClose);
+document.getElementById('ag-result-voltar').addEventListener('click', () => {
+  document.getElementById('ag-input-area').style.display  = '';
+  document.getElementById('ag-result-area').style.display = 'none';
+});
+
+function agStopRec() {
+  if (_agRec && _agRecording) { try { _agRec.stop(); } catch {} }
+  _agRecording = false;
+  const btn = document.getElementById('ag-mic-btn');
+  if (btn) {
+    btn.classList.remove('recording');
+    document.getElementById('ag-mic-icon').style.display  = '';
+    document.getElementById('ag-stop-icon').style.display = 'none';
+    document.getElementById('ag-mic-label').textContent   = 'Toque para gravar';
+  }
+}
+
+document.getElementById('ag-mic-btn').addEventListener('click', async () => {
+  if (_agRecording) { agStopRec(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    _agRec = new MediaRecorder(stream);
+    _agRec.ondataavailable = e => chunks.push(e.data);
+    _agRec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      document.getElementById('ag-mic-label').textContent = 'Transcrevendo…';
+      try {
+        const fd = new FormData();
+        fd.append('audio', new Blob(chunks, { type: 'audio/webm' }), 'ag.webm');
+        const tr = await apiFetch('/transcrever', { method: 'POST', body: fd });
+        const texto = tr.transcricao || tr.texto || '';
+        document.getElementById('ag-texto').value = texto;
+        document.getElementById('ag-mic-label').textContent = 'Gravação concluída';
+        document.getElementById('ag-rec-feedback').innerHTML =
+          `<div class="ai-bubble" style="font-size:var(--text-sm);margin-bottom:var(--space-4);">${escHtml(texto)}</div>`;
+      } catch(e) {
+        document.getElementById('ag-mic-label').textContent = 'Erro na transcrição';
+      }
+    };
+    _agRec.start();
+    _agRecording = true;
+    document.getElementById('ag-mic-btn').classList.add('recording');
+    document.getElementById('ag-mic-icon').style.display  = 'none';
+    document.getElementById('ag-stop-icon').style.display = '';
+    document.getElementById('ag-mic-label').textContent   = 'Gravando… toque para parar';
+  } catch(e) {
+    alert('Microfone não disponível: ' + e.message);
+  }
+});
+
+document.getElementById('ag-verificar-btn').addEventListener('click', async () => {
+  const texto = document.getElementById('ag-texto').value.trim();
+  if (!texto) return;
+  const btn = document.getElementById('ag-verificar-btn');
+  btn.disabled = true; btn.textContent = 'Analisando…';
+  try {
+    const data = await apiFetch('/sec/agendamento/interpretar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto }),
+    });
+    _agPendente = data.parsed;
+    renderAgResult(data);
+    document.getElementById('ag-input-area').style.display  = 'none';
+    document.getElementById('ag-result-area').style.display = '';
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Verificar disponibilidade';
+    document.getElementById('ag-rec-feedback').innerHTML =
+      `<div style="color:var(--color-danger);font-size:var(--text-sm);margin-top:var(--space-2);">${escHtml(e.message)}</div>`;
+  }
+});
+
+function fmtData(s) {
+  const [a,m,d] = (s||'').split('-');
+  return s ? new Date(+a,+m-1,+d).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}) : '';
+}
+
+function renderAgResult(data) {
+  const p = data.parsed || {};
+  const disponivel = data.disponivel !== false;
+  const match = data.paciente_match;
+  const sugestoes = data.sugestoes || [];
+
+  let html = '';
+
+  // Paciente match
+  if (match) {
+    html += `<div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-success);">Paciente identificado</span>
+      <span style="font-size:var(--text-sm);font-weight:600;">${escHtml(match.nome)}</span>
+    </div>`;
+    _agPendente.nome = match.nome;
+    _agPendente.paciente_id = match.id;
+  }
+
+  if (disponivel) {
+    html += `<div class="ai-bubble" style="margin-bottom:var(--space-4);">
+      <p><strong>${escHtml(p.nome || '—')}</strong><br>
+      ${escHtml(fmtData(p.data))} · ${escHtml(p.hora_inicio||'')} – ${escHtml(p.hora_fim||'')}</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-success);font-size:var(--text-sm);font-weight:500;margin-bottom:var(--space-2);">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 7l2 2L9.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Horário disponível
+    </div>`;
+  } else {
+    html += `<div class="ai-bubble" style="margin-bottom:var(--space-4);">
+      <p><strong>${escHtml(p.nome || '—')}</strong><br>
+      ${escHtml(fmtData(p.data))} · ${escHtml(p.hora_inicio||'')} – ${escHtml(p.hora_fim||'')}</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-warning);font-size:var(--text-sm);font-weight:500;margin-bottom:var(--space-3);">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3M7 9.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Horário ocupado — sugestões:
+    </div>`;
+    sugestoes.forEach(s => {
+      html += `<div class="sug-item" data-nome="${escHtml(p.nome||'')}" data-data="${escHtml(s.data)}" data-ini="${escHtml(s.hora_inicio)}" data-fim="${escHtml(s.hora_fim)}">
+        <span class="sug-hora">${escHtml(s.hora_inicio)} – ${escHtml(s.hora_fim)}</span>
+        <span class="sug-label">${escHtml(fmtData(s.data))}</span>
+      </div>`;
+    });
+  }
+
+  document.getElementById('ag-result-content').innerHTML = html;
+
+  // Click sugestões
+  document.querySelectorAll('.sug-item').forEach(el => {
+    el.addEventListener('click', () => {
+      _agPendente = { ..._agPendente, data: el.dataset.data, hora_inicio: el.dataset.ini, hora_fim: el.dataset.fim };
+      document.querySelectorAll('.sug-item').forEach(s => s.style.background = '');
+      el.style.background = 'var(--color-accent-light)';
+      document.getElementById('ag-confirmar-btn').disabled = false;
+    });
+  });
+
+  const confirmarBtn = document.getElementById('ag-confirmar-btn');
+  confirmarBtn.disabled = !disponivel && !sugestoes.length;
+}
+
+document.getElementById('ag-confirmar-btn').addEventListener('click', async () => {
+  if (!_agPendente) return;
+  const btn = document.getElementById('ag-confirmar-btn');
+  btn.disabled = true; btn.textContent = 'Agendando…';
+  try {
+    await apiFetch('/sec/agendamento/confirmar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome:        _agPendente.nome,
+        data:        _agPendente.data,
+        hora_inicio: _agPendente.hora_inicio,
+        hora_fim:    _agPendente.hora_fim,
+        paciente_id: _agPendente.paciente_id || null,
+      }),
+    });
+    agSheetClose();
+    await carregarAgenda();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Confirmar agendamento';
+    alert('Erro: ' + e.message);
+  }
+});
+
+/* ══════════════════════════════════════════════
+   ATESTADO
+══════════════════════════════════════════════ */
+let _atPacienteId   = null;
+let _atPacienteNome = null;
+let _atRec = null, _atRecording = false;
+let _pacientes = [];
+
+// Carrega lista de pacientes
+async function carregarPacientes() {
+  try {
+    _pacientes = await apiFetch('/sec/pacientes');
+  } catch(e) { _pacientes = []; }
+}
+
+/* Picker de paciente */
+document.getElementById('btn-escolher-pac').addEventListener('click', () => {
+  renderPacLista('');
+  document.getElementById('pac-overlay').style.display = 'block';
+  document.getElementById('pac-sheet').style.display   = 'block';
+  setTimeout(() => document.getElementById('pac-busca').focus(), 200);
+});
+document.getElementById('pac-overlay').addEventListener('click', () => {
+  document.getElementById('pac-overlay').style.display = 'none';
+  document.getElementById('pac-sheet').style.display   = 'none';
+});
+document.getElementById('pac-busca').addEventListener('input', e => {
+  renderPacLista(e.target.value.trim().toLowerCase());
+});
+
+function renderPacLista(q) {
+  const lista = _pacientes.filter(p => !q || p.nome.toLowerCase().includes(q));
+  const el    = document.getElementById('pac-lista');
+  if (!lista.length) {
+    el.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-muted);padding:var(--space-4) 0;text-align:center;">Nenhum paciente encontrado</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(p =>
+    `<div class="pac-item" data-id="${p.id}" data-nome="${escHtml(p.nome)}">
+      <div class="pac-avatar">${initials(p.nome)}</div>
+      <span class="pac-nome">${escHtml(p.nome)}</span>
+    </div>`
+  ).join('');
+  el.querySelectorAll('.pac-item').forEach(item => {
+    item.addEventListener('click', () => {
+      _atPacienteId   = parseInt(item.dataset.id);
+      _atPacienteNome = item.dataset.nome;
+      document.getElementById('pac-escolhido-label').textContent = _atPacienteNome;
+      document.getElementById('pac-escolhido-label').style.color = 'var(--color-text)';
+      document.getElementById('pac-overlay').style.display = 'none';
+      document.getElementById('pac-sheet').style.display   = 'none';
+    });
+  });
+}
+
+/* Mic do atestado */
+document.getElementById('at-mic-btn').addEventListener('click', async () => {
+  if (_atRecording) {
+    if (_atRec) { try { _atRec.stop(); } catch {} }
+    _atRecording = false;
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    _atRec = new MediaRecorder(stream);
+    _atRec.ondataavailable = e => chunks.push(e.data);
+    _atRec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      document.getElementById('at-mic-label').textContent = 'Transcrevendo…';
+      document.getElementById('at-mic-btn').classList.remove('recording');
+      document.getElementById('at-mic-icon').style.display  = '';
+      document.getElementById('at-stop-icon').style.display = 'none';
+      try {
+        const fd = new FormData();
+        fd.append('audio', new Blob(chunks, { type: 'audio/webm' }), 'at.webm');
+        const tr = await apiFetch('/transcrever', { method: 'POST', body: fd });
+        const texto = tr.transcricao || tr.texto || '';
+        document.getElementById('at-texto').value = texto;
+        document.getElementById('at-mic-label').textContent = 'Gravação concluída';
+        document.getElementById('at-rec-feedback').innerHTML =
+          `<div class="ai-bubble" style="font-size:var(--text-sm);margin-bottom:var(--space-3);">${escHtml(texto)}</div>`;
+      } catch(e) {
+        document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
+      }
+    };
+    _atRec.start();
+    _atRecording = true;
+    document.getElementById('at-mic-btn').classList.add('recording');
+    document.getElementById('at-mic-icon').style.display  = 'none';
+    document.getElementById('at-stop-icon').style.display = '';
+    document.getElementById('at-mic-label').textContent   = 'Gravando… toque para parar';
+  } catch(e) {
+    alert('Microfone não disponível: ' + e.message);
+  }
+});
+
+/* Interpretar atestado */
+document.getElementById('at-interpretar-btn').addEventListener('click', async () => {
+  const texto = document.getElementById('at-texto').value.trim();
+  if (!texto) { alert('Escreva ou grave o atestado primeiro.'); return; }
+  const btn = document.getElementById('at-interpretar-btn');
+  btn.disabled = true; btn.textContent = 'Interpretando…';
+  try {
+    const parsed = await apiFetch('/sec/atestado/interpretar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto, paciente_id: _atPacienteId || null }),
+    });
+    // Abre sheet de revisão
+    document.getElementById('rev-data').value     = parsed.data     || new Date().toISOString().slice(0,10);
+    document.getElementById('rev-hora-ini').value = parsed.hora_inicio || '';
+    document.getElementById('rev-hora-fim').value = parsed.hora_fim    || '';
+    document.getElementById('rev-motivo').value   = parsed.motivo  || '';
+    document.getElementById('rev-conduta').value  = parsed.conduta || '';
+    document.getElementById('rev-crefito').value  = localStorage.getItem('sec_crefito') || '';
+    document.getElementById('at-form-overlay').style.display = 'block';
+    document.getElementById('at-form-sheet').style.display   = 'block';
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Gerar atestado';
+  }
+});
+
+document.getElementById('at-form-overlay').addEventListener('click', () => {
+  document.getElementById('at-form-overlay').style.display = 'none';
+  document.getElementById('at-form-sheet').style.display   = 'none';
+});
+document.getElementById('rev-voltar-btn').addEventListener('click', () => {
+  document.getElementById('at-form-overlay').style.display = 'none';
+  document.getElementById('at-form-sheet').style.display   = 'none';
+});
+
+document.getElementById('rev-gerar-btn').addEventListener('click', () => {
+  const fisioNome = ''; // fisio logado não disponível aqui — campo CREFITO supre
+  const dataVal   = document.getElementById('rev-data').value;
+  const horaIni   = document.getElementById('rev-hora-ini').value;
+  const horaFim   = document.getElementById('rev-hora-fim').value;
+  const motivo    = document.getElementById('rev-motivo').value.trim();
+  const conduta   = document.getElementById('rev-conduta').value.trim();
+  const crefito   = document.getElementById('rev-crefito').value.trim();
+  const pacNome   = _atPacienteNome || 'Paciente';
+
+  if (crefito) localStorage.setItem('sec_crefito', crefito);
+
+  const [a,m,d] = dataVal.split('-');
+  const dataFmt = dataVal
+    ? new Date(+a,+m-1,+d).toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'})
+    : '';
+  const horario = horaIni && horaFim ? `, no período das ${horaIni} às ${horaFim}`
+    : horaIni ? ` a partir das ${horaIni}` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Atestado — ${escHtml(pacNome)}</title>
+<style>
+  @page { margin: 60px 80px; }
+  @media print { .no-print { display:none !important; } }
+  body { font-family:'Times New Roman',Times,serif; font-size:15px; color:#111; line-height:1.8; max-width:680px; margin:40px auto; padding:0 24px; }
+  h1 { text-align:center; font-size:17px; font-weight:bold; text-transform:uppercase; letter-spacing:3px; margin-bottom:48px; padding-bottom:16px; border-bottom:1px solid #ccc; }
+  p { margin-bottom:20px; text-align:justify; }
+  .assinatura { margin-top:80px; text-align:center; }
+  .assinatura .linha { display:inline-block; width:280px; border-top:1px solid #111; padding-top:10px; }
+  .print-btn { display:block; margin:0 auto 40px; padding:12px 40px; background:#1A1A1A; color:#fff; border:none; border-radius:8px; font-size:15px; font-family:sans-serif; cursor:pointer; }
+</style></head><body>
+<button class="print-btn no-print" onclick="window.print()">⬇ Imprimir / Salvar como PDF</button>
+<h1>Atestado de Fisioterapia</h1>
+<p>Atesto que o(a) paciente <strong>${escHtml(pacNome)}</strong> esteve sob atendimento fisioterapêutico no dia <strong>${escHtml(dataFmt)}</strong>${escHtml(horario)}, em virtude de <strong>${escHtml(motivo)}</strong>.</p>
+<p>Durante o atendimento, foram realizados: <strong>${escHtml(conduta)}</strong>.</p>
+<div class="assinatura">
+  <div class="linha">
+    Fisioterapeuta${crefito ? '<br>CREFITO: '+escHtml(crefito) : ''}
+  </div>
+</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Permita pop-ups para gerar o PDF.'); return; }
+  win.document.write(html);
+  win.document.close();
+  document.getElementById('at-form-overlay').style.display = 'none';
+  document.getElementById('at-form-sheet').style.display   = 'none';
+});
+
+/* ── Init ── */
+carregarAgenda();
+carregarPacientes();
+</script>
+</body>
+</html>
