@@ -798,6 +798,45 @@ Regras ESSENCIAIS:
     return result
 
 
+async def interpretar_agendamento(texto: str, data_hoje: str, owner_email: str | None = None) -> dict:
+    """
+    Interpreta um pedido de agendamento em linguagem natural.
+    Retorna: {nome, data (YYYY-MM-DD), hora_inicio (HH:MM), hora_fim (HH:MM)}
+    """
+    prompt = f"""Hoje é {data_hoje}.
+
+Pedido do usuário: "{texto}"
+
+Extraia as informações de agendamento. Responda APENAS com JSON válido, sem markdown, sem explicações:
+{{
+  "nome": "nome da pessoa ou título do evento",
+  "data": "YYYY-MM-DD",
+  "hora_inicio": "HH:MM",
+  "hora_fim": "HH:MM"
+}}
+
+Regras:
+- Interprete expressões relativas como "amanhã", "depois de amanhã", "sexta-feira", "semana que vem", "daqui 3 dias"
+- Se o usuário informou só hora de início e nenhuma duração, assuma 1 hora
+- Se não informou horário, use "09:00" como padrão
+- Horário em formato 24h (ex: "14:30", "08:00")
+- Se o usuário disse "das X às Y" use exatamente esses horários
+- Responda APENAS o JSON"""
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=150,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("interpretar_agendamento", message, owner_email)
+    raw = message.content[0].text.strip()
+    if "```" in raw:
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+    return json.loads(raw)
+
+
 async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:
     """Tenta extrair valor monetário de sessão avulsa da transcrição. Retorna float ou None."""
     if not transcricao or not transcricao.strip():

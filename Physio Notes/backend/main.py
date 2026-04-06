@@ -925,6 +925,147 @@ async def get_agenda_google(mes: str | None = None, request: Request = None):
         return {"conectado": True, "eventos": [], "erro": str(exc)}
 
 
+def _dt_br_iso(data: str, hora: str) -> str:
+    """Retorna datetime ISO 8601 com offset -03:00 (Brasília)."""
+    return f"{data}T{hora}:00-03:00"
+
+
+async def _verificar_disponibilidade_gcal(access_token: str, data: str, hora_ini: str, hora_fim: str):
+    """Verifica freebusy no Google Calendar. Retorna (disponivel: bool, busy: list)."""
+    import httpx
+    body = {
+        "timeMin": _dt_br_iso(data, hora_ini),
+        "timeMax": _dt_br_iso(data, hora_fim),
+        "items":   [{"id": "primary"}],
+    }
+    try:
+        async with httpx.AsyncClient() as c:
+            resp = await c.post(
+                "https://www.googleapis.com/calendar/v3/freeBusy",
+                json=body,
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10.0,
+            )
+        busy = resp.json().get("calendars", {}).get("primary", {}).get("busy", [])
+        return len(busy) == 0, busy
+    except Exception:
+        return True, []  # fallback: assume disponível
+
+
+async def _gerar_sugestoes_gcal(access_token: str, data: str, hora_ini: str, hora_fim: str) -> list:
+    """Gera até 4 sugestões de horário livre (mesmo dia ±h; próximos dias mesmo horário)."""
+    from datetime import datetime, timedelta
+
+    ini_h, ini_m = int(hora_ini[:2]), int(hora_ini[3:])
+    fim_h, fim_m = int(hora_fim[:2]), int(hora_fim[3:])
+    dur = (fim_h * 60 + fim_m) - (ini_h * 60 + ini_m)
+
+    candidatos = []
+    # Mesmo dia: offsets de -2h, -1h, +1h, +2h
+    for dh in [-2, -1, 1, 2]:
+        tot = ini_h * 60 + ini_m + dh * 60
+        if 7 * 60 <= tot and tot + dur <= 21 * 60:
+            c_ini = f"{tot // 60:02d}:{tot % 60:02d}"
+            c_fim = f"{(tot + dur) // 60:02d}:{(tot + dur) % 60:02d}"
+            candidatos.append((data, c_ini, c_fim))
+    # Próximos 3 dias: mesmo horário
+    dt_base = datetime.fromisoformat(data)
+    for dd in [1, 2, 3]:
+        nd = (dt_base + timedelta(days=dd)).strftime("%Y-%m-%d")
+        candidatos.append((nd, hora_ini, hora_fim))
+
+    sugestoes = []
+    for cand_data, cand_ini, cand_fim in candidatos:
+        if len(sugestoes) >= 4:
+            break
+        ok, _ = await _verificar_disponibilidade_gcal(access_token, cand_data, cand_ini, cand_fim)
+        if ok:
+            sugestoes.append({"data": cand_data, "hora_inicio": cand_ini, "hora_fim": cand_fim})
+    return sugestoes
+
+
+class AgendaInterpretarBody(BaseModel):
+    texto: str
+
+@app.post("/agenda/interpretar")
+async def agenda_interpretar(body: AgendaInterpretarBody, request: Request = None):
+    """Interpreta pedido de agendamento e verifica disponibilidade no Google Calendar."""
+    from datetime import date
+    owner = _owner_email(request)
+    data_hoje = date.today().isoformat()
+
+    try:
+        parsed = await ai.interpretar_agendamento(body.texto, data_hoje, owner)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Não consegui interpretar o pedido: {e}")
+
+    refresh_token = db.get_google_refresh_token(owner)
+    if not refresh_token:
+        return {"parsed": parsed, "disponivel": True, "gcal_conectado": False, "sugestoes": []}
+
+    try:
+        access_token = await calendar_service._obter_access_token(refresh_token)
+    except Exception:
+        return {"parsed": parsed, "disponivel": True, "gcal_conectado": True, "sugestoes": [],
+                "aviso": "Não foi possível verificar o calendário"}
+
+    disponivel, _ = await _verificar_disponibilidade_gcal(
+        access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"]
+    )
+    sugestoes = []
+    if not disponivel:
+        sugestoes = await _gerar_sugestoes_gcal(
+            access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"]
+        )
+
+    return {
+        "parsed":        parsed,
+        "disponivel":    disponivel,
+        "gcal_conectado": True,
+        "sugestoes":     sugestoes,
+    }
+
+
+class AgendaConfirmarBody(BaseModel):
+    nome: str
+    data: str
+    hora_inicio: str
+    hora_fim: str
+
+@app.post("/agenda/confirmar")
+async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
+    """Cria evento no Google Calendar do fisio."""
+    import httpx
+    owner = _owner_email(request)
+    refresh_token = db.get_google_refresh_token(owner)
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="Google Calendar não conectado")
+
+    try:
+        access_token = await calendar_service._obter_access_token(refresh_token)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Falha ao autenticar: {e}")
+
+    event_body = {
+        "summary": body.nome,
+        "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": "America/Sao_Paulo"},
+        "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": "America/Sao_Paulo"},
+        "colorId": "2",
+    }
+    async with httpx.AsyncClient() as c:
+        resp = await c.post(
+            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+            json=event_body,
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10.0,
+        )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
+
+    ev = resp.json()
+    return {"ok": True, "event_id": ev.get("id")}
+
+
 @app.get("/pacientes/{paciente_id}/resumo")
 async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Request = None):
     paciente = db.get_paciente(paciente_id)

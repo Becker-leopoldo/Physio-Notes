@@ -4,6 +4,24 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.261 — 2026-04-06
+
+### Funcionalidades
+
+**Novo agendamento por voz ou texto na Agenda**
+- Botão FAB "+" fixo na tela de agenda — abre bottom sheet deslizante
+- Fisio fala ou digita: nome da pessoa, data e horário (ex: "Sessão com Ana amanhã das 14h às 15h")
+- IA interpreta a linguagem natural e extrai nome, data e horários exatos
+- Verifica disponibilidade em tempo real no Google Calendar via API freebusy
+- Se disponível: exibe card verde com confirmação
+- Se ocupado: exibe card vermelho + até 4 sugestões de horário livre (mesmo dia ±1h e ±2h, próximos dias mesmo horário)
+- Usuário seleciona uma sugestão tocando nela; botão "Confirmar" cria o evento no Google Calendar
+- Após confirmação, agenda recarrega automaticamente com o novo evento
+- Novos endpoints backend: `POST /agenda/interpretar` e `POST /agenda/confirmar`
+- Nova função AI: `interpretar_agendamento()` com parsing de expressões relativas ("amanhã", "sexta", "semana que vem")
+
+---
+
 ## Beta-0.260 — 2026-04-06
 
 ### Melhorias

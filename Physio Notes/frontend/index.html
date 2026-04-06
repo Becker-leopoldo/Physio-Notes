@@ -1376,8 +1376,40 @@
       </button>
       <span class="top-bar-title">Agenda</span>
     </div>
-    <div class="section-body" id="agenda-body" style="padding:0;max-width:600px;margin:0 auto;">
+    <div class="section-body" id="agenda-body" style="padding:0;max-width:600px;margin:0 auto;position:relative;">
     </div>
+
+    <!-- FAB: adicionar evento -->
+    <button id="agenda-fab" title="Novo evento" aria-label="Novo evento na agenda">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Bottom sheet: novo agendamento -->
+    <div id="ag-sheet-overlay" style="display:none;"></div>
+    <div id="ag-sheet" style="display:none;">
+      <div id="ag-sheet-handle"></div>
+      <div id="ag-sheet-header">
+        <span id="ag-sheet-title">Novo evento</span>
+        <button id="ag-sheet-close" aria-label="Fechar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Input área -->
+      <div id="ag-sheet-input-area">
+        <div id="ag-input-wrap">
+          <textarea id="ag-texto" rows="2" placeholder="Ex: Consulta com Ana Silva amanhã das 14h às 15h…"></textarea>
+          <button id="ag-mic-btn" title="Usar voz">
+            <svg id="ag-mic-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M5 11a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <button id="ag-analisar-btn" class="btn btn-primary" style="width:100%;margin-top:10px;">Analisar disponibilidade</button>
+      </div>
+
+      <!-- Resultado -->
+      <div id="ag-sheet-result" style="display:none;"></div>
+    </div>
+
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
 
@@ -1526,7 +1558,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.260'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.261'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5514,6 +5546,7 @@
 
   async function openAgenda() {
     showSection('sec-agenda');
+    _agSheetInit();
     await _agendaCarregar();
   }
 
@@ -5712,6 +5745,50 @@
         .ag-list-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ag-list-sub { font-size:11px; color:var(--color-text-muted); margin-top:2px; }
         .ag-list-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:var(--radius-full); flex-shrink:0; }
+        /* ── FAB ── */
+        #agenda-fab { position:fixed; bottom:28px; right:20px; width:52px; height:52px; border-radius:50%; background:var(--color-accent); color:#fff; border:none; cursor:pointer; display:none; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.22); transition:transform .15s, box-shadow .15s; z-index:300; }
+        #agenda-fab:hover { transform:scale(1.07); box-shadow:0 6px 20px rgba(0,0,0,0.28); }
+        #sec-agenda.active #agenda-fab { display:flex; }
+        /* ── Bottom sheet ── */
+        #ag-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:400; animation:fadeIn .2s; }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        #ag-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--color-surface); border-radius:18px 18px 0 0; box-shadow:0 -4px 24px rgba(0,0,0,0.14); z-index:401; padding:0 0 env(safe-area-inset-bottom,0); animation:slideUp .25s cubic-bezier(.32,1,.35,1); max-height:92vh; overflow-y:auto; }
+        @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+        #ag-sheet-handle { width:36px; height:4px; border-radius:2px; background:var(--color-border-strong); margin:12px auto 0; }
+        #ag-sheet-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 10px; }
+        #ag-sheet-title { font-size:var(--text-base); font-weight:600; color:var(--color-text); }
+        #ag-sheet-close { width:32px; height:32px; border:none; background:var(--color-accent-light); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); }
+        #ag-sheet-input-area { padding:0 16px 16px; }
+        #ag-input-wrap { display:flex; align-items:flex-start; gap:8px; background:var(--color-bg); border:var(--border); border-radius:var(--radius-md); padding:10px 12px; }
+        #ag-texto { flex:1; border:none; background:transparent; resize:none; font-family:var(--font-body); font-size:var(--text-sm); color:var(--color-text); outline:none; line-height:1.5; }
+        #ag-texto::placeholder { color:var(--color-text-muted); }
+        #ag-mic-btn { width:36px; height:36px; border:none; background:transparent; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); flex-shrink:0; transition:background .15s; }
+        #ag-mic-btn:hover { background:var(--color-accent-light); }
+        #ag-mic-btn.recording { color:#dc2127; animation:pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        /* ── Result area ── */
+        #ag-sheet-result { padding:0 16px 20px; }
+        .ag-result-card { border-radius:var(--radius-md); padding:14px 16px; margin-bottom:10px; }
+        .ag-result-card-ok { background:var(--color-success-bg); border:1px solid #b7dfca; }
+        .ag-result-card-busy { background:var(--color-danger-bg); border:1px solid #f5c2c2; }
+        .ag-result-card-info { background:var(--color-info-bg); border:1px solid #b8cfe8; }
+        .ag-result-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+        .ag-result-label-ok { color:var(--color-success); }
+        .ag-result-label-busy { color:var(--color-danger); }
+        .ag-result-label-info { color:var(--color-info); }
+        .ag-result-nome { font-size:var(--text-base); font-weight:600; color:var(--color-text); }
+        .ag-result-when { font-size:var(--text-sm); color:var(--color-text-secondary); margin-top:2px; }
+        .ag-sug-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-text-muted); margin:14px 0 6px; }
+        .ag-sug-item { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--color-surface); border:var(--border); border-radius:var(--radius-md); cursor:pointer; margin-bottom:6px; transition:background .1s; }
+        .ag-sug-item:hover { background:var(--color-accent-light); }
+        .ag-sug-dot { width:8px; height:8px; border-radius:50%; background:var(--color-text-muted); flex-shrink:0; }
+        .ag-sug-body { flex:1; }
+        .ag-sug-when { font-size:var(--text-sm); font-weight:500; color:var(--color-text); }
+        .ag-sug-date { font-size:11px; color:var(--color-text-muted); margin-top:1px; }
+        .ag-sug-sel .ag-sug-dot { background:var(--color-accent); }
+        .ag-sug-sel { border-color:var(--color-accent); background:var(--color-accent-light); }
+        .ag-confirm-btn { width:100%; margin-top:14px; }
+        .ag-sheet-loading { display:flex; align-items:center; gap:10px; padding:16px 0; color:var(--color-text-secondary); font-size:var(--text-sm); }
       `;
       document.head.appendChild(style);
     }
@@ -5833,6 +5910,207 @@
 
     lista.querySelectorAll('.ag-list-physio[data-paciente-id]').forEach(el => {
       el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
+    });
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     AGENDA — Bottom sheet: novo agendamento por voz ou texto
+  ──────────────────────────────────────────────────────────── */
+  let _agSheetRec = null;
+  let _agSheetRecording = false;
+  let _agSheetPendente = null; // {nome, data, hora_inicio, hora_fim} a confirmar
+
+  function _agSheetFmtData(dataStr) {
+    const [a, m, d] = dataStr.split('-');
+    const dt = new Date(+a, +m - 1, +d);
+    return dt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  function _agSheetFmtHora(ini, fim) { return `${ini} – ${fim}`; }
+
+  function _agSheetOpen() {
+    document.getElementById('ag-sheet-overlay').style.display = 'block';
+    document.getElementById('ag-sheet').style.display = 'block';
+    document.getElementById('ag-sheet-result').style.display = 'none';
+    document.getElementById('ag-sheet-input-area').style.display = 'block';
+    document.getElementById('ag-texto').value = '';
+    _agSheetPendente = null;
+    setTimeout(() => document.getElementById('ag-texto').focus(), 300);
+  }
+
+  function _agSheetClose() {
+    if (_agSheetRecording) _agSheetStopMic();
+    document.getElementById('ag-sheet-overlay').style.display = 'none';
+    document.getElementById('ag-sheet').style.display = 'none';
+  }
+
+  async function _agSheetToggleMic() {
+    if (_agSheetRecording) { _agSheetStopMic(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+      _agSheetRec = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      const chunks = [];
+      _agSheetRec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      _agSheetRec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        _agSheetRecording = false;
+        document.getElementById('ag-mic-btn').classList.remove('recording');
+        const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+        const fd = new FormData();
+        fd.append('audio', blob, 'ag.webm');
+        try {
+          const tj = await apiFetch('/transcrever', { method: 'POST', body: fd });
+          const txt = (tj.transcricao || '').trim();
+          if (txt) {
+            document.getElementById('ag-texto').value = txt;
+            _agSheetAnalisar();
+          }
+        } catch (e) { console.warn('transcrição falhou', e); }
+      };
+      _agSheetRec.start();
+      _agSheetRecording = true;
+      document.getElementById('ag-mic-btn').classList.add('recording');
+    } catch (e) { console.warn('mic error', e); }
+  }
+
+  function _agSheetStopMic() {
+    if (_agSheetRec && _agSheetRec.state !== 'inactive') _agSheetRec.stop();
+    _agSheetRecording = false;
+    document.getElementById('ag-mic-btn').classList.remove('recording');
+  }
+
+  async function _agSheetAnalisar() {
+    const texto = (document.getElementById('ag-texto').value || '').trim();
+    if (!texto) return;
+
+    const resultArea = document.getElementById('ag-sheet-result');
+    resultArea.style.display = 'block';
+    resultArea.innerHTML = `<div class="ag-sheet-loading"><span class="spinner"></span> Analisando disponibilidade…</div>`;
+
+    try {
+      const data = await apiFetch('/agenda/interpretar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto }),
+      });
+      _agSheetRenderResult(data);
+    } catch (e) {
+      resultArea.innerHTML = `<div class="ag-result-card ag-result-card-busy"><div class="ag-result-label ag-result-label-busy">Erro</div><div class="ag-result-when">${e.message}</div></div>`;
+    }
+  }
+
+  function _agSheetRenderResult(data) {
+    const { parsed, disponivel, sugestoes = [], gcal_conectado, aviso } = data;
+    const resultArea = document.getElementById('ag-sheet-result');
+    _agSheetPendente = { ...parsed }; // slot selecionado por padrão
+
+    const dataFmt = _agSheetFmtData(parsed.data);
+    const horaFmt = _agSheetFmtHora(parsed.hora_inicio, parsed.hora_fim);
+
+    let html = '';
+
+    if (disponivel) {
+      html += `<div class="ag-result-card ag-result-card-ok">
+        <div class="ag-result-label ag-result-label-ok">● Horário disponível</div>
+        <div class="ag-result-nome">${escHtml(parsed.nome)}</div>
+        <div class="ag-result-when">${dataFmt} · ${horaFmt}</div>
+        ${aviso ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">${aviso}</div>` : ''}
+        ${!gcal_conectado ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Google Calendar não conectado — evento não será criado no calendário.</div>` : ''}
+      </div>`;
+    } else {
+      html += `<div class="ag-result-card ag-result-card-busy">
+        <div class="ag-result-label ag-result-label-busy">✕ Horário ocupado</div>
+        <div class="ag-result-nome">${escHtml(parsed.nome)}</div>
+        <div class="ag-result-when">${dataFmt} · ${horaFmt}</div>
+      </div>`;
+
+      if (sugestoes.length) {
+        html += `<div class="ag-sug-title">Sugestões disponíveis</div>`;
+        sugestoes.forEach((s, i) => {
+          const sf = _agSheetFmtData(s.data);
+          const sh = _agSheetFmtHora(s.hora_inicio, s.hora_fim);
+          const isSameDay = s.data === parsed.data;
+          html += `<div class="ag-sug-item${i === 0 ? ' ag-sug-sel' : ''}" data-idx="${i}" data-data="${s.data}" data-ini="${s.hora_inicio}" data-fim="${s.hora_fim}">
+            <div class="ag-sug-dot"></div>
+            <div class="ag-sug-body">
+              <div class="ag-sug-when">${sh}</div>
+              <div class="ag-sug-date">${isSameDay ? 'Mesmo dia' : sf}</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>`;
+        });
+        // Pré-seleciona primeira sugestão como pendente
+        _agSheetPendente = { nome: parsed.nome, data: sugestoes[0].data, hora_inicio: sugestoes[0].hora_inicio, hora_fim: sugestoes[0].hora_fim };
+      } else {
+        html += `<div style="font-size:var(--text-sm);color:var(--color-text-muted);padding:8px 0;">Nenhum horário alternativo encontrado neste período.</div>`;
+      }
+    }
+
+    html += `<button class="btn btn-primary ag-confirm-btn" id="ag-confirmar-btn">Confirmar agendamento</button>`;
+    resultArea.innerHTML = html;
+
+    // Click nas sugestões
+    resultArea.querySelectorAll('.ag-sug-item').forEach(el => {
+      el.addEventListener('click', () => {
+        resultArea.querySelectorAll('.ag-sug-item').forEach(e => e.classList.remove('ag-sug-sel'));
+        el.classList.add('ag-sug-sel');
+        _agSheetPendente = { nome: parsed.nome, data: el.dataset.data, hora_inicio: el.dataset.ini, hora_fim: el.dataset.fim };
+      });
+    });
+
+    document.getElementById('ag-confirmar-btn').addEventListener('click', _agSheetConfirmar);
+  }
+
+  async function _agSheetConfirmar() {
+    if (!_agSheetPendente) return;
+    const btn = document.getElementById('ag-confirmar-btn');
+    btn.disabled = true;
+    btn.textContent = 'Agendando…';
+    try {
+      await apiFetch('/agenda/confirmar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(_agSheetPendente),
+      });
+      const resultArea = document.getElementById('ag-sheet-result');
+      const dataFmt = _agSheetFmtData(_agSheetPendente.data);
+      const horaFmt = _agSheetFmtHora(_agSheetPendente.hora_inicio, _agSheetPendente.hora_fim);
+      resultArea.innerHTML = `<div class="ag-result-card ag-result-card-ok" style="text-align:center;padding:20px 16px;">
+        <div style="font-size:28px;margin-bottom:8px;">✓</div>
+        <div class="ag-result-nome">${escHtml(_agSheetPendente.nome)}</div>
+        <div class="ag-result-when">${dataFmt}</div>
+        <div class="ag-result-when">${horaFmt}</div>
+        <div style="font-size:11px;color:var(--color-success);margin-top:8px;">Evento criado no Google Calendar</div>
+      </div>`;
+      _agSheetPendente = null;
+      // Recarrega agenda após 1.5s e fecha o sheet
+      setTimeout(() => { _agSheetClose(); _agendaCarregar(); }, 1600);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Confirmar agendamento';
+      document.getElementById('ag-sheet-result').insertAdjacentHTML('afterbegin',
+        `<div class="ag-result-card ag-result-card-busy" style="margin-bottom:8px;"><div class="ag-result-label ag-result-label-busy">Erro</div><div class="ag-result-when">${e.message}</div></div>`
+      );
+    }
+  }
+
+  // Init do sheet (chamado uma vez ao entrar na seção agenda)
+  let _agSheetInited = false;
+  function _agSheetInit() {
+    if (_agSheetInited) return;
+    _agSheetInited = true;
+    document.getElementById('agenda-fab').addEventListener('click', _agSheetOpen);
+    document.getElementById('ag-sheet-close').addEventListener('click', _agSheetClose);
+    document.getElementById('ag-sheet-overlay').addEventListener('click', _agSheetClose);
+    document.getElementById('ag-mic-btn').addEventListener('click', _agSheetToggleMic);
+    document.getElementById('ag-analisar-btn').addEventListener('click', () => {
+      if (_agSheetRecording) { _agSheetStopMic(); return; }
+      _agSheetAnalisar();
+    });
+    document.getElementById('ag-texto').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _agSheetAnalisar(); }
     });
   }
 
