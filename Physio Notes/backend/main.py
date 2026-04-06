@@ -935,37 +935,67 @@ def _normalizar_nome(s: str) -> str:
 
 def _buscar_paciente_por_nome(nome_evento: str, pacientes: list) -> dict:
     """
-    Associa nome_evento a pacientes cadastrados.
-    Retorna:
-      {"tipo": "exato",    "paciente": {...}}          — vai direto
-      {"tipo": "sugestoes","sugestoes": [{...}, ...]}  — mostra lista (dúvida)
-      {"tipo": "nenhum"}                               — sem candidato
-    """
-    stopwords = {'de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o'}
-    nome_n = _normalizar_nome(nome_evento)
-    partes_evento = set(nome_n.split()) - stopwords
+    Associa nome_evento a pacientes cadastrados com critério rigoroso.
 
-    exatos, parciais = [], []
+    Critérios de pontuação:
+      10 — nome exato (normalizado)
+       8 — nome do evento contido no nome do paciente ou vice-versa
+       6 — primeiro nome igual E pelo menos 1 outra palavra em comum
+       5 — primeiro nome igual (sozinho)
+       3 — 2+ palavras em comum (exceto stopwords), mas primeiro nome diferente
+       0 — apenas 1 palavra em comum que não é o primeiro nome → IGNORADO
+
+    Resultado:
+      exato    → 1 candidato no topo
+      sugestoes → 2+ candidatos empatados no topo
+      nenhum   → sem candidatos com pontuação suficiente
+    """
+    stopwords = {'de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o', 'e'}
+    nome_n = _normalizar_nome(nome_evento)
+    partes_ev = [w for w in nome_n.split() if w not in stopwords and len(w) > 1]
+    if not partes_ev:
+        return {"tipo": "nenhum"}
+
+    primeiro_ev = partes_ev[0]
+    scored: list[tuple[int, dict]] = []
+
     for p in pacientes:
         p_n = _normalizar_nome(p.get("nome", ""))
-        if p_n == nome_n:
-            exatos.append(p)
-        elif nome_n in p_n or p_n in nome_n:
-            parciais.append(p)
-        else:
-            comuns = partes_evento & (set(p_n.split()) - stopwords)
-            if comuns:
-                parciais.append(p)
+        partes_pac = [w for w in p_n.split() if w not in stopwords and len(w) > 1]
+        if not partes_pac:
+            continue
 
-    if len(exatos) == 1:
-        return {"tipo": "exato", "paciente": {"id": exatos[0]["id"], "nome": exatos[0]["nome"]}}
-    if len(exatos) > 1:
-        return {"tipo": "sugestoes", "sugestoes": [{"id": p["id"], "nome": p["nome"]} for p in exatos[:4]]}
-    if len(parciais) == 1:
-        return {"tipo": "exato", "paciente": {"id": parciais[0]["id"], "nome": parciais[0]["nome"]}}
-    if len(parciais) > 1:
-        return {"tipo": "sugestoes", "sugestoes": [{"id": p["id"], "nome": p["nome"]} for p in parciais[:4]]}
-    return {"tipo": "nenhum"}
+        if p_n == nome_n:
+            score = 10
+        elif nome_n in p_n or p_n in nome_n:
+            score = 8
+        else:
+            comuns = set(partes_ev) & set(partes_pac)
+            primeiro_pac = partes_pac[0]
+            first_match = (primeiro_ev == primeiro_pac)
+
+            if first_match and len(comuns) >= 2:
+                score = 6
+            elif first_match:
+                score = 5
+            elif len(comuns) >= 2:
+                score = 3
+            else:
+                score = 0  # 1 palavra em comum (sobrenome isolado) → ignora
+
+        if score > 0:
+            scored.append((score, {"id": p["id"], "nome": p["nome"]}))
+
+    if not scored:
+        return {"tipo": "nenhum"}
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    best = scored[0][0]
+    top = [s[1] for s in scored if s[0] == best]
+
+    if len(top) == 1:
+        return {"tipo": "exato", "paciente": top[0]}
+    return {"tipo": "sugestoes", "sugestoes": top[:4]}
 
 
 def _dt_br_iso(data: str, hora: str) -> str:
