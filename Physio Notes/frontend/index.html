@@ -1573,7 +1573,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.268'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.269'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -6039,26 +6039,55 @@
   }
 
   function _agSheetRenderResult(data) {
-    const { parsed, disponivel, sugestoes = [], gcal_conectado, aviso } = data;
+    const { parsed, disponivel, sugestoes = [], gcal_conectado, aviso,
+            paciente_match, paciente_sugestoes = [] } = data;
     const resultArea = document.getElementById('ag-sheet-result');
-    _agSheetPendente = { ...parsed }; // slot selecionado por padrão
+
+    // Pendente inicial: slot original; paciente_id se match exato
+    _agSheetPendente = { ...parsed, paciente_id: paciente_match ? paciente_match.id : null };
 
     const dataFmt = _agSheetFmtData(parsed.data);
     const horaFmt = _agSheetFmtHora(parsed.hora_inicio, parsed.hora_fim);
 
-    // Link para voltar e editar
+    // Link para voltar
     let html = `<button id="ag-voltar-btn" style="background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;color:var(--color-text-muted);padding:0 0 12px;display:flex;align-items:center;gap:4px;">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Alterar pedido
     </button>`;
 
+    // ── Seleção de paciente (só quando há dúvida) ──
+    if (paciente_sugestoes.length > 0) {
+      html += `<div class="ag-sug-title" style="margin-top:0;">Qual paciente?</div>`;
+      paciente_sugestoes.forEach((p, i) => {
+        html += `<div class="ag-sug-item${i === 0 ? ' ag-sug-sel' : ''} ag-pac-item" data-pac-id="${p.id}" data-pac-nome="${escHtml(p.nome)}">
+          <div class="ag-sug-dot"></div>
+          <div class="ag-sug-body"><div class="ag-sug-when">${escHtml(p.nome)}</div></div>
+        </div>`;
+      });
+      html += `<div class="ag-sug-item ag-pac-item ag-pac-nenhum" data-pac-id="" data-pac-nome="${escHtml(parsed.nome)}">
+        <div class="ag-sug-dot"></div>
+        <div class="ag-sug-body"><div class="ag-sug-when" style="color:var(--color-text-muted);">Nenhum desses — usar "${escHtml(parsed.nome)}"</div></div>
+      </div>`;
+      // Pré-seleciona o primeiro como pendente
+      _agSheetPendente.paciente_id = paciente_sugestoes[0].id;
+      _agSheetPendente.nome = paciente_sugestoes[0].nome;
+      html += `<div style="height:1px;background:var(--color-border);margin:14px 0;"></div>`;
+    } else if (paciente_match) {
+      // Match exato — mostra badge discreto
+      html += `<div style="font-size:12px;color:var(--color-success);display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Paciente identificado: <strong>${escHtml(paciente_match.nome)}</strong>
+      </div>`;
+    }
+
+    // ── Disponibilidade ──
     if (disponivel) {
       html += `<div class="ag-result-card ag-result-card-ok">
         <div class="ag-result-label ag-result-label-ok">● Horário disponível</div>
         <div class="ag-result-nome">${escHtml(parsed.nome)}</div>
         <div class="ag-result-when">${dataFmt} · ${horaFmt}</div>
         ${aviso ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:6px;">${aviso}</div>` : ''}
-        ${!gcal_conectado ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Google Calendar não conectado — evento não será criado no calendário.</div>` : ''}
+        ${!gcal_conectado ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Google Calendar não conectado.</div>` : ''}
       </div>`;
     } else {
       html += `<div class="ag-result-card ag-result-card-busy">
@@ -6068,22 +6097,22 @@
       </div>`;
 
       if (sugestoes.length) {
-        html += `<div class="ag-sug-title">Sugestões disponíveis</div>`;
+        html += `<div class="ag-sug-title">Horários disponíveis</div>`;
         sugestoes.forEach((s, i) => {
           const sf = _agSheetFmtData(s.data);
           const sh = _agSheetFmtHora(s.hora_inicio, s.hora_fim);
-          const isSameDay = s.data === parsed.data;
-          html += `<div class="ag-sug-item${i === 0 ? ' ag-sug-sel' : ''}" data-idx="${i}" data-data="${s.data}" data-ini="${s.hora_inicio}" data-fim="${s.hora_fim}">
+          html += `<div class="ag-sug-item ag-hora-item${i === 0 ? ' ag-sug-sel' : ''}" data-data="${s.data}" data-ini="${s.hora_inicio}" data-fim="${s.hora_fim}">
             <div class="ag-sug-dot"></div>
             <div class="ag-sug-body">
               <div class="ag-sug-when">${sh}</div>
-              <div class="ag-sug-date">${isSameDay ? 'Mesmo dia' : sf}</div>
+              <div class="ag-sug-date">${s.data === parsed.data ? 'Mesmo dia' : sf}</div>
             </div>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>`;
         });
-        // Pré-seleciona primeira sugestão como pendente
-        _agSheetPendente = { nome: parsed.nome, data: sugestoes[0].data, hora_inicio: sugestoes[0].hora_inicio, hora_fim: sugestoes[0].hora_fim };
+        _agSheetPendente.data = sugestoes[0].data;
+        _agSheetPendente.hora_inicio = sugestoes[0].hora_inicio;
+        _agSheetPendente.hora_fim = sugestoes[0].hora_fim;
       } else {
         html += `<div style="font-size:var(--text-sm);color:var(--color-text-muted);padding:8px 0;">Nenhum horário alternativo encontrado neste período.</div>`;
       }
@@ -6093,18 +6122,30 @@
     <button id="ag-cancelar-result-btn" class="btn btn-ghost btn-sm" style="width:100%;margin-top:var(--space-2);">Cancelar</button>`;
     resultArea.innerHTML = html;
 
-    // Botão "Alterar pedido"
+    // Voltar
     document.getElementById('ag-voltar-btn').addEventListener('click', () => {
       resultArea.style.display = 'none';
       document.getElementById('ag-sheet-input-area').style.display = 'block';
     });
 
-    // Click nas sugestões
-    resultArea.querySelectorAll('.ag-sug-item').forEach(el => {
+    // Seleção de paciente (dúvida)
+    resultArea.querySelectorAll('.ag-pac-item').forEach(el => {
       el.addEventListener('click', () => {
-        resultArea.querySelectorAll('.ag-sug-item').forEach(e => e.classList.remove('ag-sug-sel'));
+        resultArea.querySelectorAll('.ag-pac-item').forEach(e => e.classList.remove('ag-sug-sel'));
         el.classList.add('ag-sug-sel');
-        _agSheetPendente = { nome: parsed.nome, data: el.dataset.data, hora_inicio: el.dataset.ini, hora_fim: el.dataset.fim };
+        _agSheetPendente.paciente_id = el.dataset.pacId ? parseInt(el.dataset.pacId) : null;
+        _agSheetPendente.nome = el.dataset.pacNome;
+      });
+    });
+
+    // Seleção de horário alternativo
+    resultArea.querySelectorAll('.ag-hora-item').forEach(el => {
+      el.addEventListener('click', () => {
+        resultArea.querySelectorAll('.ag-hora-item').forEach(e => e.classList.remove('ag-sug-sel'));
+        el.classList.add('ag-sug-sel');
+        _agSheetPendente.data = el.dataset.data;
+        _agSheetPendente.hora_inicio = el.dataset.ini;
+        _agSheetPendente.hora_fim = el.dataset.fim;
       });
     });
 

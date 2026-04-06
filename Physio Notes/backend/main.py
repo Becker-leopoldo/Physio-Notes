@@ -925,6 +925,49 @@ async def get_agenda_google(mes: str | None = None, request: Request = None):
         return {"conectado": True, "eventos": [], "erro": str(exc)}
 
 
+def _normalizar_nome(s: str) -> str:
+    """Lowercase + remove acentos para comparação."""
+    import unicodedata
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s.lower())
+        if unicodedata.category(c) != 'Mn'
+    )
+
+def _buscar_paciente_por_nome(nome_evento: str, pacientes: list) -> dict:
+    """
+    Associa nome_evento a pacientes cadastrados.
+    Retorna:
+      {"tipo": "exato",    "paciente": {...}}          — vai direto
+      {"tipo": "sugestoes","sugestoes": [{...}, ...]}  — mostra lista (dúvida)
+      {"tipo": "nenhum"}                               — sem candidato
+    """
+    stopwords = {'de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o'}
+    nome_n = _normalizar_nome(nome_evento)
+    partes_evento = set(nome_n.split()) - stopwords
+
+    exatos, parciais = [], []
+    for p in pacientes:
+        p_n = _normalizar_nome(p.get("nome", ""))
+        if p_n == nome_n:
+            exatos.append(p)
+        elif nome_n in p_n or p_n in nome_n:
+            parciais.append(p)
+        else:
+            comuns = partes_evento & (set(p_n.split()) - stopwords)
+            if comuns:
+                parciais.append(p)
+
+    if len(exatos) == 1:
+        return {"tipo": "exato", "paciente": {"id": exatos[0]["id"], "nome": exatos[0]["nome"]}}
+    if len(exatos) > 1:
+        return {"tipo": "sugestoes", "sugestoes": [{"id": p["id"], "nome": p["nome"]} for p in exatos[:4]]}
+    if len(parciais) == 1:
+        return {"tipo": "exato", "paciente": {"id": parciais[0]["id"], "nome": parciais[0]["nome"]}}
+    if len(parciais) > 1:
+        return {"tipo": "sugestoes", "sugestoes": [{"id": p["id"], "nome": p["nome"]} for p in parciais[:4]]}
+    return {"tipo": "nenhum"}
+
+
 def _dt_br_iso(data: str, hora: str) -> str:
     """Retorna datetime ISO 8601 com offset -03:00 (Brasília)."""
     return f"{data}T{hora}:00-03:00"
@@ -1018,11 +1061,17 @@ async def agenda_interpretar(body: AgendaInterpretarBody, request: Request = Non
             access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"]
         )
 
+    # Tenta associar ao paciente cadastrado
+    pacientes = db.listar_pacientes(owner)
+    match_pac = _buscar_paciente_por_nome(parsed.get("nome", ""), pacientes)
+
     return {
-        "parsed":        parsed,
-        "disponivel":    disponivel,
-        "gcal_conectado": True,
-        "sugestoes":     sugestoes,
+        "parsed":          parsed,
+        "disponivel":      disponivel,
+        "gcal_conectado":  True,
+        "sugestoes":       sugestoes,
+        "paciente_match":  match_pac.get("paciente") if match_pac["tipo"] == "exato" else None,
+        "paciente_sugestoes": match_pac.get("sugestoes", []) if match_pac["tipo"] == "sugestoes" else [],
     }
 
 
@@ -1031,6 +1080,7 @@ class AgendaConfirmarBody(BaseModel):
     data: str
     hora_inicio: str
     hora_fim: str
+    paciente_id: int | None = None
 
 @app.post("/agenda/confirmar")
 async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
