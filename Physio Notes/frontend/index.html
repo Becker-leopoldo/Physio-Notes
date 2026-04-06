@@ -1690,7 +1690,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.278'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.279'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -7767,15 +7767,14 @@
           if (!res.ok) throw new Error('Falha na transcrição');
           const { texto } = await res.json();
           document.getElementById('at-texto').value = texto;
-          document.getElementById('at-mic-label').textContent = 'Gravação concluída';
+          document.getElementById('at-mic-label').textContent = 'Interpretando…';
           document.getElementById('at-rec-feedback').innerHTML =
-            `<div class="ai-bubble" style="margin-top:var(--space-3);font-size:var(--text-sm);">"${escHtml(texto)}"</div>`;
-          const btn = document.getElementById('at-interpretar-btn');
-          btn.style.display = 'block';
-          btn.disabled = false;
-          btn.textContent = 'Interpretar';
+            `<div class="ai-bubble" style="margin-top:var(--space-3);font-size:var(--text-sm);">${escHtml(texto)}</div>`;
+          // Interpreta automaticamente sem precisar clicar
+          await _atInterpretar(texto);
         } catch (e2) {
           document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
+          document.getElementById('at-rec-feedback').innerHTML = '';
         }
       };
       _atRec.start();
@@ -7795,13 +7794,13 @@
     document.getElementById('at-overlay').addEventListener('click', _atClose);
     document.getElementById('at-input-cancel-btn').addEventListener('click', _atClose);
     document.getElementById('at-mic-btn').addEventListener('click', _atToggleRec);
-    // Interpretar após gravação
+    // Botão interpretar (fallback — normalmente a IA interpreta automaticamente após transcrição)
     document.getElementById('at-interpretar-btn').addEventListener('click', async () => {
       const texto = document.getElementById('at-texto').value.trim();
+      if (!texto) return;
       const btn = document.getElementById('at-interpretar-btn');
       btn.disabled = true; btn.textContent = 'Interpretando…';
       await _atInterpretar(texto);
-      btn.disabled = false; btn.textContent = 'Interpretar';
     });
     // Prefiro digitar
     document.getElementById('at-digitar-btn').addEventListener('click', () => {
