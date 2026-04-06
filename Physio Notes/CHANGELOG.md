@@ -4,6 +4,75 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.283 — 2026-04-06
+
+### Correções
+
+- **Backend:** `db.get_paciente` chamado com argumento `owner` inválido — causava TypeError e 500
+- **Frontend:** requisição `/atestado/interpretar` enviada sem `Content-Type: application/json` — FastAPI retornava 422
+- Removido botão "Tentar interpretar" — fluxo agora é 100% automático: voz → transcrição → IA → formulário
+
+---
+
+## Beta-0.282 — 2026-04-06
+
+### Correções
+
+- Transcrição do atestado usava campo `texto` — backend retorna `transcricao`; sempre retornava string vazia
+
+---
+
+## Beta-0.281 — 2026-04-06
+
+### Correções
+
+- Transcrição do atestado usava `fetch` manual sem `API_BASE` — substituído por `apiFetch` igual ao restante do app
+
+---
+
+## Beta-0.280 — 2026-04-06
+
+### Correções
+
+- Atestado não travava mais em "Interpretando…": adicionado tratamento de erro robusto em toda a cadeia de transcrição → interpretação
+- Transcrição vazia agora exibe mensagem e reseta o microfone
+
+---
+
+## Beta-0.279 — 2026-04-06
+
+### Melhorias
+
+- Atestado interpreta automaticamente após transcrição — sem necessidade de clicar em "Interpretar"
+- Bubble exibe o texto transcrito corretamente antes de interpretar
+
+---
+
+## Beta-0.278 — 2026-04-06
+
+### Correções
+
+- Ícone do microfone visível (SVG com `fill="white"` igual aos outros modais)
+- UX do sheet de atestado alinhado ao padrão "Novo Paciente": bubble IA, botão "Prefiro digitar", animação de gravação
+
+---
+
+## Beta-0.277 — 2026-04-06
+
+### Correções
+
+- Sheet do atestado movido para fora da `<section id="sec-agenda">` — estava oculto pelo `display:none` da section ao abrir um paciente
+
+---
+
+## Beta-0.276 — 2026-04-06
+
+### Correções
+
+- CSS do `#at-sheet` movido para o `<style>` global — antes era injetado apenas ao abrir a Agenda
+
+---
+
 ## Beta-0.275 — 2026-04-06
 
 ### Funcionalidades
