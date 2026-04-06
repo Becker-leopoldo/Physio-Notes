@@ -1396,6 +1396,74 @@
       </div>
     </div>
 
+    <!-- Bottom sheet: atestado de fisioterapia -->
+    <div id="at-overlay" style="display:none;"></div>
+    <div id="at-sheet" style="display:none;">
+      <div class="modal-drag-handle"></div>
+
+      <!-- Etapa 1: voz / texto -->
+      <div id="at-input-area" style="padding:var(--space-4) var(--space-6) var(--space-6);">
+        <h2 class="modal-title">Gerar Atestado</h2>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);text-align:center;">
+          Diga ou escreva: data, horário, motivo e conduta aplicada
+        </p>
+        <div class="record-btn-wrap" style="padding:var(--space-2) 0;">
+          <button class="record-btn" id="at-mic-btn" title="Gravar por voz">
+            <svg id="at-mic-icon" width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="10" y="2" width="12" height="18" rx="6" fill="currentColor"/><path d="M6 16a10 10 0 0020 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="26" x2="16" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg id="at-stop-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" style="display:none;"><rect x="5" y="5" width="18" height="18" rx="4" fill="currentColor"/></svg>
+          </button>
+          <div id="at-mic-label" class="record-label">Toque para gravar</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-3);margin:var(--space-4) 0;color:var(--color-text-muted);font-size:var(--text-sm);">
+          <div style="flex:1;height:1px;background:var(--color-border);"></div>
+          ou
+          <div style="flex:1;height:1px;background:var(--color-border);"></div>
+        </div>
+        <textarea id="at-texto" class="form-textarea" rows="3" placeholder="Ex: Atestado para Érica, dia 5 de abril, das 8h às 9h, por lombalgia, fiz TENS e mobilização..." style="font-size:16px;resize:none;"></textarea>
+        <button id="at-interpretar-btn" class="btn btn-primary btn-full" style="margin-top:var(--space-4);height:52px;border-radius:var(--radius-lg);font-size:var(--text-base);">
+          Interpretar
+        </button>
+        <button id="at-input-cancel-btn" class="btn btn-ghost btn-full" style="margin-top:var(--space-2);">Cancelar</button>
+      </div>
+
+      <!-- Etapa 2: formulário revisão -->
+      <div id="at-form-area" style="display:none;padding:var(--space-4) var(--space-6) var(--space-6);overflow-y:auto;max-height:80vh;">
+        <h2 class="modal-title" style="margin-bottom:var(--space-4);">Revisar atestado</h2>
+
+        <div class="form-group">
+          <label class="form-label">Data do atendimento</label>
+          <input class="form-input" type="date" id="at-data">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+          <div class="form-group">
+            <label class="form-label">Início</label>
+            <input class="form-input" type="time" id="at-hora-ini">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fim</label>
+            <input class="form-input" type="time" id="at-hora-fim">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motivo</label>
+          <input class="form-input" type="text" id="at-motivo" placeholder="Ex: lombalgia crônica">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Conduta realizada</label>
+          <textarea class="form-textarea" rows="3" id="at-conduta" placeholder="Ex: aplicação de TENS, mobilização articular..." style="resize:none;"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">CREFITO (opcional)</label>
+          <input class="form-input" type="text" id="at-crefito" placeholder="Ex: 3-123456-F">
+        </div>
+
+        <button id="at-gerar-btn" class="btn btn-primary btn-full" style="margin-top:var(--space-2);height:52px;border-radius:var(--radius-lg);font-size:var(--text-base);">
+          Gerar PDF
+        </button>
+        <button id="at-voltar-btn" class="btn btn-ghost btn-full" style="margin-top:var(--space-2);">Voltar</button>
+      </div>
+    </div>
+
     <!-- Bottom sheet: cancelar evento Google Calendar -->
     <div id="ag-cancel-overlay" style="display:none;"></div>
     <div id="ag-cancel-sheet" style="display:none;">
@@ -1600,7 +1668,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.274'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.275'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2352,9 +2420,13 @@
           <div class="patient-dob">${paciente.data_nascimento ? 'Nasc. ' + formatDate(paciente.data_nascimento) : ''}</div>
           ${paciente.observacoes ? `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:var(--space-1);">${escHtml(paciente.observacoes)}</div>` : ''}
         </div>
-        <button class="btn btn-ghost btn-sm" id="btn-editar-paciente" style="align-self:flex-start;flex-shrink:0;">Editar</button>`;
+        <div style="display:flex;gap:var(--space-2);align-self:flex-start;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" id="btn-atestado-paciente">Atestado</button>
+          <button class="btn btn-ghost btn-sm" id="btn-editar-paciente">Editar</button>
+        </div>`;
       headerArea.appendChild(hdr);
       document.getElementById('btn-editar-paciente').addEventListener('click', () => abrirModalEdicao(paciente));
+      document.getElementById('btn-atestado-paciente').addEventListener('click', () => _atOpen(paciente));
 
       // Anamnese
       const anamneseCard = el('div', { style: 'padding: var(--space-4) var(--space-5) 0;' });
@@ -5884,6 +5956,16 @@
         .ag-sr-body { flex:1; min-width:0; }
         .ag-sr-titulo { font-size:var(--text-sm); font-weight:500; color:var(--color-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ag-sr-sub { font-size:11px; color:var(--color-text-muted); margin-top:2px; }
+        /* ── Atestado ── */
+        #at-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; animation:agFadeIn .2s; }
+        #at-sheet {
+          position:fixed; bottom:0; left:0; right:0;
+          background:var(--color-surface); border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+          box-shadow:var(--shadow-lg); z-index:401;
+          width:100%; max-width:480px; margin:0 auto;
+          animation:agSlideUp .25s cubic-bezier(.32,1,.35,1);
+          padding-bottom:env(safe-area-inset-bottom,0px);
+        }
       `;
       document.head.appendChild(style);
     }
@@ -7507,6 +7589,203 @@
         }
       });
     }
+  }
+
+  /* ============================================================
+     ATESTADO — Bottom sheet: gerar atestado de fisioterapia
+  ============================================================ */
+  let _atPaciente   = null;  // { id, nome, cpf, ... }
+  let _atRec        = null;
+  let _atRecording  = false;
+  let _atInited     = false;
+
+  function _atOpen(paciente) {
+    _atPaciente = paciente;
+    // Restaura etapa 1
+    document.getElementById('at-input-area').style.display = 'block';
+    document.getElementById('at-form-area').style.display  = 'none';
+    document.getElementById('at-texto').value = '';
+    document.getElementById('at-mic-label').textContent = 'Toque para gravar';
+    document.getElementById('at-mic-icon').style.display  = '';
+    document.getElementById('at-stop-icon').style.display = 'none';
+    document.getElementById('at-mic-btn').style.background = '';
+    document.getElementById('at-interpretar-btn').disabled = false;
+    document.getElementById('at-interpretar-btn').textContent = 'Interpretar';
+    document.getElementById('at-overlay').style.display = 'block';
+    document.getElementById('at-sheet').style.display   = 'block';
+    _atInitListeners();
+  }
+
+  function _atClose() {
+    _atStopRec();
+    document.getElementById('at-overlay').style.display = 'none';
+    document.getElementById('at-sheet').style.display   = 'none';
+    _atPaciente = null;
+  }
+
+  function _atShowForm(parsed) {
+    document.getElementById('at-input-area').style.display = 'none';
+    document.getElementById('at-form-area').style.display  = 'block';
+    document.getElementById('at-data').value      = parsed.data || new Date().toISOString().slice(0,10);
+    document.getElementById('at-hora-ini').value  = parsed.hora_inicio || '';
+    document.getElementById('at-hora-fim').value  = parsed.hora_fim    || '';
+    document.getElementById('at-motivo').value    = parsed.motivo  || '';
+    document.getElementById('at-conduta').value   = parsed.conduta || '';
+    // CREFITO: tenta recuperar do localStorage
+    const user = JSON.parse(localStorage.getItem('physio_user') || '{}');
+    const crefito = localStorage.getItem('physio_crefito') || '';
+    document.getElementById('at-crefito').value = crefito;
+  }
+
+  async function _atInterpretar() {
+    const texto = document.getElementById('at-texto').value.trim();
+    if (!texto) return;
+    const btn = document.getElementById('at-interpretar-btn');
+    btn.disabled = true; btn.textContent = 'Interpretando…';
+    try {
+      const parsed = await apiFetch('/atestado/interpretar', {
+        method: 'POST',
+        body: JSON.stringify({ texto, paciente_id: _atPaciente.id }),
+      });
+      _atShowForm(parsed);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Interpretar';
+      alert('Erro: ' + e.message);
+    }
+  }
+
+  function _atGerarPDF() {
+    const user      = JSON.parse(localStorage.getItem('physio_user') || '{}');
+    const fisioNome = user.nome || 'Fisioterapeuta';
+    const p         = _atPaciente || {};
+    const dataVal   = document.getElementById('at-data').value;
+    const horaIni   = document.getElementById('at-hora-ini').value;
+    const horaFim   = document.getElementById('at-hora-fim').value;
+    const motivo    = document.getElementById('at-motivo').value.trim();
+    const conduta   = document.getElementById('at-conduta').value.trim();
+    const crefito   = document.getElementById('at-crefito').value.trim();
+
+    // Salva CREFITO para próxima vez
+    if (crefito) localStorage.setItem('physio_crefito', crefito);
+
+    const [a, m, d] = dataVal.split('-');
+    const dataFmt = dataVal
+      ? new Date(+a, +m - 1, +d).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '';
+
+    const horario = horaIni && horaFim ? `, no período das ${horaIni} às ${horaFim}`
+      : horaIni ? ` a partir das ${horaIni}` : '';
+
+    const cpfTxt = p.cpf ? `, portador(a) do CPF <strong>${p.cpf}</strong>,` : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Atestado — ${escHtml(p.nome || '')}</title>
+  <style>
+    @page { margin: 60px 80px; }
+    @media print { .no-print { display:none !important; } }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 15px; color: #111; line-height: 1.8; max-width: 680px; margin: 40px auto; padding: 0 24px; }
+    h1 { text-align: center; font-size: 17px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 48px; padding-bottom: 16px; border-bottom: 1px solid #ccc; }
+    p { margin-bottom: 20px; text-align: justify; }
+    .assinatura { margin-top: 80px; text-align: center; }
+    .assinatura .linha { display: inline-block; width: 280px; border-top: 1px solid #111; padding-top: 10px; }
+    .print-btn {
+      display: block; margin: 0 auto 40px; padding: 12px 40px;
+      background: #1A1A1A; color: #fff; border: none; border-radius: 8px;
+      font-size: 15px; font-family: sans-serif; cursor: pointer; letter-spacing: .5px;
+    }
+    .print-btn:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">⬇ Imprimir / Salvar como PDF</button>
+  <h1>Atestado de Fisioterapia</h1>
+  <p>
+    Atesto que o(a) paciente <strong>${escHtml(p.nome || '')}</strong>${cpfTxt}
+    esteve sob atendimento fisioterapêutico no dia <strong>${escHtml(dataFmt)}</strong>${escHtml(horario)},
+    em virtude de <strong>${escHtml(motivo)}</strong>.
+  </p>
+  <p>
+    Durante o atendimento, foram realizados: <strong>${escHtml(conduta)}</strong>.
+  </p>
+  <div class="assinatura">
+    <div class="linha">
+      <strong>${escHtml(fisioNome)}</strong><br>
+      Fisioterapeuta${crefito ? '<br>CREFITO: ' + escHtml(crefito) : ''}
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) { alert('Permita pop-ups para gerar o PDF.'); return; }
+    win.document.write(html);
+    win.document.close();
+    _atClose();
+  }
+
+  /* Gravação de áudio */
+  function _atStopRec() {
+    if (_atRec && _atRecording) { try { _atRec.stop(); } catch {} }
+    _atRecording = false;
+    const btn = document.getElementById('at-mic-btn');
+    if (btn) {
+      btn.style.background = '';
+      document.getElementById('at-mic-icon').style.display  = '';
+      document.getElementById('at-stop-icon').style.display = 'none';
+      document.getElementById('at-mic-label').textContent   = 'Toque para gravar';
+    }
+  }
+
+  async function _atToggleRec() {
+    if (_atRecording) { _atStopRec(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks = [];
+      _atRec = new MediaRecorder(stream);
+      _atRec.ondataavailable = e => chunks.push(e.data);
+      _atRec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        document.getElementById('at-mic-label').textContent = 'Transcrevendo…';
+        try {
+          const fd = new FormData();
+          fd.append('audio', blob, 'atestado.webm');
+          const token = localStorage.getItem('physio_token');
+          const res = await fetch('/transcrever', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+          if (!res.ok) throw new Error('Falha na transcrição');
+          const { texto } = await res.json();
+          document.getElementById('at-texto').value = texto;
+          document.getElementById('at-mic-label').textContent = 'Gravação concluída';
+        } catch (e2) {
+          document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
+        }
+      };
+      _atRec.start();
+      _atRecording = true;
+      document.getElementById('at-mic-btn').style.background = 'var(--color-danger)';
+      document.getElementById('at-mic-icon').style.display   = 'none';
+      document.getElementById('at-stop-icon').style.display  = '';
+      document.getElementById('at-mic-label').textContent    = 'Gravando… toque para parar';
+    } catch (e) {
+      alert('Microfone não disponível: ' + e.message);
+    }
+  }
+
+  function _atInitListeners() {
+    if (_atInited) return;
+    _atInited = true;
+    document.getElementById('at-overlay').addEventListener('click', _atClose);
+    document.getElementById('at-input-cancel-btn').addEventListener('click', _atClose);
+    document.getElementById('at-mic-btn').addEventListener('click', _atToggleRec);
+    document.getElementById('at-interpretar-btn').addEventListener('click', _atInterpretar);
+    document.getElementById('at-voltar-btn').addEventListener('click', () => {
+      document.getElementById('at-input-area').style.display = 'block';
+      document.getElementById('at-form-area').style.display  = 'none';
+    });
+    document.getElementById('at-gerar-btn').addEventListener('click', _atGerarPDF);
   }
 
   /* ============================================================

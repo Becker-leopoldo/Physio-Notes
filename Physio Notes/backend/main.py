@@ -1835,6 +1835,34 @@ def auth_status():
     return {"registered": bool(credencial)}
 
 
+# ─────────────────────────────────────────────────────────────
+# ATESTADO
+# ─────────────────────────────────────────────────────────────
+
+class AtestadoInterpretarBody(BaseModel):
+    texto: str
+    paciente_id: int
+
+@app.post("/atestado/interpretar")
+async def atestado_interpretar(body: AtestadoInterpretarBody, request: Request = None):
+    """Interpreta pedido de atestado em linguagem natural e retorna campos preenchidos pela IA."""
+    from datetime import date
+    owner = _owner_email(request)
+    paciente = db.get_paciente(body.paciente_id, owner)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    try:
+        parsed = await ai.interpretar_atestado(
+            body.texto,
+            date.today().isoformat(),
+            paciente["nome"],
+            owner,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
+    return parsed
+
+
 # ---------- Frontend (deve ser montado por último) ----------
 
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")

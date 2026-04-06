@@ -837,6 +837,51 @@ Regras:
     return json.loads(raw)
 
 
+async def interpretar_atestado(texto: str, data_hoje: str, paciente_nome: str, owner_email: str | None = None) -> dict:
+    """
+    Interpreta pedido de atestado em linguagem natural.
+    Retorna: {data (YYYY-MM-DD), hora_inicio (HH:MM), hora_fim (HH:MM), motivo, conduta}
+    """
+    prompt = f"""Você é um fisioterapeuta clínico experiente com domínio completo de terminologia clínica, anatomia, biomecânica e reabilitação. Entende perfeitamente termos técnicos do universo da fisioterapia brasileira (TENS, FES, ultrassom terapêutico, laser, RPG, Pilates clínico, Cinesioterapia, PNF, McKenzie, Maitland, bandagem funcional, mobilização neural, drenagem linfática, entre outros).
+
+Hoje é {data_hoje}. Paciente: {paciente_nome}.
+
+O fisioterapeuta disse: "{texto}"
+
+Extraia as informações para um atestado de fisioterapia. Responda APENAS com JSON válido, sem markdown, sem explicações:
+{{
+  "data": "YYYY-MM-DD",
+  "hora_inicio": "HH:MM",
+  "hora_fim": "HH:MM",
+  "motivo": "motivo do atendimento em linguagem clínica formal",
+  "conduta": "conduta fisioterapêutica aplicada em linguagem clínica formal"
+}}
+
+Regras:
+- "data" é a data do atendimento — use hoje se não informada
+- Se não informou horários, deixe hora_inicio e hora_fim como strings vazias ""
+- Interprete expressões como "das 8 às 9", "das 14h30 às 15h30", "amanhã" etc.
+- Converta linguagem coloquial em termos clínicos formais:
+  - Ex motivo: "dor nas costas" → "lombalgia crônica", "dor no joelho" → "gonalgia", "cirurgia de ombro" → "reabilitação pós-operatória de ombro"
+  - Ex conduta: "fiz laser e exercício" → "aplicação de laserterapia de baixa potência e cinesioterapia ativa"
+  - Preserve termos técnicos já corretos (TENS, RPG, Pilates clínico, etc.)
+- Linguagem formal, em terceira pessoa implícita, adequada para documento oficial
+- Responda APENAS o JSON"""
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=300,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    _registrar("interpretar_atestado", message, owner_email)
+    raw = message.content[0].text.strip()
+    if "```" in raw:
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+    return json.loads(raw)
+
+
 async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:
     """Tenta extrair valor monetário de sessão avulsa da transcrição. Retorna float ou None."""
     if not transcricao or not transcricao.strip():

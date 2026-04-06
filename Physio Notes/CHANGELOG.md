@@ -4,6 +4,22 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.275 — 2026-04-06
+
+### Funcionalidades
+
+**Atestado de Fisioterapia**
+- Botão "Atestado" no header do paciente (ao lado de "Editar")
+- Bottom sheet com entrada por voz (microfone) ou texto livre
+- IA especializada em fisioterapia interpreta o relato e extrai: data, horário de início/fim, motivo e conduta realizada
+- Termos técnicos do fisio (TENS, RPG, Pilates clínico, laserterapia etc.) são preservados e/ou convertidos para linguagem clínica formal
+- Formulário de revisão completo antes de gerar — todos os campos editáveis
+- Campo CREFITO salvo no localStorage para reutilização
+- "Gerar PDF" abre nova aba com atestado formatado e botão de imprimir/salvar PDF
+- Assinatura inclui nome do fisio logado e CREFITO (quando informado)
+
+---
+
 ## Beta-0.274 — 2026-04-06
 
 ### Correções
