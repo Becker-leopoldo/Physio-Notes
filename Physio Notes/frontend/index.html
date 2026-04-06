@@ -1573,7 +1573,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.269'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.270'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -6044,7 +6044,12 @@
     const resultArea = document.getElementById('ag-sheet-result');
 
     // Pendente inicial: slot original; paciente_id se match exato
-    _agSheetPendente = { ...parsed, paciente_id: paciente_match ? paciente_match.id : null };
+    // Se match exato: usa o nome completo cadastrado no Calendar
+    _agSheetPendente = {
+      ...parsed,
+      nome: paciente_match ? paciente_match.nome : parsed.nome,
+      paciente_id: paciente_match ? paciente_match.id : null,
+    };
 
     const dataFmt = _agSheetFmtData(parsed.data);
     const horaFmt = _agSheetFmtHora(parsed.hora_inicio, parsed.hora_fim);
@@ -6119,7 +6124,7 @@
     }
 
     html += `<button id="ag-confirmar-btn">Confirmar agendamento</button>
-    <button id="ag-cancelar-result-btn" class="btn btn-ghost btn-sm" style="width:100%;margin-top:var(--space-2);">Cancelar</button>`;
+    <button id="ag-cancelar-result-btn" class="btn btn-secondary" style="width:100%;margin-top:var(--space-3);">Cancelar</button>`;
     resultArea.innerHTML = html;
 
     // Voltar
