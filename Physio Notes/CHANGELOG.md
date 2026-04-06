@@ -4,6 +4,26 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.273 — 2026-04-06
+
+### Funcionalidades
+
+**Cancelar agendamento Google Calendar**
+- Clicar em evento Google (marcado com ícone de 3 pontos) abre sheet de confirmação
+- Sheet exibe nome do evento, data e horário antes de confirmar
+- Botão "Cancelar agendamento" chama `DELETE /agenda/google/{event_id}` e remove o evento
+- Botão "Voltar" fecha sem ação
+- Após cancelamento: agenda recarrega automaticamente (evento some do grid e lista)
+
+### Correções
+
+**Busca por nome insensível a acentos no Google Calendar**
+- Digitar "Erica" agora encontra eventos com "Érica" no título
+- Backend envia a query original E a versão normalizada (sem acentos) para a API do Google
+- Filtro adicional server-side valida os resultados por correspondência normalizada
+
+---
+
 ## Beta-0.263 — 2026-04-06
 
 ### Melhorias

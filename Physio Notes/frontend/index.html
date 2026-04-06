@@ -1396,6 +1396,20 @@
       </div>
     </div>
 
+    <!-- Bottom sheet: cancelar evento Google Calendar -->
+    <div id="ag-cancel-overlay" style="display:none;"></div>
+    <div id="ag-cancel-sheet" style="display:none;">
+      <div class="modal-drag-handle"></div>
+      <div style="padding:var(--space-4) var(--space-6) var(--space-6);">
+        <h2 class="modal-title" style="font-size:var(--text-xl);">Cancelar agendamento</h2>
+        <div id="ag-cancel-info" class="ai-bubble" style="margin-bottom:var(--space-5);"></div>
+        <button id="ag-cancel-confirm-btn" class="btn btn-danger btn-full" style="margin-bottom:var(--space-3);">
+          Cancelar agendamento
+        </button>
+        <button id="ag-cancel-close-btn" class="btn btn-secondary btn-full">Voltar</button>
+      </div>
+    </div>
+
     <!-- Bottom sheet: novo agendamento -->
     <div id="ag-sheet-overlay" style="display:none;"></div>
     <div id="ag-sheet" style="display:none;">
@@ -1586,7 +1600,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.272'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.273'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5627,12 +5641,14 @@
       const cor  = _gcalCores[item.color_id] || '#4285F4';
       const hora = item.dia_inteiro ? 'Dia inteiro'
         : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – ' + item.hora_fim : ''}` : '';
-      return `<div class="ag-item">
+      const eid  = item.id ? ` data-gcal-id="${item.id}"` : '';
+      return `<div class="ag-item ag-item-gcal"${eid} style="cursor:${item.id ? 'pointer' : 'default'};">
         <div class="ag-item-strip" style="background:${cor};"></div>
         <div class="ag-item-body">
           <div class="ag-item-titulo">${item.titulo}</div>
           ${hora ? `<div class="ag-item-sub">${hora}</div>` : ''}
         </div>
+        ${item.id ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="7" cy="4" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/></svg>` : ''}
       </div>`;
     }
   }
@@ -5658,6 +5674,16 @@
     `;
     painel.querySelectorAll('.ag-item-physio[data-paciente-id]').forEach(el => {
       el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
+    });
+    painel.querySelectorAll('.ag-item-gcal[data-gcal-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const eid    = el.dataset.gcalId;
+        const titulo = el.querySelector('.ag-item-titulo')?.textContent || '';
+        const hora   = el.querySelector('.ag-item-sub')?.textContent || '';
+        const [a, m, d] = (dataKey || '').split('-');
+        const dataFmt = dataKey ? new Date(+a, +m - 1, +d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+        _agCancelOpen(eid, titulo, dataFmt, hora);
+      });
     });
   }
 
@@ -5820,6 +5846,16 @@
         }
         #ag-confirmar-btn:disabled { opacity:.6; }
         .ag-sheet-loading { display:flex; align-items:center; gap:10px; padding:20px 0; color:var(--color-text-secondary); font-size:14px; justify-content:center; }
+        /* ── Cancelar evento ── */
+        #ag-cancel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; animation:agFadeIn .2s; }
+        #ag-cancel-sheet {
+          position:fixed; bottom:0; left:0; right:0;
+          background:var(--color-surface); border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+          box-shadow:var(--shadow-lg); z-index:401;
+          width:100%; max-width:480px; margin:0 auto;
+          animation:agSlideUp .25s cubic-bezier(.32,1,.35,1);
+          padding-bottom:env(safe-area-inset-bottom,0px);
+        }
         /* ── Busca ── */
         #ag-search-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; animation:agFadeIn .2s; }
         #ag-search-sheet {
@@ -5960,12 +5996,14 @@
           } else {
             const cor  = _gcalCores[item.color_id] || '#4285F4';
             const hora = item.dia_inteiro ? 'Dia inteiro' : item.hora_inicio ? `${item.hora_inicio}${item.hora_fim ? ' – ' + item.hora_fim : ''}` : '';
-            return `<div class="ag-list-item">
+            const eid2 = item.id ? ` data-gcal-id="${item.id}" data-data="${dataKey}"` : '';
+            return `<div class="ag-list-item ag-list-gcal"${eid2} style="cursor:${item.id ? 'pointer' : 'default'};">
               <div class="ag-list-strip" style="background:${cor};"></div>
               <div class="ag-list-body">
                 <div class="ag-list-titulo">${item.titulo}</div>
                 ${hora ? `<div class="ag-list-sub">${hora}</div>` : ''}
               </div>
+              ${item.id ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--color-text-muted);"><circle cx="7" cy="4" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/></svg>` : ''}
             </div>`;
           }
         }).join('')}`;
@@ -5973,6 +6011,17 @@
 
     lista.querySelectorAll('.ag-list-physio[data-paciente-id]').forEach(el => {
       el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
+    });
+    lista.querySelectorAll('.ag-list-gcal[data-gcal-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const eid     = el.dataset.gcalId;
+        const titulo  = el.querySelector('.ag-list-titulo')?.textContent || '';
+        const hora    = el.querySelector('.ag-list-sub')?.textContent || '';
+        const dataKey = el.dataset.data || '';
+        const [a, m, d] = (dataKey || '').split('-');
+        const dataFmt = dataKey ? new Date(+a, +m - 1, +d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+        _agCancelOpen(eid, titulo, dataFmt, hora);
+      });
     });
   }
 
@@ -6367,6 +6416,68 @@
       clearTimeout(_agSearchTimer);
       _agSearchTimer = setTimeout(() => _agSearchRun(e.target.value.trim()), 400);
     });
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     AGENDA — Bottom sheet: cancelar agendamento Google Calendar
+  ──────────────────────────────────────────────────────────── */
+  let _agCancelEventId = null;
+  let _agCancelInited  = false;
+
+  function _agCancelOpen(eventId, titulo, dataFmt, horaFmt) {
+    _agCancelEventId = eventId;
+    const info = document.getElementById('ag-cancel-info');
+    info.innerHTML = `<strong>${escHtml(titulo)}</strong><br>${escHtml(dataFmt)}${horaFmt ? ' · ' + escHtml(horaFmt) : ''}`;
+    document.getElementById('ag-cancel-overlay').style.display = 'block';
+    document.getElementById('ag-cancel-sheet').style.display   = 'block';
+    const btn = document.getElementById('ag-cancel-confirm-btn');
+    btn.disabled    = false;
+    btn.textContent = 'Cancelar agendamento';
+    _agCancelInitListeners();
+  }
+
+  function _agCancelClose() {
+    document.getElementById('ag-cancel-overlay').style.display = 'none';
+    document.getElementById('ag-cancel-sheet').style.display   = 'none';
+    _agCancelEventId = null;
+  }
+
+  async function _agCancelConfirm() {
+    if (!_agCancelEventId) return;
+    const btn = document.getElementById('ag-cancel-confirm-btn');
+    btn.disabled    = true;
+    btn.textContent = 'Cancelando…';
+    try {
+      await apiFetch(`/agenda/google/${encodeURIComponent(_agCancelEventId)}`, { method: 'DELETE' });
+      _agCancelClose();
+      // Recarrega a agenda do mês atual para remover o evento
+      await _agendaCarregarGoogle(_agendaAno, _agendaMes);
+      _agendaRenderizar();
+      _agendaRenderizarDia(_agendaDiaSelecionado, (() => {
+        const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
+        const itensSessoes = _agendaSessoes.map(s => ({ ...s, _tipo: 'physio', titulo: s.paciente_nome }));
+        const itensGoogle  = _agendaGoogle.map(ev => ({ ...ev, _tipo: 'google', paciente_id: null }));
+        const porDia = {};
+        [...itensSessoes, ...itensGoogle].forEach(item => {
+          if (!item.data) return;
+          if (!porDia[item.data]) porDia[item.data] = [];
+          porDia[item.data].push(item);
+        });
+        return porDia;
+      })());
+    } catch (e) {
+      btn.disabled    = false;
+      btn.textContent = 'Cancelar agendamento';
+      alert('Erro ao cancelar: ' + e.message);
+    }
+  }
+
+  function _agCancelInitListeners() {
+    if (_agCancelInited) return;
+    _agCancelInited = true;
+    document.getElementById('ag-cancel-overlay').addEventListener('click', _agCancelClose);
+    document.getElementById('ag-cancel-close-btn').addEventListener('click', _agCancelClose);
+    document.getElementById('ag-cancel-confirm-btn').addEventListener('click', _agCancelConfirm);
   }
 
   async function openFaturamento(mes, pacienteId) {

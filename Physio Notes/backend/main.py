@@ -1057,6 +1057,29 @@ async def _gerar_sugestoes_gcal(access_token: str, data: str, hora_ini: str, hor
     return sugestoes
 
 
+@app.delete("/agenda/google/{event_id}")
+async def agenda_cancelar_evento(event_id: str, request: Request = None):
+    """Cancela (deleta) um evento do Google Calendar primário do fisio."""
+    import httpx
+    owner = _owner_email(request)
+    refresh_token = db.get_google_refresh_token(owner)
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="Google Calendar não conectado")
+    try:
+        access_token = await calendar_service._obter_access_token(refresh_token)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Falha ao autenticar: {e}")
+    async with httpx.AsyncClient() as c:
+        resp = await c.delete(
+            f"https://www.googleapis.com/calendar/v3/calendars/primary/events/{event_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10.0,
+        )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
+    return {"ok": True}
+
+
 @app.get("/agenda/buscar")
 async def agenda_buscar(q: str = "", request: Request = None):
     """Busca eventos por nome em sessões Physio + Google Calendar (todos os períodos)."""
@@ -1074,41 +1097,60 @@ async def agenda_buscar(q: str = "", request: Request = None):
         if q_n in _normalizar_nome(s.get("paciente_nome") or "")
     ]
 
-    # ── Google Calendar: usa o parâmetro q da API ──
+    # ── Google Calendar: busca com variações da query (insensível a acentos) ──
     gcal = []
     refresh_token = db.get_google_refresh_token(owner)
     if refresh_token:
         try:
             access_token = await calendar_service._obter_access_token(refresh_token)
+            # Envia a query original E a versão sem acentos (ex: "Erica" + "erica")
+            # para capturar eventos com "Érica" mesmo digitando "Erica"
+            queries = list(dict.fromkeys([q, q_n]))  # mantém ordem, remove dup
+
+            seen_ids: set = set()
+            raw_items: list = []
+
             async with httpx.AsyncClient() as c:
-                resp = await c.get(
-                    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-                    params={
-                        "q": q,
-                        "singleEvents": "true",
-                        "orderBy": "startTime",
-                        "maxResults": 50,
-                        "timeMin": "2020-01-01T00:00:00Z",
-                    },
-                    headers={"Authorization": f"Bearer {access_token}"},
-                    timeout=10.0,
-                )
-            if resp.status_code == 200:
-                for ev in resp.json().get("items", []):
-                    start = ev.get("start", {})
-                    end   = ev.get("end", {})
-                    data_str     = start.get("date") or (start.get("dateTime") or "")[:10]
-                    hora_inicio  = (start.get("dateTime") or "")[11:16]
-                    hora_fim     = (end.get("dateTime") or "")[11:16]
-                    gcal.append({
-                        "id":          ev.get("id"),
-                        "titulo":      ev.get("summary") or "(sem título)",
-                        "data":        data_str,
-                        "hora_inicio": hora_inicio,
-                        "hora_fim":    hora_fim,
-                        "dia_inteiro": "date" in start,
-                        "color_id":    ev.get("colorId"),
-                    })
+                for q_term in queries:
+                    resp = await c.get(
+                        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                        params={
+                            "q": q_term,
+                            "singleEvents": "true",
+                            "orderBy": "startTime",
+                            "maxResults": 50,
+                            "timeMin": "2020-01-01T00:00:00Z",
+                        },
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        timeout=10.0,
+                    )
+                    if resp.status_code == 200:
+                        for ev in resp.json().get("items", []):
+                            eid = ev.get("id")
+                            if eid and eid not in seen_ids:
+                                seen_ids.add(eid)
+                                raw_items.append(ev)
+
+            # Filtro adicional no servidor: aceita apenas eventos cujo título
+            # contenha a query normalizada (elimina falsos positivos do Google)
+            for ev in raw_items:
+                titulo = ev.get("summary") or ""
+                if q_n not in _normalizar_nome(titulo):
+                    continue
+                start = ev.get("start", {})
+                end   = ev.get("end", {})
+                data_str     = start.get("date") or (start.get("dateTime") or "")[:10]
+                hora_inicio  = (start.get("dateTime") or "")[11:16]
+                hora_fim     = (end.get("dateTime") or "")[11:16]
+                gcal.append({
+                    "id":          ev.get("id"),
+                    "titulo":      titulo or "(sem título)",
+                    "data":        data_str,
+                    "hora_inicio": hora_inicio,
+                    "hora_fim":    hora_fim,
+                    "dia_inteiro": "date" in start,
+                    "color_id":    ev.get("colorId"),
+                })
         except Exception:
             pass
 
