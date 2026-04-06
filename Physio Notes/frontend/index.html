@@ -1690,7 +1690,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.282'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.283'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -7651,9 +7651,9 @@
 
   async function _atInterpretar(texto) {
     if (!texto || !texto.trim()) return;
-    // Lança o erro para que o chamador possa tratar
     const parsed = await apiFetch('/atestado/interpretar', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ texto, paciente_id: _atPaciente.id }),
     });
     _atShowForm(parsed);
@@ -7778,12 +7778,9 @@
           try {
             await _atInterpretar(texto);
           } catch (e3) {
-            resetMic('Toque para gravar');
-            // Mostra botão manual como fallback
-            const btn = document.getElementById('at-interpretar-btn');
-            btn.style.display = 'block';
-            btn.disabled = false;
-            btn.textContent = 'Tentar interpretar';
+            resetMic('Erro ao interpretar — tente novamente');
+            document.getElementById('at-rec-feedback').innerHTML +=
+              `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${escHtml(e3.message)}</div>`;
           }
         } catch (e2) {
           resetMic('Erro — tente novamente');

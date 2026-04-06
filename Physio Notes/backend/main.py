@@ -1848,7 +1848,7 @@ async def atestado_interpretar(body: AtestadoInterpretarBody, request: Request =
     """Interpreta pedido de atestado em linguagem natural e retorna campos preenchidos pela IA."""
     from datetime import date
     owner = _owner_email(request)
-    paciente = db.get_paciente(body.paciente_id, owner)
+    paciente = db.get_paciente(body.paciente_id)
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     try:
