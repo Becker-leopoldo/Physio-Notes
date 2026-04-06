@@ -1690,7 +1690,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.279'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.280'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -7650,16 +7650,13 @@
   }
 
   async function _atInterpretar(texto) {
-    if (!texto) return;
-    try {
-      const parsed = await apiFetch('/atestado/interpretar', {
-        method: 'POST',
-        body: JSON.stringify({ texto, paciente_id: _atPaciente.id }),
-      });
-      _atShowForm(parsed);
-    } catch (e) {
-      alert('Erro: ' + e.message);
-    }
+    if (!texto || !texto.trim()) return;
+    // Lança o erro para que o chamador possa tratar
+    const parsed = await apiFetch('/atestado/interpretar', {
+      method: 'POST',
+      body: JSON.stringify({ texto, paciente_id: _atPaciente.id }),
+    });
+    _atShowForm(parsed);
   }
 
   function _atGerarPDF() {
@@ -7759,6 +7756,11 @@
         const blob = new Blob(chunks, { type: 'audio/webm' });
         document.getElementById('at-mic-label').textContent = 'Transcrevendo…';
         document.getElementById('at-rec-feedback').innerHTML = '';
+        const resetMic = (msg) => {
+          document.getElementById('at-mic-label').textContent = msg || 'Toque para gravar';
+          document.getElementById('at-mic-icon').style.display  = '';
+          document.getElementById('at-stop-icon').style.display = 'none';
+        };
         try {
           const fd = new FormData();
           fd.append('audio', blob, 'atestado.webm');
@@ -7766,15 +7768,29 @@
           const res = await fetch('/transcrever', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
           if (!res.ok) throw new Error('Falha na transcrição');
           const { texto } = await res.json();
+          if (!texto || !texto.trim()) {
+            resetMic('Nada gravado — tente novamente');
+            return;
+          }
           document.getElementById('at-texto').value = texto;
           document.getElementById('at-mic-label').textContent = 'Interpretando…';
           document.getElementById('at-rec-feedback').innerHTML =
             `<div class="ai-bubble" style="margin-top:var(--space-3);font-size:var(--text-sm);">${escHtml(texto)}</div>`;
-          // Interpreta automaticamente sem precisar clicar
-          await _atInterpretar(texto);
+          // Interpreta automaticamente
+          try {
+            await _atInterpretar(texto);
+          } catch (e3) {
+            resetMic('Toque para gravar');
+            // Mostra botão manual como fallback
+            const btn = document.getElementById('at-interpretar-btn');
+            btn.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Tentar interpretar';
+          }
         } catch (e2) {
-          document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
-          document.getElementById('at-rec-feedback').innerHTML = '';
+          resetMic('Erro — tente novamente');
+          document.getElementById('at-rec-feedback').innerHTML =
+            `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${escHtml(e2.message)}</div>`;
         }
       };
       _atRec.start();
@@ -7814,8 +7830,13 @@
       if (!texto) return;
       const btn = document.getElementById('at-interpretar-texto-btn');
       btn.disabled = true; btn.textContent = 'Interpretando…';
-      await _atInterpretar(texto);
-      btn.disabled = false; btn.textContent = 'Interpretar';
+      try {
+        await _atInterpretar(texto);
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Interpretar';
+        document.getElementById('at-texto').insertAdjacentHTML('afterend',
+          `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${escHtml(e.message)}</div>`);
+      }
     });
     document.getElementById('at-texto-voltar-btn').addEventListener('click', () => {
       document.getElementById('at-texto-area').style.display  = 'none';
