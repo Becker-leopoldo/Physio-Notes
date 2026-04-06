@@ -1386,48 +1386,43 @@
     <!-- Bottom sheet: novo agendamento -->
     <div id="ag-sheet-overlay" style="display:none;"></div>
     <div id="ag-sheet" style="display:none;">
-      <div id="ag-sheet-handle"></div>
+      <div class="modal-drag-handle"></div>
 
-      <!-- Cabeçalho -->
-      <div id="ag-sheet-header">
-        <span id="ag-sheet-title">Novo evento</span>
-        <button id="ag-sheet-close" aria-label="Fechar">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 3l12 12M15 3L3 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </button>
-      </div>
+      <!-- Etapa: voz / texto -->
+      <div id="ag-sheet-input-area" style="padding:0 var(--space-6) var(--space-6);">
+        <h2 class="modal-title">Novo evento</h2>
 
-      <!-- Input área -->
-      <div id="ag-sheet-input-area">
+        <div class="ai-bubble" style="margin-bottom:var(--space-5);">
+          Fale o nome, a data e o horário do evento. A IA verifica a disponibilidade e sugere alternativas se necessário.
+        </div>
 
-        <!-- Mic hero -->
-        <div id="ag-mic-hero">
-          <button id="ag-mic-btn" aria-label="Gravar por voz">
-            <svg id="ag-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <rect x="9" y="2" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M5 11a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
+        <!-- Mic -->
+        <div class="record-btn-wrap">
+          <button class="record-btn" id="ag-mic-btn" aria-label="Gravar por voz">
+            <svg id="ag-mic-icon-mic" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg id="ag-mic-icon-stop" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
           </button>
-          <span id="ag-mic-label">Toque para falar</span>
+          <span class="record-label" id="ag-mic-label">Toque para gravar</span>
         </div>
 
-        <!-- Divisor -->
-        <div id="ag-or-divider"><span>ou</span></div>
-
-        <!-- Campo de texto -->
-        <div id="ag-input-wrap">
-          <textarea id="ag-texto" rows="2" placeholder="Ex: Consulta com Ana amanhã das 14h às 15h…"></textarea>
+        <!-- Campo de texto (oculto por padrão) -->
+        <div id="ag-input-wrap" style="display:none;margin-bottom:var(--space-4);">
+          <textarea id="ag-texto" class="form-textarea" rows="2" placeholder="Ex: Consulta com Ana amanhã das 14h às 15h…" style="font-size:16px;"></textarea>
+          <button id="ag-analisar-btn" class="btn btn-primary btn-full" style="margin-top:var(--space-3);">Verificar disponibilidade</button>
         </div>
 
-        <!-- Botão analisar -->
-        <button id="ag-analisar-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Verificar disponibilidade
-        </button>
+        <!-- Ações -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);margin-top:var(--space-2);">
+          <button type="button" class="btn btn-secondary btn-sm" id="ag-digitar-btn" style="gap:var(--space-2);display:inline-flex;align-items:center;">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2V4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5 8h.01M8 8h.01M11 8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Prefiro digitar
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" id="ag-sheet-close">Cancelar</button>
+        </div>
       </div>
 
       <!-- Resultado (aparece após análise) -->
-      <div id="ag-sheet-result" style="display:none;"></div>
+      <div id="ag-sheet-result" style="display:none;padding:0 var(--space-6) var(--space-6);"></div>
     </div>
 
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
@@ -1578,7 +1573,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.264'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.265'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5776,51 +5771,12 @@
           border-radius:20px 20px 0 0;
           box-shadow:0 -4px 24px rgba(0,0,0,0.15);
           z-index:401;
+          padding-top:var(--space-5);
           padding-bottom:max(env(safe-area-inset-bottom,0px), 8px);
           animation:agSlideUp .25s cubic-bezier(.32,1,.35,1);
-          max-height:80vh; overflow-y:auto;
+          max-height:90vh; overflow-y:auto;
         }
         @keyframes agSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-        #ag-sheet-handle { width:36px; height:4px; border-radius:2px; background:var(--color-border-strong); margin:10px auto 0; }
-        #ag-sheet-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px 6px; }
-        #ag-sheet-title { font-size:16px; font-weight:600; color:var(--color-text); }
-        #ag-sheet-close { width:32px; height:32px; border:none; background:var(--color-accent-light); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); flex-shrink:0; }
-        /* ── Input area ── */
-        #ag-sheet-input-area { padding:4px 16px 16px; }
-        /* Mic hero */
-        #ag-mic-hero { display:flex; align-items:center; gap:14px; padding:12px 0 10px; }
-        #ag-mic-btn {
-          width:56px; height:56px; border-radius:50%; flex-shrink:0;
-          background:var(--color-accent); color:#fff; border:none; cursor:pointer;
-          display:flex; align-items:center; justify-content:center;
-          box-shadow:0 2px 10px rgba(0,0,0,0.15);
-          transition:transform .15s;
-        }
-        #ag-mic-btn:active { transform:scale(.93); }
-        #ag-mic-btn.recording {
-          background:#dc2127;
-          animation:agPulse 1.2s ease-in-out infinite;
-        }
-        @keyframes agPulse { 0%,100%{box-shadow:0 0 0 8px rgba(220,33,39,.15)} 50%{box-shadow:0 0 0 16px rgba(220,33,39,.06)} }
-        #ag-mic-label { font-size:14px; color:var(--color-text-secondary); font-weight:500; }
-        /* Or divider */
-        #ag-or-divider { display:flex; align-items:center; gap:10px; margin:8px 0 10px; color:var(--color-text-muted); font-size:11px; }
-        #ag-or-divider::before, #ag-or-divider::after { content:''; flex:1; height:1px; background:var(--color-border); }
-        /* Text input */
-        #ag-input-wrap { background:var(--color-bg); border:1.5px solid var(--color-border); border-radius:12px; padding:12px 14px; transition:border-color .15s; }
-        #ag-input-wrap:focus-within { border-color:var(--color-border-strong); }
-        #ag-texto { width:100%; border:none; background:transparent; resize:none; font-family:var(--font-body); font-size:16px; color:var(--color-text); outline:none; line-height:1.5; min-height:44px; }
-        #ag-texto::placeholder { color:var(--color-text-muted); }
-        /* Analisar btn */
-        #ag-analisar-btn {
-          width:100%; margin-top:12px;
-          display:flex; align-items:center; justify-content:center; gap:8px;
-          padding:14px; border-radius:12px;
-          background:var(--color-accent); color:#fff; border:none; cursor:pointer;
-          font-family:var(--font-body); font-size:15px; font-weight:600;
-          transition:background .15s;
-        }
-        #ag-analisar-btn:active { background:var(--color-accent-hover); }
         /* ── Result area ── */
         #ag-sheet-result { padding:0 16px 16px; }
         .ag-result-card { border-radius:12px; padding:14px 16px; margin-bottom:10px; }
@@ -5991,9 +5947,13 @@
     document.getElementById('ag-sheet').style.display = 'block';
     document.getElementById('ag-sheet-result').style.display = 'none';
     document.getElementById('ag-sheet-input-area').style.display = 'block';
+    document.getElementById('ag-input-wrap').style.display = 'none';
+    document.getElementById('ag-digitar-btn').style.display = 'inline-flex';
     document.getElementById('ag-texto').value = '';
-    document.getElementById('ag-mic-label').textContent = 'Toque para falar';
+    document.getElementById('ag-mic-label').textContent = 'Toque para gravar';
     document.getElementById('ag-mic-btn').classList.remove('recording');
+    document.getElementById('ag-mic-icon-stop').style.display = 'none';
+    document.getElementById('ag-mic-icon-mic').style.display = '';
     _agSheetPendente = null;
   }
 
@@ -6017,6 +5977,8 @@
         stream.getTracks().forEach(t => t.stop());
         _agSheetRecording = false;
         document.getElementById('ag-mic-btn').classList.remove('recording');
+        document.getElementById('ag-mic-icon-mic').style.display = '';
+        document.getElementById('ag-mic-icon-stop').style.display = 'none';
         document.getElementById('ag-mic-label').textContent = 'Processando…';
         const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
         const fd = new FormData();
@@ -6037,6 +5999,8 @@
       _agSheetRec.start();
       _agSheetRecording = true;
       document.getElementById('ag-mic-btn').classList.add('recording');
+      document.getElementById('ag-mic-icon-mic').style.display = 'none';
+      document.getElementById('ag-mic-icon-stop').style.display = '';
       document.getElementById('ag-mic-label').textContent = 'Gravando… toque para parar';
     } catch (e) { console.warn('mic error', e); }
   }
@@ -6045,6 +6009,8 @@
     if (_agSheetRec && _agSheetRec.state !== 'inactive') _agSheetRec.stop();
     _agSheetRecording = false;
     document.getElementById('ag-mic-btn').classList.remove('recording');
+    document.getElementById('ag-mic-icon-mic').style.display = '';
+    document.getElementById('ag-mic-icon-stop').style.display = 'none';
   }
 
   async function _agSheetAnalisar() {
@@ -6184,9 +6150,11 @@
     document.getElementById('ag-sheet-close').addEventListener('click', _agSheetClose);
     document.getElementById('ag-sheet-overlay').addEventListener('click', _agSheetClose);
     document.getElementById('ag-mic-btn').addEventListener('click', _agSheetToggleMic);
-    document.getElementById('ag-analisar-btn').addEventListener('click', () => {
-      if (_agSheetRecording) { _agSheetStopMic(); return; }
-      _agSheetAnalisar();
+    document.getElementById('ag-analisar-btn').addEventListener('click', _agSheetAnalisar);
+    document.getElementById('ag-digitar-btn').addEventListener('click', () => {
+      document.getElementById('ag-input-wrap').style.display = 'block';
+      document.getElementById('ag-digitar-btn').style.display = 'none';
+      setTimeout(() => document.getElementById('ag-texto').focus(), 100);
     });
     document.getElementById('ag-texto').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _agSheetAnalisar(); }
