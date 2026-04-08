@@ -194,9 +194,10 @@ class NotaFiscalCreate(BaseModel):
 # ---------- Helper de autenticação ----------
 
 def _client_ip(request: Request) -> str | None:
-    ff = request.headers.get("x-forwarded-for")
-    if ff:
-        return ff.split(",")[0].strip()
+    """Extrai o IP do cliente de forma segura contra Spoofing.
+    A leitura manual do X-Forwarded-For foi removida para evitar que o cliente 
+    inverta logs de auditoria ou contorne limites.
+    Em produção sob proxy (como NGINX/Alb), configure o uvicorn com --proxy-headers."""
     return request.client.host if request.client else None
 
 
@@ -331,6 +332,7 @@ async def _disparar_ia_pos_anamnese(paciente_id: int, anamnese: str, conduta_atu
 
 
 @app.post("/pacientes/{paciente_id}/complementar-anamnese")
+@limiter.limit("20/minute")
 async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, background_tasks: BackgroundTasks, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -364,6 +366,7 @@ class ComplementarCondutaBody(BaseModel):
 
 
 @app.post("/pacientes/{paciente_id}/complementar-conduta")
+@limiter.limit("20/minute")
 async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -510,6 +513,7 @@ async def transcrever_audio_avulso(request: Request, audio: UploadFile = File(..
 
 
 @app.post("/extrair-paciente")
+@limiter.limit("20/minute")
 async def extrair_dados_paciente(body: ExtrairPacienteBody, request: Request):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
@@ -521,6 +525,7 @@ async def extrair_dados_paciente(body: ExtrairPacienteBody, request: Request):
 
 
 @app.post("/extrair-procedimento")
+@limiter.limit("20/minute")
 async def extrair_procedimento(body: ExtrairProcedimentoBody, request: Request):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
@@ -595,6 +600,7 @@ def deletar_procedimento(proc_id: int):
 
 
 @app.post("/extrair-pacote")
+@limiter.limit("20/minute")
 async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Transcrição vazia")
@@ -641,6 +647,7 @@ def buscar_sessao(sessao_id: int, request: Request):
 
 
 @app.post("/sessoes/{sessao_id}/audio")
+@limiter.limit("20/minute")
 async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: Request = None):
     sessao = db.get_sessao(sessao_id)
     if not sessao:

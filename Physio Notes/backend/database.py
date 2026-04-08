@@ -24,20 +24,19 @@ def _get_fernet():
     if _fernet_instance is None:
         raw = os.getenv("FIELD_ENCRYPTION_KEY", "")
         if not raw:
-            logger.warning("FIELD_ENCRYPTION_KEY não configurada — CPF/endereço armazenados em plaintext")
-            return None
+            raise ValueError("Falha de Segurança (LGPD): A variável FIELD_ENCRYPTION_KEY não está configurada! Criptografia de PII é obrigatória.")
         from cryptography.fernet import Fernet
         enc_key = base64.urlsafe_b64encode(hashlib.sha256(("enc:" + raw).encode()).digest())
         _fernet_instance = Fernet(enc_key)
     return _fernet_instance
 
 
-def _get_hash_key() -> bytes | None:
+def _get_hash_key() -> bytes:
     global _hash_key
     if _hash_key is None:
         raw = os.getenv("FIELD_ENCRYPTION_KEY", "")
         if not raw:
-            return None
+            raise ValueError("Falha de Segurança (LGPD): A variável FIELD_ENCRYPTION_KEY não está configurada! Hashing cego de CPF é obrigatório.")
         _hash_key = hashlib.sha256(("hash:" + raw).encode()).digest()
     return _hash_key
 
@@ -48,17 +47,13 @@ def _encrypt_field(value: str | None) -> str | None:
     if value.startswith(_ENC_PREFIX):
         return value  # já criptografado
     f = _get_fernet()
-    if f is None:
-        return value
     return _ENC_PREFIX + f.encrypt(value.encode()).decode()
 
 
 def _decrypt_field(value: str | None) -> str | None:
     if not value or not value.startswith(_ENC_PREFIX):
-        return value  # plaintext ou None
+        return value  # plaintext ou None (mantém legibilidade de dados antigos)
     f = _get_fernet()
-    if f is None:
-        return value
     try:
         return f.decrypt(value[len(_ENC_PREFIX):].encode()).decode()
     except Exception:
@@ -70,8 +65,6 @@ def _cpf_hash(cpf: str | None) -> str | None:
     if not cpf:
         return None
     key = _get_hash_key()
-    if key is None:
-        return None
     return _hmac.new(key, cpf.strip().encode(), hashlib.sha256).hexdigest()
 
 

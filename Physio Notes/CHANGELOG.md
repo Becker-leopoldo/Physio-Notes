@@ -4,6 +4,18 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.286 — 2026-04-08
+
+### Segurança — Q.A de Segurança Finalizado
+
+- **Fail-fast no JWT_SECRET (`google_auth.py`)**: Inicialização da aplicação agora é sumariamente bloqueada caso a variável de ambiente não esteja configurada, prevenindo o uso de chaves hardcoded e falsificação de tokens.
+- **Defesa Antispoofing de IP (`main.py`)**: Extração de IP em `_client_ip()` não confia mais no header livre `X-Forwarded-For`, utilizando a conexão nativa socket via delegamento explícito para o uvicorn, protegendo logs de auditoria contra contorno malicioso.
+- **Mitigação de DoS / Denial of Wallet (`main.py`)**: Inseridas travas de *Rate Limit* (`@limiter.limit("20/minute")`) em todos os endpoints remanescentes de extração LLM, barrando explorações assíncronas de faturamento da API (Groq/Anthropic).
+- **Sandboxing XML contra Prompt Injection (`ai.py`)**: Adicionado isolamento de instrução mestre via parâmetro `system_prompt` da Anthropic e tags delimitadoras (`<transcricao_crua>`) sobre fala processada garantindo que a IA lide com transcrições de usuários meramente como dados passivos inexecutáveis.
+- **Proteção PII Rigorosa nas Bases (LGPD) (`database.py`)**: Mecanismo de fallback que salvava silenciosamente em *plaintext* desabilitado. Leituras e escritas sem posse legível do `FIELD_ENCRYPTION_KEY` geram *ValueError/Fail-Fast*, não burlando lei de dados privados.
+
+---
+
 ## Beta-0.285 — 2026-04-06
 
 ### Melhorias
