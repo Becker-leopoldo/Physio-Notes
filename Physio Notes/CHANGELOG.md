@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.285 — 2026-04-06
+
+### Melhorias
+- Chips "Perguntar ao Histórico": "Check clínico" renomeado para "Evolução do paciente" e "Feedback clínico" renomeado para "Pendências"
+
+---
+
 ## Beta-0.284 — 2026-04-06
 
 ### Funcionalidades

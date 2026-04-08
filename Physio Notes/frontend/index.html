@@ -1240,8 +1240,8 @@
       <div style="padding: var(--space-4) var(--space-5);">
         <div class="ask-chips" id="ask-chips">
           <button class="ask-chip ask-chip-ia" id="chip-sugestao-dia">✦ Sugestão do Dia</button>
-          <button class="ask-chip ask-chip-ia" id="chip-sugestao-ia">✦ Check clínico</button>
-          <button class="ask-chip ask-chip-feedback" id="chip-feedback">✦ Feedback</button>
+          <button class="ask-chip ask-chip-ia" id="chip-sugestao-ia">✦ Evolução do paciente</button>
+          <button class="ask-chip ask-chip-feedback" id="chip-feedback">✦ Pendências</button>
           <button class="ask-chip" data-q="Qual foi a última conduta aplicada?">Última conduta</button>
           <button class="ask-chip" data-q="Como o paciente evoluiu desde o início do tratamento?">Evolução geral</button>
           <button class="ask-chip" data-q="Quais são as queixas mais frequentes do paciente?">Queixas frequentes</button>
@@ -1706,7 +1706,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.284'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.285'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -4626,7 +4626,7 @@
       result.innerHTML = `
         <div style="background:var(--color-info-bg);border:1px solid #bfcfe8;border-radius:var(--radius-md);overflow:hidden;margin-bottom:var(--space-2);">
           <div style="padding:var(--space-2) var(--space-4);background:#e8f0fb;border-bottom:1px solid #bfcfe8;display:flex;align-items:center;gap:var(--space-2);">
-            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-info);flex:1;">✦ Check clínico</span>
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-info);flex:1;">✦ Evolução do paciente</span>
             ${ts ? `<span style="font-size:var(--text-xs);color:var(--color-text-muted);">${ts}</span>` : ''}
           </div>
           <div style="padding:var(--space-4);display:grid;gap:var(--space-4);">
@@ -4665,7 +4665,7 @@
       result.innerHTML = `
         <div style="border:1px solid #e8d5a3;border-radius:var(--radius-md);overflow:hidden;margin-bottom:var(--space-2);">
           <div style="padding:var(--space-2) var(--space-4);background:#fdedc7;border-bottom:1px solid #e8d5a3;display:flex;align-items:center;gap:var(--space-2);">
-            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-warning);flex:1;">✦ Feedback clínico</span>
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-warning);flex:1;">✦ Pendências</span>
             <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${new Date().toLocaleDateString('pt-BR')}</span>
           </div>
           <div style="padding:var(--space-4);display:grid;gap:var(--space-4);">
