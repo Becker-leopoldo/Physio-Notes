@@ -14,9 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Crucial para o SonarCloud detectar histórico e novos códigos
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+          fetch-depth: 0
+      - name: SonarQube Cloud Scan
+        uses: sonarsource/sonarqube-scan-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Criado automaticamente pelo GitHub
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Você deve criar nas configurações do repositório
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
