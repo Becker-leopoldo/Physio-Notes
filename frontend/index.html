@@ -1715,7 +1715,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.287'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.288'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5829,7 +5829,7 @@
       body.innerHTML = `<div class="alert alert-error">Erro ao carregar agenda: ${e.message}</div>`;
       return;
     }
-    _agendaListaExpandida = false;
+    let _agendaListaExpandida = false;
     _agendaRenderizar();
   }
 

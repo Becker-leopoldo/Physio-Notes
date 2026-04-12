@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.288 — 2026-04-12
+
+### Correções
+- **Segurança:** validação de `event_id` nas rotas `/agenda/google/{event_id}` e `/sec/agendamento/{event_id}` para prevenir path traversal (Sonar `pythonsecurity:S7044`)
+- **Backend:** escrita de arquivo em upload de documentos convertida para API assíncrona (`aiofiles`) — não bloqueia mais o event loop do FastAPI (`python:S7493`)
+- **Frontend:** variável `_agendaListaExpandida` declarada explicitamente com `let` — eliminada variável global implícita (`javascript:S2703`)
+
+---
+
 ## Beta-0.287 — 2026-04-12
 
 ### Funcionalidades

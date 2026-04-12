@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import secrets
 import sqlite3
 from contextlib import asynccontextmanager
@@ -12,6 +13,8 @@ from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+
+import aiofiles
 
 import database as db
 import transcribe
@@ -1096,10 +1099,15 @@ async def _gerar_sugestoes_gcal(access_token: str, data: str, hora_ini: str, hor
     return sugestoes
 
 
+_SAFE_EVENT_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]{1,1024}$")
+
+
 @app.delete("/agenda/google/{event_id}")
 async def agenda_cancelar_evento(event_id: str, request: Request = None):
     """Cancela (deleta) um evento do Google Calendar primário do fisio."""
     import httpx
+    if not _SAFE_EVENT_ID_RE.match(event_id):
+        raise HTTPException(status_code=400, detail="event_id inválido")
     owner = _owner_email(request)
     refresh_token = db.get_google_refresh_token(owner)
     if not refresh_token:
@@ -1347,8 +1355,8 @@ async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), re
     # Salva arquivo em disco
     nome_arquivo = f"{uuid.uuid4().hex}.pdf"
     caminho = os.path.join(db.DOCS_DIR, nome_arquivo)
-    with open(caminho, "wb") as f:
-        f.write(conteudo)
+    async with aiofiles.open(caminho, "wb") as f:
+        await f.write(conteudo)
 
     # Resumo IA (opcional — não bloqueia se falhar)
     resumo = None
@@ -2137,6 +2145,8 @@ async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: 
 async def sec_agendamento_cancelar(event_id: str, request: Request = None):
     """Cancela evento do Google Calendar do fisio."""
     import httpx
+    if not _SAFE_EVENT_ID_RE.match(event_id):
+        raise HTTPException(status_code=400, detail="event_id inválido")
     _, fisio_email = _sec_context(request)
     refresh_token = db.get_google_refresh_token(fisio_email)
     if not refresh_token:
