@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.290 — 2026-04-12
+
+### Correções
+- **CSS:** removida propriedade `border: none` duplicada em `.top-bar-action` (`css:S4656`)
+- **CSS:** removida propriedade `display: inline-block` duplicada em `.ai-bubble::before` (`css:S4656`)
+- **JS:** removida expressão morta `.parentElement` sem efeito na lista de pacientes (`javascript:S905`)
+
+---
+
 ## Beta-0.289 — 2026-04-12
 
 ### Melhorias
