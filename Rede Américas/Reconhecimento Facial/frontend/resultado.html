@@ -19,10 +19,33 @@
 
     .result-card {
       width: 100%;
-      max-width: 560px;
+      max-width: 1000px;
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
+    }
+
+    /* ── Layout desktop 2 colunas ───────────────────────── */
+    .result-cols {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: var(--space-4);
+      align-items: start;
+    }
+
+    .result-col-left {
+      position: sticky;
+      top: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .result-col-right {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      min-width: 0;
     }
 
     /* ── Topbar ─────────────────────────────────────────── */
@@ -579,6 +602,73 @@
     .bottom-actions .btn { flex: 1; justify-content: center; }
 
     .powered-bar { margin-top: var(--space-4); }
+
+    /* ── Responsivo ─────────────────────────────────────── */
+    @media (max-width: 860px) {
+      .result-cols {
+        grid-template-columns: 1fr;
+      }
+      .result-col-left { position: static; }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: var(--space-4) var(--space-3) var(--space-10);
+      }
+
+      /* Painel identidade: foto e gauge lado a lado centralizados */
+      .identity-panel {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: var(--space-4);
+      }
+
+      /* Bio card: badge desce para baixo da info */
+      .bio-card {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+      }
+
+      .bio-badge {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Linha de dados: barra de confiança compacta */
+      .data-row {
+        padding: var(--space-3) var(--space-4);
+      }
+
+      .confidence-bar-wrap {
+        display: none;
+      }
+
+      /* Botões de ação em coluna */
+      .bottom-actions {
+        flex-direction: column;
+      }
+
+      /* Padding dos cards de seção */
+      .data-section-header {
+        padding: var(--space-3) var(--space-4);
+      }
+
+      .crime-row,
+      .data-row {
+        padding: var(--space-3) var(--space-4);
+      }
+
+      .json-inner {
+        padding: var(--space-4);
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .topbar-brand { display: none; }
+      .gauge-label { font-size: var(--text-xs); }
+    }
   </style>
 </head>
 <body>
@@ -608,6 +698,9 @@
 
     <!-- ── RELATÓRIO VIEW ── -->
     <div id="reportView" class="report-view">
+
+      <div class="result-cols">
+      <div class="result-col-left">
 
       <!-- Painel identidade: gauge + foto — preenchido via JS -->
       <div class="identity-panel">
@@ -656,6 +749,9 @@
         </div>
         <div class="bio-badge" id="bioBadge"></div>
       </div>
+
+      </div><!-- /result-col-left -->
+      <div class="result-col-right">
 
       <!-- Dados principais — preenchido via JS -->
       <div class="data-section" id="secDados">
@@ -783,6 +879,9 @@
         </div>
       </div>
 
+      </div><!-- /result-col-right -->
+      </div><!-- /result-cols -->
+
       <!-- Ações -->
       <div class="bottom-actions">
         <a href="cadastro-identidade.html" class="btn btn-secondary">Voltar</a>
@@ -800,7 +899,7 @@
   </div>
 
   <script>
-    const API_BASE = 'http://localhost:8000';
+    const API_BASE = '/api';
 
     let typed = {};
     try { typed = JSON.parse(sessionStorage.getItem('cadastro') || '{}'); } catch(e) {}

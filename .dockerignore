@@ -1,0 +1,14 @@
+# Ignorar tudo por padrão
+**
+
+# Permitir apenas assets globais e o frontend do cliente
+!assets/
+!assets/**
+
+# Caminho completo a partir da raiz do context (Dev/Poc/)
+!Rede Américas/
+!Rede Américas/Reconhecimento Facial/
+!Rede Américas/Reconhecimento Facial/docker/
+!Rede Américas/Reconhecimento Facial/docker/**
+!Rede Américas/Reconhecimento Facial/frontend/
+!Rede Américas/Reconhecimento Facial/frontend/**

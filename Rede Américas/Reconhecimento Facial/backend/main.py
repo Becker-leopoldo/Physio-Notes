@@ -1,7 +1,6 @@
 import asyncio
 import uuid
 import traceback
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +42,7 @@ app = FastAPI(title="POC Rede Américas — API Hub", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost", "http://localhost:80"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -56,17 +55,16 @@ def new_job(service: str) -> str:
     return job_id
 
 
-async def run_job(job_id: str, service_name: str, coro):
+async def run_job(job_id: str, coro):
     jobs[job_id]["status"] = JobStatus.processing
     try:
         result = await coro
         jobs[job_id]["status"] = JobStatus.done
         jobs[job_id]["result"] = result
     except Exception as e:
-        tb = traceback.format_exc()
-        logger.error("Job %s falhou:\n%s", job_id, tb)
+        logger.error("Job %s falhou:\n%s", job_id, traceback.format_exc())
         jobs[job_id]["status"] = JobStatus.error
-        jobs[job_id]["error"] = tb
+        jobs[job_id]["error"] = str(e)
 
 
 async def run_job_parallel(job_id: str, named_coros: dict):
@@ -83,8 +81,7 @@ async def run_job_parallel(job_id: str, named_coros: dict):
         try:
             jobs[job_id]["result"][key] = await coro
         except Exception as e:
-            tb = traceback.format_exc()
-            logger.error("Service %s in job %s failed:\n%s", key, job_id, tb)
+            logger.error("Service %s in job %s failed:\n%s", key, job_id, traceback.format_exc())
             jobs[job_id]["result"][key] = {"error": str(e)}
 
     await asyncio.gather(*[run_one(k, v) for k, v in named_coros.items()])
@@ -121,7 +118,7 @@ async def consulta_coren(body: CorenRequest, background_tasks: BackgroundTasks):
         params["nome_completo"] = body.nome_completo
 
     job_id = new_job("coren")
-    background_tasks.add_task(run_job, job_id, "coren", coren_service.consultar(params))
+    background_tasks.add_task(run_job, job_id, coren_service.consultar(params))
 
     return JobResponse(job_id=job_id, status=JobStatus.pending, service="coren")
 
@@ -138,7 +135,7 @@ async def consulta_datavalid_facial(body: DataValidRequest, background_tasks: Ba
         params["data_nascimento"] = body.data_nascimento
 
     job_id = new_job("datavalid/facial")
-    background_tasks.add_task(run_job, job_id, "datavalid/facial", datavalid_service.consultar(params))
+    background_tasks.add_task(run_job, job_id, datavalid_service.consultar(params))
 
     return JobResponse(job_id=job_id, status=JobStatus.pending, service="datavalid/facial")
 

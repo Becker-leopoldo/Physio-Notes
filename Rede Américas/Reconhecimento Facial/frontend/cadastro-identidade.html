@@ -19,12 +19,50 @@
 
     .id-card {
       width: 100%;
-      max-width: 560px;
+      max-width: 960px;
       background: var(--color-surface);
       border: var(--border);
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow-lg);
       padding: var(--space-10);
+    }
+
+    /* ── Layout interno desktop: captura | formulário ────── */
+    .id-body {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: var(--space-8);
+      align-items: start;
+    }
+
+    .capture-col {
+      position: sticky;
+      top: var(--space-8);
+    }
+
+    /* Adaptações do componente de captura para a coluna estreita */
+    .capture-col .face-capture {
+      padding: var(--space-5) var(--space-4);
+      margin-bottom: 0;
+    }
+
+    .capture-col .face-oval {
+      width: 100%;
+      height: 220px;
+    }
+
+    .capture-col .face-actions {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .capture-col .face-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .form-col {
+      min-width: 0;
     }
 
     .id-brand {
@@ -266,11 +304,40 @@
       flex-shrink: 0;
     }
 
+    @media (max-width: 860px) {
+      .id-body {
+        grid-template-columns: 1fr;
+      }
+      .capture-col { position: static; }
+    }
+
     @media (max-width: 600px) {
       .form-row { grid-template-columns: 1fr; }
       .id-card { padding: var(--space-6); }
       .face-actions { flex-direction: column; width: 100%; }
       .face-actions .btn { width: 100%; justify-content: center; }
+
+      /* Modal câmera ocupa a tela inteira no mobile */
+      .camera-box {
+        margin: 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .camera-modal {
+        align-items: flex-end;
+      }
+    }
+
+    @media (max-width: 400px) {
+      body { padding: var(--space-4) var(--space-3); }
+      .id-card { padding: var(--space-5); border-radius: var(--radius-lg); }
     }
   </style>
 </head>
@@ -290,7 +357,8 @@
     <!-- Corpo -->
     <div class="id-body">
 
-      <!-- Seção 1: Captura de imagem -->
+      <!-- Coluna esquerda: captura facial -->
+      <div class="capture-col">
       <span class="section-label">Foto para reconhecimento</span>
 
       <div class="face-capture">
@@ -324,8 +392,10 @@
         <input type="file" id="fileInput" accept="image/*" style="display:none">
         <p class="capture-hint">JPG ou PNG • Máx. 5 MB • Rosto centralizado e bem iluminado</p>
       </div>
+      </div><!-- /capture-col -->
 
-      <!-- Seção 2: Dados cadastrais -->
+      <!-- Coluna direita: dados cadastrais -->
+      <div class="form-col">
       <span class="section-label">Dados cadastrais</span>
 
       <form id="formCadastro">
@@ -464,6 +534,7 @@
         </button>
 
       </form>
+      </div><!-- /form-col -->
 
     </div><!-- /id-body -->
 
@@ -598,7 +669,7 @@
     });
 
     /* ── Form submit + API ────────────────────────────────── */
-    const API_BASE = 'http://localhost:8000';
+    const API_BASE = '/api';
 
     document.getElementById('formCadastro').addEventListener('submit', async function(e) {
       e.preventDefault();

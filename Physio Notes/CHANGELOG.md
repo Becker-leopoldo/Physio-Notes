@@ -4,6 +4,23 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.287 — 2026-04-12
+
+### Funcionalidades
+- **Fluxo de convite para secretaria**: fisio convida secretaria pelo e-mail; admin aprova/rejeita; secretaria loga pelo SSO normalmente após aprovação
+- **Coluna `status` em `secretaria_link`**: suporte a status `pendente` e `ativa` com migração automática do banco existente
+- **Login unificado** (`/login.html`): fisio e secretaria usam a mesma tela; token e redirecionamento são definidos pelo papel (`role`) retornado pelo backend
+- **Painel de convite no drawer**: estado dinâmico mostra formulário de convite ou status atual do convite (⏳ aguardando / ✓ ativa)
+- **Novos endpoints admin**: `GET /admin/secretaria/pendentes`, `POST /admin/secretaria/{email}/aprovar`, `DELETE /admin/secretaria/{email}/rejeitar`
+- **Painel admin atualizado**: seção de convites de secretaria pendentes com aprovação/rejeição
+- **Secretaria — pacientes e pacotes**: abas Pacientes e Pacotes no app da secretaria, com CRUD completo escopo ao fisio vinculado
+
+### Correções
+- Null-safety em `get_secretaria_do_fisio` e `admin_get_secretaria`: evita crash quando `fisio_email` é `None`
+- `secretaria/login.html` redireciona para `/login.html` unificado
+
+---
+
 ## Beta-0.286 — 2026-04-08
 
 ### Segurança — Q.A de Segurança Finalizado

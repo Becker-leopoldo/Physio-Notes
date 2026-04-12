@@ -47,14 +47,18 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 
 ### Frontend (`frontend/`)
 
-| Arquivo        | Descrição |
-|----------------|-----------|
-| `index.html`   | SPA completo (~3.000 linhas). Seções: lista de pacientes, perfil do paciente, gravação de sessão, detalhe de sessão, resumo clínico IA, billing. Funcionalidades detalhadas na seção abaixo. |
-| `sw.js`        | Service Worker para registrar o app como PWA instalável com suporte a atualização automática. |
-| `manifest.json`| Manifesto PWA: nome, ícones PNG (192×512), cor de tema, modo standalone. |
-| `favicon.svg`  | Ícone SVG do app — iniciais "PN" em fundo preto. |
-| `icon-192.png` | Ícone PNG 192×192 para PWA (install prompt e tela inicial). |
-| `icon-512.png` | Ícone PNG 512×512 para PWA (splash screen). |
+| Arquivo                    | Descrição |
+|----------------------------|-----------|
+| `index.html`               | SPA completo da fisioterapeuta. Seções: lista de pacientes, perfil, gravação de sessão, billing, faturamento, agenda, NFS-e. Inclui drawer com painel de convite de secretaria e configurações. |
+| `login.html`               | Login unificado fisio + secretaria via Google SSO. Redireciona para `/` (fisio) ou `/secretaria/` (secretaria) conforme o `role` retornado pelo backend. |
+| `admin.html`               | Painel de administração: aprovar/revogar usuários fisio, aprovar/rejeitar convites de secretaria pendentes. |
+| `secretaria/index.html`    | SPA da secretaria. Abas: Agenda, Atestado, Pacientes, Pacotes. Toda operação é escopada ao fisio vinculado. |
+| `secretaria/login.html`    | Redirect simples para `/login.html` (login unificado). |
+| `sw.js`                    | Service Worker para registrar o app como PWA instalável com suporte a atualização automática. |
+| `manifest.json`            | Manifesto PWA: nome, ícones PNG (192×512), cor de tema, modo standalone. |
+| `favicon.svg`              | Ícone SVG do app — iniciais "PN" em fundo preto. |
+| `icon-192.png`             | Ícone PNG 192×192 para PWA (install prompt e tela inicial). |
+| `icon-512.png`             | Ícone PNG 512×512 para PWA (splash screen). |
 
 ---
 
@@ -184,6 +188,20 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 | `GET` | `/billing?mes=YYYY-MM` | Retorna uso e custo de IA do mês |
 | `GET` | `/faturamento/pacientes?mes=YYYY-MM&paciente_id=X` | Retorna pacotes com valor pago, filtrado por mês de competência e/ou paciente |
 
+### Secretaria
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/admin/secretaria/vincular` | Fisio convida secretaria — cria vínculo com `status=pendente` |
+| `DELETE` | `/admin/secretaria/desvincular` | Fisio cancela convite ou remove vínculo |
+| `GET` | `/admin/secretaria` | Retorna secretaria convidada/vinculada ao fisio logado (com status), ou null |
+| `GET` | `/admin/secretaria/pendentes` | Admin lista todos os convites aguardando aprovação |
+| `POST` | `/admin/secretaria/{email}/aprovar` | Admin aprova convite — status passa para `ativa` |
+| `DELETE` | `/admin/secretaria/{email}/rejeitar` | Admin rejeita convite — remove registro |
+| `GET` | `/sec/pacientes` | Secretaria lista pacientes do fisio vinculado |
+| `POST` | `/sec/pacientes` | Secretaria cria paciente para o fisio vinculado |
+| `GET` | `/sec/pacientes/{id}/pacotes` | Secretaria lista pacotes do paciente |
+| `POST` | `/sec/pacientes/{id}/pacotes` | Secretaria cria pacote para o paciente |
+
 ### Notas Fiscais de Serviço (demo)
 | Método | Rota | Descrição |
 |--------|------|-----------|
@@ -206,6 +224,8 @@ documento          → PDFs enviados ao prontuário + resumo IA + soft delete
 pacote             → pacotes de sessões comprados pelo paciente + soft delete
 procedimento_extra → procedimentos extras cobrados por sessão (detecção automática IA + manual) + soft delete
 nota_fiscal        → NFS-e demo emitida pelo sistema (número sequencial, código verificação, dados_json)
+secretaria_link    → vínculo fisio↔secretaria com status (pendente/ativa) e data de criação
+usuario_google     → config por usuário (valor_sessao_avulsa, cobrar_avulsa, google_refresh_token)
 ```
 
 ### Regras de negócio do pacote

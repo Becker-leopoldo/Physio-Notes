@@ -18,18 +18,18 @@
       --color-text-secondary: #6B6860;
       --color-text-muted: #A09D97;
       --color-accent:    #1A1A1A;
-      --color-accent-hover: #333333;
       --color-accent-light: #F0EFED;
       --color-success:   #2D6A4F;
       --color-success-bg: #EDF7F2;
       --color-danger:    #9B1C1C;
       --color-danger-bg: #FEF2F2;
+      --color-info:      #1E3A5F;
+      --color-info-bg:   #EFF6FF;
       --font-display: 'DM Serif Display', Georgia, serif;
       --font-body:    'DM Sans', system-ui, sans-serif;
       --radius-md: 8px;
       --radius-lg: 12px;
       --radius-full: 9999px;
-      --shadow-md: 0 2px 8px rgba(0,0,0,0.07);
       --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
       --space-2: 0.5rem;
       --space-3: 0.75rem;
@@ -37,10 +37,7 @@
       --space-6: 1.5rem;
       --space-8: 2rem;
       --space-10: 2.5rem;
-      --space-12: 3rem;
       --text-sm: 0.875rem;
-      --text-base: 1rem;
-      --text-lg: 1.125rem;
       --text-3xl: 1.875rem;
     }
 
@@ -48,10 +45,11 @@
       font-family: var(--font-body);
       background: var(--color-bg);
       color: var(--color-text);
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 24px;
     }
 
     .login-card {
@@ -59,7 +57,7 @@
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-lg);
-      padding: var(--space-10) var(--space-10);
+      padding: var(--space-10);
       width: 100%;
       max-width: 400px;
       display: flex;
@@ -68,17 +66,13 @@
       gap: var(--space-8);
     }
 
-    .login-brand {
-      text-align: center;
-    }
-
+    .login-brand { text-align: center; }
     .login-brand h1 {
       font-family: var(--font-display);
       font-size: var(--text-3xl);
       color: var(--color-text);
       margin-bottom: var(--space-2);
     }
-
     .login-brand p {
       font-size: var(--text-sm);
       color: var(--color-text-secondary);
@@ -98,21 +92,9 @@
       border-radius: var(--radius-md);
       display: none;
     }
-    .status-msg.success {
-      display: block;
-      background: var(--color-success-bg);
-      color: var(--color-success);
-    }
-    .status-msg.error {
-      display: block;
-      background: var(--color-danger-bg);
-      color: var(--color-danger);
-    }
-    .status-msg.info {
-      display: block;
-      background: var(--color-accent-light);
-      color: var(--color-text-secondary);
-    }
+    .status-msg.success { display: block; background: var(--color-success-bg); color: var(--color-success); }
+    .status-msg.error   { display: block; background: var(--color-danger-bg);  color: var(--color-danger); }
+    .status-msg.info    { display: block; background: var(--color-info-bg);    color: var(--color-info); }
 
     .powered-bar {
       font-size: 0.75rem;
@@ -131,8 +113,6 @@
 
     <div class="login-body">
       <div class="status-msg" id="statusMsg"></div>
-
-      <!-- Google SSO -->
       <div id="google-btn-wrap" style="display:flex;justify-content:center;min-height:44px;"></div>
     </div>
 
@@ -148,16 +128,18 @@
 
     // Redireciona se já está logado
     if (localStorage.getItem('physio_token')) {
-      window.location.href = '/';
+      window.location.replace('/');
+    } else if (localStorage.getItem('sec_token')) {
+      window.location.replace('/secretaria/');
     } else {
       iniciarGoogleSSO();
     }
 
-    // ── Google OAuth2 (com scope de Calendar) ───────────────────
     async function iniciarGoogleSSO() {
       try {
         const cfg = await fetch('/auth/config').then(r => r.json());
         if (!cfg.google_client_id) return;
+
         const script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
         script.onload = () => {
@@ -168,7 +150,6 @@
             callback: handleGoogleCode,
           });
 
-          // Botão customizado (visual idêntico ao anterior)
           const btn = document.createElement('button');
           btn.style.cssText = `
             display:flex;align-items:center;justify-content:center;gap:10px;
@@ -201,7 +182,6 @@
 
     async function handleGoogleCode(response) {
       if (response.error) {
-        // Usuário fechou o popup ou negou — restaura botão silenciosamente
         const btn = document.querySelector('#google-btn-wrap button');
         if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         return;
@@ -214,15 +194,26 @@
           body: JSON.stringify({ code: response.code }),
         });
         const data = await res.json();
+
         if (res.status === 403) {
           setStatus('Cadastro realizado! Aguarde a aprovação do administrador para acessar.', 'info');
           return;
         }
         if (!res.ok) throw new Error(data.detail || 'Erro ao autenticar');
-        localStorage.setItem('physio_token', data.token);
-        localStorage.setItem('physio_user', JSON.stringify({ nome: data.nome, email: data.email, foto: data.foto }));
-        setStatus('Olá, ' + data.nome.split(' ')[0] + '! Redirecionando...', 'success');
-        setTimeout(() => { window.location.href = '/'; }, 900);
+
+        const nome = data.nome.split(' ')[0];
+
+        if (data.role === 'secretaria') {
+          localStorage.setItem('sec_token', data.token);
+          localStorage.setItem('sec_user', JSON.stringify({ nome: data.nome, email: data.email, foto: data.foto }));
+          setStatus('Olá, ' + nome + '! Redirecionando...', 'success');
+          setTimeout(() => { window.location.replace('/secretaria/'); }, 900);
+        } else {
+          localStorage.setItem('physio_token', data.token);
+          localStorage.setItem('physio_user', JSON.stringify({ nome: data.nome, email: data.email, foto: data.foto }));
+          setStatus('Olá, ' + nome + '! Redirecionando...', 'success');
+          setTimeout(() => { window.location.replace('/'); }, 900);
+        }
       } catch (e) {
         setStatus(e.message, 'error');
         const btn = document.querySelector('#google-btn-wrap button');

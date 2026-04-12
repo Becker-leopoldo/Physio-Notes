@@ -1,0 +1,34 @@
+name: SonarCloud — Reconhecimento Facial
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - "Rede Américas/Reconhecimento Facial/**"
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - "Rede Américas/Reconhecimento Facial/**"
+
+jobs:
+  sonarcloud:
+    name: Análise SonarCloud
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # necessário para análise de blame e histórico
+
+      - name: Análise SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: "Rede Américas/Reconhecimento Facial"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # gerado automaticamente pelo GitHub
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}    # adicionar em Settings > Secrets > Actions

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <script>
     if (!localStorage.getItem('sec_token')) {
-      window.location.replace('/secretaria/login.html');
+      window.location.replace('/login.html');
     }
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -320,6 +320,37 @@
     .user-menu-item.danger { color: var(--color-danger); }
     .user-menu-item.danger:hover { background: var(--color-danger-bg); }
 
+    /* ── Pacientes tab ── */
+    .pac-list-item {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4); border-bottom: var(--border);
+      transition: background 0.1s; cursor: default;
+    }
+    .pac-list-avatar {
+      width: 40px; height: 40px; border-radius: var(--radius-full);
+      background: var(--color-accent-light); color: var(--color-text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; flex-shrink: 0;
+    }
+    .pac-list-info { flex: 1; min-width: 0; }
+    .pac-list-nome { font-size: var(--text-sm); font-weight: 500; }
+    .pac-list-sub  { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 2px; }
+
+    /* ── Pacotes tab ── */
+    .pacote-item {
+      padding: var(--space-4); border-bottom: var(--border);
+    }
+    .pacote-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
+    .pacote-sessoes { font-size: var(--text-sm); font-weight: 600; }
+    .pacote-valor { font-size: var(--text-sm); color: var(--color-text-secondary); }
+    .pacote-data { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .pacote-desc { font-size: var(--text-xs); color: var(--color-text-secondary); margin-top: var(--space-1); }
+    .pacote-progresso {
+      margin-top: var(--space-2); height: 4px; background: var(--color-border);
+      border-radius: var(--radius-full); overflow: hidden;
+    }
+    .pacote-progresso-fill { height: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: width .3s; }
+
     /* paciente picker list */
     .pac-item {
       display: flex; align-items: center; gap: var(--space-3);
@@ -430,6 +461,44 @@
       </button>
     </div>
 
+    <!-- ABA: PACIENTES -->
+    <div id="tab-pacientes" style="display:none;">
+
+      <div style="padding:var(--space-4) var(--space-4) 0;display:flex;gap:var(--space-3);align-items:center;">
+        <input id="pac-tab-busca" class="form-input" type="search" placeholder="Buscar paciente..." style="flex:1;">
+        <button class="fab-novo" id="btn-novo-pac" style="white-space:nowrap;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Novo
+        </button>
+      </div>
+
+      <div id="pac-tab-lista" style="margin-top:var(--space-3);"></div>
+    </div>
+
+    <!-- ABA: PACOTES -->
+    <div id="tab-pacotes" style="display:none;">
+
+      <div style="padding:var(--space-4) var(--space-4) 0;">
+        <label class="form-label">Paciente</label>
+        <button class="btn btn-secondary btn-full" id="btn-pac-pacotes" style="justify-content:space-between;text-align:left;margin-bottom:var(--space-4);">
+          <span id="pac-pacotes-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div id="pacotes-lista-wrap" style="display:none;">
+        <div style="padding:0 var(--space-4) var(--space-3);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:var(--text-sm);color:var(--color-text-secondary);" id="pacotes-paciente-nome"></span>
+          <button class="fab-novo" id="btn-novo-pacote" style="padding:6px 14px;font-size:var(--text-xs);">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Novo pacote
+          </button>
+        </div>
+        <div id="pacotes-lista"></div>
+      </div>
+
+    </div>
+
   </div>
 
   <!-- Bottom nav -->
@@ -445,6 +514,18 @@
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
       </svg>
       Atestado
+    </button>
+    <button class="nav-tab" id="nav-pacientes" data-tab="pacientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      Pacientes
+    </button>
+    <button class="nav-tab" id="nav-pacotes" data-tab="pacotes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+      Pacotes
     </button>
   </nav>
 
@@ -501,6 +582,84 @@
       <div id="cancel-info" class="ai-bubble" style="margin-bottom:var(--space-5);"></div>
       <button id="cancel-confirm-btn" class="btn btn-danger btn-full" style="margin-bottom:var(--space-3);">Cancelar agendamento</button>
       <button id="cancel-close-btn" class="btn btn-secondary btn-full">Voltar</button>
+    </div>
+  </div>
+
+  <!-- SHEET: Novo paciente -->
+  <div class="overlay" id="novo-pac-overlay" style="display:none;"></div>
+  <div class="sheet" id="novo-pac-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Novo paciente</h2>
+      <div class="form-group">
+        <label class="form-label">Nome completo <span style="color:var(--color-danger);">*</span></label>
+        <input class="form-input" type="text" id="novo-pac-nome" placeholder="Ex: Maria Oliveira" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">CPF</label>
+          <input class="form-input" type="text" id="novo-pac-cpf" placeholder="000.000.000-00" maxlength="14">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Nascimento</label>
+          <input class="form-input" type="date" id="novo-pac-nasc">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:var(--space-4);">
+        <label class="form-label">Observações</label>
+        <textarea class="form-textarea" rows="2" id="novo-pac-obs" placeholder="Informações relevantes..."></textarea>
+      </div>
+      <div id="novo-pac-erro" style="display:none;font-size:var(--text-sm);color:var(--color-danger);margin-bottom:var(--space-3);"></div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+        <button id="novo-pac-salvar" class="btn btn-primary btn-full btn-lg">Cadastrar paciente</button>
+        <button id="novo-pac-cancelar" class="btn btn-ghost btn-full">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHEET: Novo pacote -->
+  <div class="overlay" id="novo-pacote-overlay" style="display:none;"></div>
+  <div class="sheet" id="novo-pacote-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Novo pacote</h2>
+      <p id="novo-pacote-pac-nome" style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);margin-top:calc(-1 * var(--space-3));"></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Nº de sessões <span style="color:var(--color-danger);">*</span></label>
+          <input class="form-input" type="number" id="novo-pacote-sessoes" min="1" placeholder="Ex: 10">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Valor pago (R$)</label>
+          <input class="form-input" type="number" id="novo-pacote-valor" min="0" step="0.01" placeholder="Ex: 800.00">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-4);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Data do pagamento</label>
+          <input class="form-input" type="date" id="novo-pacote-data">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Descrição</label>
+          <input class="form-input" type="text" id="novo-pacote-desc" placeholder="Ex: Lombalgia">
+        </div>
+      </div>
+      <div id="novo-pacote-erro" style="display:none;font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-3);margin-bottom:var(--space-2);"></div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-5);">
+        <button id="novo-pacote-salvar" class="btn btn-primary btn-full btn-lg">Criar pacote</button>
+        <button id="novo-pacote-cancelar" class="btn btn-ghost btn-full">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHEET: Picker de paciente (pacotes tab) -->
+  <div class="overlay" id="pac-pacotes-overlay" style="display:none;"></div>
+  <div class="sheet" id="pac-pacotes-sheet" style="display:none;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Escolher paciente</h2>
+      <input id="pac-pacotes-busca" class="form-input" type="search" placeholder="Buscar pelo nome..." style="margin-bottom:var(--space-4);">
+      <div id="pac-pacotes-lista"></div>
     </div>
   </div>
 
@@ -574,7 +733,7 @@ async function apiFetch(path, opts = {}) {
   const res = await fetch(API_BASE + path, opts);
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('sec_token');
-    window.location.replace('/secretaria/login.html');
+    window.location.replace('/login.html');
     return;
   }
   const data = await res.json().catch(() => ({}));
@@ -603,14 +762,18 @@ document.getElementById('user-menu-overlay').addEventListener('click', () => {
 document.getElementById('btn-logout').addEventListener('click', () => {
   localStorage.removeItem('sec_token');
   localStorage.removeItem('sec_user');
-  window.location.replace('/secretaria/login.html');
+  window.location.replace('/login.html');
 });
 
 /* ── Bottom nav ── */
+const _TABS = ['agenda', 'atestado', 'pacientes', 'pacotes'];
 function showTab(tab) {
-  document.getElementById('tab-agenda').style.display   = tab === 'agenda'   ? '' : 'none';
-  document.getElementById('tab-atestado').style.display = tab === 'atestado' ? '' : 'none';
+  _TABS.forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
+  });
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  if (tab === 'pacientes') renderPacTab(_pacTabQ);
+  if (tab === 'pacotes' && _pacotePacienteId) carregarPacotes(_pacotePacienteId);
 }
 document.querySelectorAll('.nav-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
@@ -1005,11 +1168,12 @@ let _atPacienteNome = null;
 let _atRec = null, _atRecording = false;
 let _pacientes = [];
 
-// Carrega lista de pacientes
+// Carrega lista de pacientes (usada por atestado, pacientes tab e pacotes tab)
 async function carregarPacientes() {
   try {
     _pacientes = await apiFetch('/sec/pacientes');
   } catch(e) { _pacientes = []; }
+  renderPacTab(_pacTabQ);
 }
 
 /* Picker de paciente */
@@ -1180,6 +1344,231 @@ document.getElementById('rev-gerar-btn').addEventListener('click', () => {
   win.document.close();
   document.getElementById('at-form-overlay').style.display = 'none';
   document.getElementById('at-form-sheet').style.display   = 'none';
+});
+
+/* ══════════════════════════════════════════════
+   TAB PACIENTES
+══════════════════════════════════════════════ */
+let _pacTabQ = '';
+
+function renderPacTab(q) {
+  const lista = _pacientes.filter(p => !q || p.nome.toLowerCase().includes(q.toLowerCase()));
+  const el = document.getElementById('pac-tab-lista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = `<div style="padding:var(--space-8) var(--space-4);text-align:center;font-size:var(--text-sm);color:var(--color-text-muted);">${_pacientes.length ? 'Nenhum paciente encontrado.' : 'Ainda não há pacientes cadastrados.'}</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(p => {
+    const sub = [p.cpf, p.data_nascimento ? 'Nasc. ' + fmtDataBr(p.data_nascimento) : ''].filter(Boolean).join(' · ');
+    return `<div class="pac-list-item">
+      <div class="pac-list-avatar">${initials(p.nome)}</div>
+      <div class="pac-list-info">
+        <div class="pac-list-nome">${escHtml(p.nome)}</div>
+        ${sub ? `<div class="pac-list-sub">${escHtml(sub)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtDataBr(iso) {
+  if (!iso) return '';
+  const [a, m, d] = iso.split('-');
+  return `${d}/${m}/${a}`;
+}
+
+document.getElementById('pac-tab-busca').addEventListener('input', e => {
+  _pacTabQ = e.target.value.trim();
+  renderPacTab(_pacTabQ);
+});
+
+/* Sheet novo paciente */
+function novoPacOpen() {
+  document.getElementById('novo-pac-nome').value = '';
+  document.getElementById('novo-pac-cpf').value  = '';
+  document.getElementById('novo-pac-nasc').value = '';
+  document.getElementById('novo-pac-obs').value  = '';
+  document.getElementById('novo-pac-erro').style.display = 'none';
+  document.getElementById('novo-pac-salvar').disabled = false;
+  document.getElementById('novo-pac-salvar').textContent = 'Cadastrar paciente';
+  document.getElementById('novo-pac-overlay').style.display = 'block';
+  document.getElementById('novo-pac-sheet').style.display   = 'block';
+  setTimeout(() => document.getElementById('novo-pac-nome').focus(), 200);
+}
+function novoPacClose() {
+  document.getElementById('novo-pac-overlay').style.display = 'none';
+  document.getElementById('novo-pac-sheet').style.display   = 'none';
+}
+document.getElementById('btn-novo-pac').addEventListener('click', novoPacOpen);
+document.getElementById('novo-pac-overlay').addEventListener('click', novoPacClose);
+document.getElementById('novo-pac-cancelar').addEventListener('click', novoPacClose);
+
+document.getElementById('novo-pac-salvar').addEventListener('click', async () => {
+  const nome = document.getElementById('novo-pac-nome').value.trim();
+  if (!nome) {
+    document.getElementById('novo-pac-erro').textContent = 'O nome é obrigatório.';
+    document.getElementById('novo-pac-erro').style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('novo-pac-salvar');
+  btn.disabled = true; btn.textContent = 'Cadastrando…';
+  document.getElementById('novo-pac-erro').style.display = 'none';
+  try {
+    await apiFetch('/sec/pacientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome,
+        cpf:             document.getElementById('novo-pac-cpf').value.trim()  || null,
+        data_nascimento: document.getElementById('novo-pac-nasc').value         || null,
+        observacoes:     document.getElementById('novo-pac-obs').value.trim()   || null,
+      }),
+    });
+    novoPacClose();
+    await carregarPacientes();
+  } catch(e) {
+    document.getElementById('novo-pac-erro').textContent = e.message;
+    document.getElementById('novo-pac-erro').style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Cadastrar paciente';
+  }
+});
+
+/* ══════════════════════════════════════════════
+   TAB PACOTES
+══════════════════════════════════════════════ */
+let _pacotePacienteId   = null;
+let _pacotePacienteNome = null;
+
+/* Picker de paciente para pacotes */
+function renderPacPacotesLista(q) {
+  const lista = _pacientes.filter(p => !q || p.nome.toLowerCase().includes(q.toLowerCase()));
+  const el = document.getElementById('pac-pacotes-lista');
+  if (!lista.length) {
+    el.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-muted);padding:var(--space-4) 0;text-align:center;">Nenhum paciente encontrado</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(p =>
+    `<div class="pac-item" data-id="${p.id}" data-nome="${escHtml(p.nome)}">
+      <div class="pac-avatar">${initials(p.nome)}</div>
+      <span class="pac-nome">${escHtml(p.nome)}</span>
+    </div>`
+  ).join('');
+  el.querySelectorAll('.pac-item').forEach(item => {
+    item.addEventListener('click', () => {
+      _pacotePacienteId   = parseInt(item.dataset.id);
+      _pacotePacienteNome = item.dataset.nome;
+      document.getElementById('pac-pacotes-label').textContent = _pacotePacienteNome;
+      document.getElementById('pac-pacotes-label').style.color = 'var(--color-text)';
+      document.getElementById('pacotes-paciente-nome').textContent = _pacotePacienteNome;
+      document.getElementById('pac-pacotes-overlay').style.display = 'none';
+      document.getElementById('pac-pacotes-sheet').style.display   = 'none';
+      document.getElementById('pacotes-lista-wrap').style.display  = '';
+      carregarPacotes(_pacotePacienteId);
+    });
+  });
+}
+
+document.getElementById('btn-pac-pacotes').addEventListener('click', () => {
+  document.getElementById('pac-pacotes-busca').value = '';
+  renderPacPacotesLista('');
+  document.getElementById('pac-pacotes-overlay').style.display = 'block';
+  document.getElementById('pac-pacotes-sheet').style.display   = 'block';
+  setTimeout(() => document.getElementById('pac-pacotes-busca').focus(), 200);
+});
+document.getElementById('pac-pacotes-overlay').addEventListener('click', () => {
+  document.getElementById('pac-pacotes-overlay').style.display = 'none';
+  document.getElementById('pac-pacotes-sheet').style.display   = 'none';
+});
+document.getElementById('pac-pacotes-busca').addEventListener('input', e => {
+  renderPacPacotesLista(e.target.value.trim());
+});
+
+/* Carregar e renderizar pacotes */
+async function carregarPacotes(pacienteId) {
+  const el = document.getElementById('pacotes-lista');
+  el.innerHTML = `<div style="padding:var(--space-4);text-align:center;"><span class="spinner"></span></div>`;
+  try {
+    const pacotes = await apiFetch(`/sec/pacientes/${pacienteId}/pacotes`);
+    if (!pacotes.length) {
+      el.innerHTML = `<div style="padding:var(--space-8) var(--space-4);text-align:center;font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum pacote cadastrado.</div>`;
+      return;
+    }
+    el.innerHTML = pacotes.map(pk => {
+      const usadas   = pk.sessoes_usadas ?? 0;
+      const total    = pk.total_sessoes  ?? 0;
+      const restantes = Math.max(0, total - usadas);
+      const pct      = total > 0 ? Math.round((usadas / total) * 100) : 0;
+      const valorFmt = pk.valor_pago != null
+        ? 'R$ ' + Number(pk.valor_pago).toFixed(2).replace('.', ',')
+        : '';
+      const dataFmt = pk.data_pagamento ? fmtDataBr(pk.data_pagamento) : '';
+      return `<div class="pacote-item">
+        <div class="pacote-header">
+          <span class="pacote-sessoes">${total} sessões · ${restantes} restante${restantes !== 1 ? 's' : ''}</span>
+          ${valorFmt ? `<span class="pacote-valor">${escHtml(valorFmt)}</span>` : ''}
+        </div>
+        ${dataFmt || pk.descricao ? `<div class="pacote-data">${[pk.descricao ? escHtml(pk.descricao) : '', dataFmt ? 'Pago em ' + escHtml(dataFmt) : ''].filter(Boolean).join(' · ')}</div>` : ''}
+        <div class="pacote-progresso">
+          <div class="pacote-progresso-fill" style="width:${pct}%;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="padding:var(--space-4);font-size:var(--text-sm);color:var(--color-danger);">${escHtml(e.message)}</div>`;
+  }
+}
+
+/* Sheet novo pacote */
+function novoPacoteOpen() {
+  document.getElementById('novo-pacote-pac-nome').textContent = _pacotePacienteNome || '';
+  document.getElementById('novo-pacote-sessoes').value = '';
+  document.getElementById('novo-pacote-valor').value   = '';
+  document.getElementById('novo-pacote-data').value    = '';
+  document.getElementById('novo-pacote-desc').value    = '';
+  document.getElementById('novo-pacote-erro').style.display = 'none';
+  document.getElementById('novo-pacote-salvar').disabled = false;
+  document.getElementById('novo-pacote-salvar').textContent = 'Criar pacote';
+  document.getElementById('novo-pacote-overlay').style.display = 'block';
+  document.getElementById('novo-pacote-sheet').style.display   = 'block';
+  setTimeout(() => document.getElementById('novo-pacote-sessoes').focus(), 200);
+}
+function novoPacoteClose() {
+  document.getElementById('novo-pacote-overlay').style.display = 'none';
+  document.getElementById('novo-pacote-sheet').style.display   = 'none';
+}
+document.getElementById('btn-novo-pacote').addEventListener('click', novoPacoteOpen);
+document.getElementById('novo-pacote-overlay').addEventListener('click', novoPacoteClose);
+document.getElementById('novo-pacote-cancelar').addEventListener('click', novoPacoteClose);
+
+document.getElementById('novo-pacote-salvar').addEventListener('click', async () => {
+  const sessoes = parseInt(document.getElementById('novo-pacote-sessoes').value);
+  if (!sessoes || sessoes < 1) {
+    document.getElementById('novo-pacote-erro').textContent = 'Informe o número de sessões.';
+    document.getElementById('novo-pacote-erro').style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('novo-pacote-salvar');
+  btn.disabled = true; btn.textContent = 'Criando…';
+  document.getElementById('novo-pacote-erro').style.display = 'none';
+  try {
+    const valor = document.getElementById('novo-pacote-valor').value;
+    await apiFetch(`/sec/pacientes/${_pacotePacienteId}/pacotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        total_sessoes:   sessoes,
+        valor_pago:      valor ? parseFloat(valor) : null,
+        data_pagamento:  document.getElementById('novo-pacote-data').value || null,
+        descricao:       document.getElementById('novo-pacote-desc').value.trim() || null,
+      }),
+    });
+    novoPacoteClose();
+    await carregarPacotes(_pacotePacienteId);
+  } catch(e) {
+    document.getElementById('novo-pacote-erro').textContent = e.message;
+    document.getElementById('novo-pacote-erro').style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Criar pacote';
+  }
 });
 
 /* ── Init ── */

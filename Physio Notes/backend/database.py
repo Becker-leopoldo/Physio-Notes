@@ -1165,29 +1165,76 @@ def _init_secretaria_table():
             CREATE TABLE IF NOT EXISTS secretaria_link (
                 secretaria_email TEXT PRIMARY KEY,
                 fisio_email      TEXT NOT NULL,
+                status           TEXT NOT NULL DEFAULT 'ativa',
                 criado_em        TEXT NOT NULL
             )
         """)
+        # Migração: adiciona coluna status se ainda não existir (banco existente)
+        try:
+            conn.execute("ALTER TABLE secretaria_link ADD COLUMN status TEXT NOT NULL DEFAULT 'ativa'")
+        except Exception:
+            pass  # coluna já existe
         conn.commit()
 
 
-def vincular_secretaria(secretaria_email: str, fisio_email: str):
+def convidar_secretaria(secretaria_email: str, fisio_email: str):
+    """Fisio cria convite com status=pendente. Admin deve aprovar."""
     _init_secretaria_table()
     with get_conn() as conn:
         conn.execute("""
-            INSERT INTO secretaria_link (secretaria_email, fisio_email, criado_em)
-            VALUES (?, ?, ?)
-            ON CONFLICT(secretaria_email) DO UPDATE SET fisio_email = excluded.fisio_email
+            INSERT INTO secretaria_link (secretaria_email, fisio_email, status, criado_em)
+            VALUES (?, ?, 'pendente', ?)
+            ON CONFLICT(secretaria_email) DO UPDATE SET
+                fisio_email = excluded.fisio_email,
+                status      = 'pendente',
+                criado_em   = excluded.criado_em
         """, (secretaria_email.lower().strip(), fisio_email.lower().strip(),
               datetime.now(timezone.utc).isoformat()))
         conn.commit()
 
 
+def vincular_secretaria(secretaria_email: str, fisio_email: str):
+    """Mantido por compatibilidade — usa fluxo de convite pendente."""
+    convidar_secretaria(secretaria_email, fisio_email)
+
+
+def aprovar_secretaria(secretaria_email: str):
+    """Admin aprova o convite — status passa para 'ativa'."""
+    _init_secretaria_table()
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE secretaria_link SET status = 'ativa' WHERE secretaria_email = ?",
+            (secretaria_email.lower().strip(),)
+        )
+        conn.commit()
+
+
+def rejeitar_secretaria(secretaria_email: str):
+    """Admin rejeita o convite — remove o registro."""
+    _init_secretaria_table()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM secretaria_link WHERE secretaria_email = ?",
+                     (secretaria_email.lower().strip(),))
+        conn.commit()
+
+
 def get_fisio_da_secretaria(secretaria_email: str) -> str | None:
+    """Retorna fisio_email somente se o vínculo estiver ativo."""
     _init_secretaria_table()
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT fisio_email FROM secretaria_link WHERE secretaria_email = ?",
+            "SELECT fisio_email FROM secretaria_link WHERE secretaria_email = ? AND status = 'ativa'",
+            (secretaria_email.lower().strip(),)
+        ).fetchone()
+        return row[0] if row else None
+
+
+def get_status_secretaria(secretaria_email: str) -> str | None:
+    """Retorna o status do convite ('pendente', 'ativa') ou None se não existe."""
+    _init_secretaria_table()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT status FROM secretaria_link WHERE secretaria_email = ?",
             (secretaria_email.lower().strip(),)
         ).fetchone()
         return row[0] if row else None
@@ -1202,7 +1249,9 @@ def desvincular_secretaria(secretaria_email: str):
 
 
 def get_secretaria_do_fisio(fisio_email: str) -> dict | None:
-    """Retorna o registro da secretaria vinculada ao fisio, ou None."""
+    """Retorna o registro da secretaria vinculada ao fisio (qualquer status), ou None."""
+    if not fisio_email:
+        return None
     _init_secretaria_table()
     with get_conn() as conn:
         row = conn.execute(
@@ -1210,6 +1259,16 @@ def get_secretaria_do_fisio(fisio_email: str) -> dict | None:
             (fisio_email.lower().strip(),)
         ).fetchone()
         return _row_to_dict(row) if row else None
+
+
+def listar_convites_secretaria_pendentes() -> list[dict]:
+    """Lista todos os convites com status=pendente (para o admin)."""
+    _init_secretaria_table()
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM secretaria_link WHERE status = 'pendente' ORDER BY criado_em DESC"
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
 
 
 # ---------- Configurações do usuário ----------

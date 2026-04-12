@@ -1,0 +1,24 @@
+version: 2
+updates:
+
+  # Python — backend Reconhecimento Facial
+  - package-ecosystem: pip
+    directory: /Rede Américas/Reconhecimento Facial/backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - security
+
+  # Docker — imagens base dos Dockerfiles
+  - package-ecosystem: docker
+    directory: /Rede Américas/Reconhecimento Facial/docker
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker

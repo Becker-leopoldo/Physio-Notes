@@ -1624,12 +1624,16 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     if not email:
         raise HTTPException(status_code=401, detail="E-mail não disponível no token Google.")
 
-    # Verifica se é secretaria vinculada
-    fisio_email = db.get_fisio_da_secretaria(email)
-    if fisio_email:
+    # Verifica se há convite de secretaria (ativo ou pendente)
+    status_sec = db.get_status_secretaria(email)
+    if status_sec == "ativa":
+        fisio_email = db.get_fisio_da_secretaria(email)
         token = google_auth.criar_jwt(email, nome, foto, role="secretaria", fisio_email=fisio_email)
         db.registrar_audit(email, "login_secretaria", f"fisio={fisio_email}", _client_ip(request))
         return {"token": token, "nome": nome, "email": email, "foto": foto, "role": "secretaria"}
+    if status_sec == "pendente":
+        db.registrar_audit(email, "login_secretaria_pendente", "convite aguarda aprovação", _client_ip(request))
+        raise HTTPException(status_code=403, detail="Convite pendente de aprovação do administrador. Aguarde a liberação.")
 
     # Login normal do fisioterapeuta
     admin_email = os.environ.get("ADMIN_EMAIL", "")
@@ -1901,17 +1905,17 @@ class SecretariaVincularBody(BaseModel):
 
 @app.post("/admin/secretaria/vincular", status_code=200)
 def admin_vincular_secretaria(body: SecretariaVincularBody, request: Request = None):
-    """Fisio vincula o e-mail da secretaria ao próprio e-mail."""
+    """Fisio convida secretaria — cria vínculo com status=pendente (aguarda aprovação do admin)."""
     fisio_email = _owner_email(request)
     if not fisio_email:
         raise HTTPException(status_code=401, detail="Não autenticado")
-    db.vincular_secretaria(body.secretaria_email, fisio_email)
-    db.registrar_audit(fisio_email, "vincular_secretaria", body.secretaria_email, _client_ip(request))
-    return {"ok": True, "secretaria_email": body.secretaria_email, "fisio_email": fisio_email}
+    db.convidar_secretaria(body.secretaria_email, fisio_email)
+    db.registrar_audit(fisio_email, "convidar_secretaria", body.secretaria_email, _client_ip(request))
+    return {"ok": True, "secretaria_email": body.secretaria_email, "status": "pendente"}
 
 @app.delete("/admin/secretaria/desvincular", status_code=200)
 def admin_desvincular_secretaria(request: Request = None):
-    """Fisio remove o vínculo com a secretaria."""
+    """Fisio cancela convite ou remove vínculo da secretaria."""
     fisio_email = _owner_email(request)
     link = db.get_secretaria_do_fisio(fisio_email)
     if link:
@@ -1921,22 +1925,39 @@ def admin_desvincular_secretaria(request: Request = None):
 
 @app.get("/admin/secretaria")
 def admin_get_secretaria(request: Request = None):
-    """Retorna a secretaria vinculada ao fisio logado (ou null)."""
+    """Retorna a secretaria convidada/vinculada ao fisio logado (com status), ou null."""
     fisio_email = _owner_email(request)
+    if not fisio_email:
+        return {"secretaria": None}
     link = db.get_secretaria_do_fisio(fisio_email)
     return {"secretaria": link}
+
+@app.get("/admin/secretaria/pendentes")
+def admin_listar_convites_pendentes(request: Request):
+    """Admin lista todos os convites de secretaria aguardando aprovação."""
+    _verificar_admin(request)
+    return db.listar_convites_secretaria_pendentes()
+
+@app.post("/admin/secretaria/{secretaria_email}/aprovar")
+def admin_aprovar_secretaria(secretaria_email: str, request: Request):
+    """Admin aprova um convite de secretaria — status passa para 'ativa'."""
+    _verificar_admin(request)
+    db.aprovar_secretaria(secretaria_email)
+    db.registrar_audit(_owner_email(request), "admin_aprovar_secretaria", secretaria_email, _client_ip(request))
+    return {"ok": True}
+
+@app.delete("/admin/secretaria/{secretaria_email}/rejeitar")
+def admin_rejeitar_secretaria(secretaria_email: str, request: Request):
+    """Admin rejeita um convite de secretaria — remove o registro."""
+    _verificar_admin(request)
+    db.rejeitar_secretaria(secretaria_email)
+    db.registrar_audit(_owner_email(request), "admin_rejeitar_secretaria", secretaria_email, _client_ip(request))
+    return {"ok": True}
 
 
 # ─────────────────────────────────────────────────────────────
 # SECRETARIA — Endpoints (usa token com role=secretaria)
 # ─────────────────────────────────────────────────────────────
-
-@app.get("/sec/pacientes")
-def sec_listar_pacientes(request: Request = None):
-    """Lista pacientes do fisio vinculado (apenas nome e id — sem dados clínicos)."""
-    _, fisio_email = _sec_context(request)
-    pacientes = db.get_pacientes(fisio_email)
-    return [{"id": p["id"], "nome": p["nome"]} for p in pacientes]
 
 
 @app.get("/sec/agenda")
@@ -2092,6 +2113,56 @@ async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Re
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
     return parsed
+
+
+# ---------- Secretaria — Pacientes ----------
+
+@app.get("/sec/pacientes")
+def sec_listar_pacientes(request: Request = None):
+    """Secretaria lista os pacientes do fisio vinculado."""
+    _, fisio_email = _sec_context(request)
+    return db.listar_pacientes(fisio_email)
+
+
+@app.post("/sec/pacientes", status_code=201)
+def sec_criar_paciente(body: PacienteCreate, request: Request = None):
+    """Secretaria cadastra novo paciente no nome do fisio vinculado."""
+    _, fisio_email = _sec_context(request)
+    try:
+        paciente = db.criar_paciente(
+            body.nome, body.data_nascimento, body.observacoes,
+            body.anamnese, body.cpf, body.endereco, fisio_email,
+        )
+    except (sqlite3.IntegrityError, ValueError):
+        raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado.")
+    db.registrar_audit(fisio_email, "sec_paciente_criar", f"id={paciente['id']} nome={paciente['nome']}", _client_ip(request))
+    return paciente
+
+
+# ---------- Secretaria — Pacotes ----------
+
+@app.get("/sec/pacientes/{paciente_id}/pacotes")
+def sec_listar_pacotes(paciente_id: int, request: Request = None):
+    """Secretaria lista os pacotes de um paciente do fisio vinculado."""
+    _, fisio_email = _sec_context(request)
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, fisio_email)
+    return db.get_pacotes_paciente(paciente_id)
+
+
+@app.post("/sec/pacientes/{paciente_id}/pacotes", status_code=201)
+def sec_criar_pacote(paciente_id: int, body: PacoteCreate, request: Request = None):
+    """Secretaria cria pacote de sessões para um paciente do fisio vinculado."""
+    _, fisio_email = _sec_context(request)
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+    _verificar_dono(paciente, fisio_email)
+    pacote = db.criar_pacote(paciente_id, body.total_sessoes, body.valor_pago, body.data_pagamento, body.descricao)
+    db.registrar_audit(fisio_email, "sec_pacote_criar", f"id={pacote['id']} paciente_id={paciente_id} sessoes={body.total_sessoes}", _client_ip(request))
+    return pacote
 
 
 # ---------- Frontend (deve ser montado por último) ----------
