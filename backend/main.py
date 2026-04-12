@@ -4,6 +4,7 @@ import re
 import secrets
 import sqlite3
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -522,7 +523,7 @@ async def feedback_clinico(paciente_id: int, request: Request):
 
 @app.post("/transcrever")
 @limiter.limit("20/minute")
-async def transcrever_audio_avulso(request: Request, audio: UploadFile = File(...)):
+async def transcrever_audio_avulso(request: Request, audio: Annotated[UploadFile, File()]):
     audio_bytes = await audio.read()
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
@@ -669,7 +670,7 @@ def buscar_sessao(sessao_id: int, request: Request):
 
 @app.post("/sessoes/{sessao_id}/audio")
 @limiter.limit("20/minute")
-async def upload_audio(sessao_id: int, audio: UploadFile = File(...), request: Request = None):
+async def upload_audio(sessao_id: int, audio: Annotated[UploadFile, File()], request: Request = None):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
         raise HTTPException(status_code=404, detail="Sessão não encontrada")
@@ -730,7 +731,7 @@ def cancelar_sessao(sessao_id: int, request: Request):
 
 
 @app.post("/sessoes/{sessao_id}/adicionar-audio")
-async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: UploadFile = File(...), request: Request = None):
+async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: Annotated[UploadFile, File()], request: Request = None):
     """Adiciona áudio a uma sessão encerrada do mesmo dia, sem abater do pacote."""
     from datetime import date
     sessao = db.get_sessao(sessao_id)
@@ -1332,7 +1333,7 @@ async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody, request: 
 # ---------- Documentos ----------
 
 @app.post("/pacientes/{paciente_id}/documentos", status_code=201)
-async def upload_documento(paciente_id: int, arquivo: UploadFile = File(...), request: Request = None):
+async def upload_documento(paciente_id: int, arquivo: Annotated[UploadFile, File()], request: Request = None):
     import io, uuid
     from pypdf import PdfReader
 

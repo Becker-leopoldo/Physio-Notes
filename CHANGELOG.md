@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.289 — 2026-04-12
+
+### Melhorias
+- **Backend:** 4 endpoints FastAPI migrados para `Annotated` type hints na injeção de dependência (`UploadFile`) — elimina 4 BLOCKERs Sonar (`python:S8410`)
+
+---
+
 ## Beta-0.288 — 2026-04-12
 
 ### Correções
