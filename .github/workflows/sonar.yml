@@ -1,0 +1,22 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ "master" ]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Crucial para o SonarCloud detectar histórico e novos códigos
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Criado automaticamente pelo GitHub
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Você deve criar nas configurações do repositório

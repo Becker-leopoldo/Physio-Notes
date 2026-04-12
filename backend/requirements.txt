@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-multipart
+openai
+anthropic
+python-dotenv
+aiofiles
+pypdf
+webauthn
+google-auth
+requests
+PyJWT
+pywebpush
+apscheduler
+slowapi
+cryptography
+httpx
