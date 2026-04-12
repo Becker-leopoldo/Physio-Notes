@@ -23,6 +23,12 @@ import calendar_service
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("physio_notes")
 
+# ---------- Constants ----------
+AUTH_BEARER_PREFIX = "Bearer "
+ERR_NOT_AUTHENTICATED = "Não autenticado"
+ERR_PACIENTE_NOT_FOUND = "Paciente não encontrado"
+ERR_ACCESS_DENIED_SEC = "Acesso restrito à secretaria"
+
 # ---------- WebAuthn session store (in-memory) ----------
 _challenges: dict[str, bytes] = {}   # username -> challenge bytes
 _sessions: dict[str, str] = {}       # token -> username
@@ -108,14 +114,14 @@ async def verificar_autenticacao(request: Request, call_next):
         return await call_next(request)
 
     auth_header = request.headers.get("authorization", "")
-    if auth_header.startswith("Bearer "):
+    if auth_header.startswith(AUTH_BEARER_PREFIX):
         token = auth_header.split(" ", 1)[1]
         # Aceita JWT do Google SSO
         try:
             google_auth.verificar_jwt(token)
         except Exception as e:
             logger.warning(f"verificar_autenticacao: FALHA JWT no path {path} [{request.method}]: {e}")
-            return JSONResponse(status_code=401, content={"detail": "Não autenticado"})
+            return JSONResponse(status_code=401, content={"detail": ERR_NOT_AUTHENTICATED})
 
         # Se o token é válido, segue para o próximo handler
         return await call_next(request)
@@ -124,7 +130,7 @@ async def verificar_autenticacao(request: Request, call_next):
             return await call_next(request)
 
     logger.warning(f"verificar_autenticacao: BLOQUEIO 401 no path {path} [{request.method}] - AuthHeader: {bool(auth_header)}")
-    return JSONResponse(status_code=401, content={"detail": "Não autenticado"})
+    return JSONResponse(status_code=401, content={"detail": ERR_NOT_AUTHENTICATED})
 
 
 # ---------- Schemas ----------
@@ -227,7 +233,7 @@ def _sec_context(request: Request) -> tuple[str, str]:
     """Extrai (secretaria_email, fisio_email) do JWT de secretaria.
     Lança 403 se o token não for de secretaria."""
     auth = request.headers.get("authorization", "")
-    if auth.startswith("Bearer "):
+    if auth.startswith(AUTH_BEARER_PREFIX):
         try:
             token = auth.split(" ", 1)[1]
             payload = google_auth.verificar_jwt(token)
@@ -239,13 +245,13 @@ def _sec_context(request: Request) -> tuple[str, str]:
             logger.error(f"_sec_context: Erro ao verificar JWT: {e}")
             pass
     logger.warning(f"_sec_context: BLOQUEIO 403 para {request.url.path} [{request.method}] - Header: {bool(auth)}")
-    raise HTTPException(status_code=403, detail="Acesso restrito à secretaria")
+    raise HTTPException(status_code=403, detail=ERR_ACCESS_DENIED_SEC)
 
 
 def _verificar_dono(paciente: dict, owner: str | None):
     """Lança 404 se o paciente não pertence ao usuário (None = WebAuthn, vê tudo)."""
     if owner and paciente.get("owner_email") and paciente["owner_email"] != owner:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
 
 
 def _verificar_dono_sessao(sessao: dict, owner: str | None):

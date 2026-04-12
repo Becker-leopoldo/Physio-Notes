@@ -5,8 +5,14 @@ import hashlib
 import hmac as _hmac
 import logging
 from datetime import datetime, timezone
+from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger("physio_notes")
+
+# ---------- Constants ----------
+STATUS_ABERTA = "aberta"
+STATUS_ENCERRADA = "encerrada"
+STATUS_CANCELADA = "cancelada"
 
 # ---------- Criptografia de campos PII (CPF, endereço) ----------
 # Estratégia: Blind Index
@@ -56,7 +62,7 @@ def _decrypt_field(value: str | None) -> str | None:
     f = _get_fernet()
     try:
         return f.decrypt(value[len(_ENC_PREFIX):].encode()).decode()
-    except Exception:
+    except (InvalidToken, ValueError):
         return value
 
 
@@ -222,7 +228,7 @@ def _migrate():
         """)
         try:
             conn.execute("ALTER TABLE pacote ADD COLUMN pago BOOLEAN DEFAULT 1;")
-        except BaseException:
+        except sqlite3.Error:
             pass
 
         # Procedimentos extras por sessão
@@ -324,7 +330,7 @@ def registrar_audit(owner_email: str | None, acao: str, detalhe: str | None = No
                 (_now(), owner_email, acao, detalhe, ip),
             )
             conn.commit()
-    except Exception as exc:
+    except sqlite3.Error as exc:
         logger.warning("registrar_audit: falha ao gravar acao=%s: %s", acao, exc)
 
 
