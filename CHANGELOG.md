@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.325 — 2026-04-13
+
+### Admin — Botão "Negar" para fisio pendente
+- **Botão "Negar"** adicionado ao lado de "Aprovar" para solicitações de fisio pendentes
+- Hard delete do registro — e-mail fica livre para nova solicitação futura
+- Audit log registra `admin_rejeitar_usuario` com nome e e-mail do rejeitado
+- Endpoint: `DELETE /admin/usuarios/{email}/rejeitar`
+
+---
+
 ## Beta-0.324 — 2026-04-13
 
 ### Admin — Revogar fisio abre porta para nova solicitação

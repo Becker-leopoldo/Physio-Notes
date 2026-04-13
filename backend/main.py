@@ -2013,6 +2013,16 @@ def admin_revogar_usuario(email: str, request: Request):
     return {"ok": True}
 
 
+@app.delete("/admin/usuarios/{email}/rejeitar", status_code=200)
+def admin_rejeitar_usuario(email: str, request: Request):
+    """Admin rejeita solicitação de acesso de fisio pendente (ativo=0). Hard delete — libera o e-mail para nova tentativa futura."""
+    _verificar_admin(request)
+    nome = db.get_nome_fisio(email) or ""
+    db.revogar_usuario(email)  # mesma lógica: hard delete + encerra vínculos
+    db.registrar_audit(_owner_email(request), "admin_rejeitar_usuario", f"target={email} nome={nome} (pendente_rejeitado)", _client_ip(request))
+    return {"ok": True}
+
+
 @app.get("/admin/audit-log")
 def admin_audit_log(owner: str | None = None, limit: int = 200, request: Request = None):
     _verificar_admin(request)

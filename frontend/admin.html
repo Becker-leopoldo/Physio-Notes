@@ -602,6 +602,7 @@
             </div>
             <div class="user-actions">
               <button class="btn btn-success" onclick="aprovar('${escHtml(u.email)}', this)">Aprovar</button>
+              <button class="btn btn-danger"  onclick="rejeitarFisio('${escHtml(u.email)}', this)">Negar</button>
             </div>
           </div>
         </div>`;
@@ -694,6 +695,17 @@
       btn.textContent = '…';
       await fetch(`/admin/usuarios/${encodeURIComponent(email)}/revogar`, {
         method: 'POST',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      await carregar();
+    }
+
+    async function rejeitarFisio(email, btn) {
+      if (!confirm(`Negar acesso de ${email}?\n\nO usuário poderá solicitar novamente no futuro.`)) return;
+      btn.disabled = true;
+      btn.textContent = '…';
+      await fetch(`/admin/usuarios/${encodeURIComponent(email)}/rejeitar`, {
+        method: 'DELETE',
         headers: { Authorization: 'Bearer ' + token }
       });
       await carregar();
