@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.335 — 2026-04-13
+
+### Correção — Layout mobile: conteúdo cortado / não centralizado
+- **`box-sizing: border-box` global** adicionado (`*, *::before, *::after`): corrige overflow horizontal em todo o app — padding nunca mais extrapola a largura do elemento
+- **`.section { overflow-x: hidden }`**: blindagem adicional contra qualquer overflow residual em seções filhas
+
+---
+
 ## Beta-0.334 — 2026-04-13
 
 ### Correção — 2 bugs UX na tela de Créditos (mobile)

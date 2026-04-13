@@ -96,6 +96,8 @@
       --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
     }
 
+    *, *::before, *::after { box-sizing: border-box; }
+
     html, body {
       height: 100%;
       font-family: var(--font-body);
@@ -171,6 +173,7 @@
       display: none;
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       flex-direction: column;
     }
     .section.active { display: flex; }
@@ -1727,7 +1730,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.334'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.335'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
