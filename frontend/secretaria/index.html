@@ -376,23 +376,6 @@
       content: ''; flex: 1; height: 1px; background: var(--color-border);
     }
 
-    /* logout menu */
-    .user-menu {
-      position: fixed; top: 60px; right: 12px;
-      background: var(--color-surface); border: var(--border-strong);
-      border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
-      padding: var(--space-2); z-index: 201; min-width: 160px;
-    }
-    .user-menu-item {
-      display: flex; align-items: center; gap: var(--space-2);
-      padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
-      font-size: var(--text-sm); cursor: pointer; background: none; border: none;
-      width: 100%; font-family: var(--font-body); color: var(--color-text);
-      transition: background 0.1s;
-    }
-    .user-menu-item:hover { background: var(--color-accent-light); }
-    .user-menu-item.danger { color: var(--color-danger); }
-    .user-menu-item.danger:hover { background: var(--color-danger-bg); }
 
     /* ── Pacientes tab ── */
     .pac-list-item {
@@ -541,6 +524,10 @@
           <div class="user-role">Secretária</div>
         </div>
       </div>
+      <div style="padding:var(--space-3) var(--space-3) 0;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted);">powered by <strong style="color:var(--color-text-secondary);">up it</strong></span>
+        <span id="app-version-label" style="font-size:var(--text-xs);color:var(--color-text-muted);font-variant-numeric:tabular-nums;"></span>
+      </div>
     </div>
   </aside>
 
@@ -652,11 +639,6 @@
     </div>
 
   </div>
-
-  <footer class="powered-bar" style="padding:var(--space-4) var(--space-8);text-align:left;">
-    powered by <strong>up it</strong>
-    <span id="app-version-label" style="margin-left:var(--space-4);font-size:var(--text-xs);color:var(--color-text-muted);font-variant-numeric:tabular-nums;"></span>
-  </footer>
 
   </main>
 </div>
@@ -1896,7 +1878,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.293';
+const APP_VERSION = 'Beta-0.294';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;
