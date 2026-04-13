@@ -560,13 +560,13 @@
       });
 
       const listaAtivos = document.getElementById('lista-ativos');
-      if (!ativosVisiveis.length) {
-        listaAtivos.innerHTML = '<div class="empty">Nenhum fisio ativo encontrado.</div>';
-      } else {
+      if (ativosVisiveis.length) {
         listaAtivos.innerHTML = ativosVisiveis.map(u => {
           const link = linkPorFisio[u.email];
           return renderFisioAtivo(u, link, inconsistentes);
         }).join('');
+      } else {
+        listaAtivos.innerHTML = '<div class="empty">Nenhum fisio ativo encontrado.</div>';
       }
 
       // ─── Inativos ───

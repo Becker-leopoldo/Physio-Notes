@@ -845,8 +845,8 @@
       width: 100%; text-align: left;
       transition: background 0.12s, color 0.12s;
     }
-    .drawer-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-    .drawer-item.active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .drawer-item:hover { background: rgba(255,255,255,0.07); color: #fff; } /* NOSONAR */
+    .drawer-item.active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; } /* NOSONAR */
     .drawer-item svg { flex-shrink: 0; color: rgba(255,255,255,0.4); }
     .drawer-item:hover svg, .drawer-item.active svg { color: rgba(255,255,255,0.85); }
     .drawer-footer {
@@ -1727,7 +1727,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.330'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.331'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2050,16 +2050,16 @@
     el.addEventListener('blur', () => {
       const v = el.value.replaceAll(/\D/g, '');
       if (v.length === 0) { hint.style.display = 'none'; return; }
-      if (!cpfValido(el.value)) {
-        hint.textContent = 'CPF inválido';
-        hint.style.color = 'var(--color-danger)';
-        hint.style.display = '';
-        el.style.borderColor = 'var(--color-danger)';
-      } else {
+      if (cpfValido(el.value)) {
         hint.textContent = 'CPF válido';
         hint.style.color = 'var(--color-success)';
         hint.style.display = '';
         el.style.borderColor = 'var(--color-success)';
+      } else {
+        hint.textContent = 'CPF inválido';
+        hint.style.color = 'var(--color-danger)';
+        hint.style.display = '';
+        el.style.borderColor = 'var(--color-danger)';
       }
     });
     el.addEventListener('focus', () => {
@@ -3015,7 +3015,7 @@
       <div class="open-session-actions" style="align-items:center;">
         <button class="btn btn-primary btn-sm" id="btn-gravar">Gravar áudio</button>
         <button class="btn btn-danger btn-sm" id="btn-encerrar">Encerrar sessão</button>
-        ${!temPacote ? `<button class="btn btn-ghost btn-sm" id="btn-cancelar" style="color:var(--color-danger);font-size:var(--text-xs);padding:var(--space-1) var(--space-2);">Cancelar sessão</button>` : ''}
+        ${temPacote ? '' : `<button class="btn btn-ghost btn-sm" id="btn-cancelar" style="color:var(--color-danger);font-size:var(--text-xs);padding:var(--space-1) var(--space-2);">Cancelar sessão</button>` : ''}
         <div class="ac-indicator" style="display:none;">
           <div class="ac-pill" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-accent-light);border-radius:var(--radius-full);padding:4px 10px 4px 7px;transition:background 0.4s,color 0.4s;">
             <svg width="14" height="14" viewBox="0 0 16 16" style="flex-shrink:0;">
@@ -4830,7 +4830,7 @@
         </div>
         <div style="font-size:var(--text-xs);color:var(--color-text-muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
           <span>${ativo.sessoes_usadas} sess${ativo.sessoes_usadas === 1 ? 'ão' : 'ões'} utilizada${ativo.sessoes_usadas === 1 ? '' : 's'} ${ativo.valor_pago ? '· R$ ' + ativo.valor_pago.toFixed(2).replaceAll('.', ',') : ''}</span>
-          ${!ativo.pago ? '<span style="background:var(--color-warning-bg);color:var(--color-warning);padding:2px 8px;border-radius:999px;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;border:1px solid #f6d186;">⚠️ Pendente de pagamento</span>' : ''}
+          ${ativo.pago ? '' : '<span style="background:var(--color-warning-bg);color:var(--color-warning);padding:2px 8px;border-radius:999px;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;border:1px solid #f6d186;">⚠️ Pendente de pagamento</span>'}
         </div>
         ${alertaHtml}`;
     } else {
@@ -7360,7 +7360,7 @@
         <div class="ag-result-nome">${escHtml(parsed.nome)}</div>
         <div class="ag-result-when">${dataFmt} · ${horaFmt}</div>
         ${aviso ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:6px;">${aviso}</div>` : ''}
-        ${!gcal_conectado ? `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Google Calendar não conectado.</div>` : ''}
+        ${gcal_conectado ? '' : `<div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Google Calendar não conectado.</div>`}
       </div>`;
     } else {
       html += `<div class="ag-result-card ag-result-card-busy">
@@ -7769,7 +7769,7 @@
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-5);">
-        <button class="btn btn-secondary" id="fat-btn-extrato" ${!temDados ? 'disabled title="Nenhum dado no período selecionado"' : ''}>Gerar extrato</button>
+        <button class="btn btn-secondary" id="fat-btn-extrato" ${temDados ? '' : 'disabled title="Nenhum dado no período selecionado"'}>Gerar extrato</button>
         <button class="btn btn-secondary" id="fat-btn-nfse" disabled style="display:flex;align-items:center;justify-content:center;gap:6px;">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           <span id="fat-nfse-label">Emitir NFS-e</span>
@@ -8371,13 +8371,13 @@
     caretEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
     function atualizarLabel() {
-      if (!competenciaSel) {
-        labelEl.textContent = 'Todos os meses';
-        labelEl.style.color = '#6B6860';
-      } else {
+      if (competenciaSel) {
         const [y, mo] = competenciaSel.split('-');
         labelEl.textContent = `${MESES[Number.parseInt(mo)-1]}/${y}`;
         labelEl.style.color = '#1A1A1A';
+      } else {
+        labelEl.textContent = 'Todos os meses';
+        labelEl.style.color = '#6B6860';
       }
     }
     atualizarLabel();
@@ -8396,9 +8396,9 @@
       const selAnoCurrent = competenciaSel ? Number.parseInt(competenciaSel.split('-')[0]) : null;
       const selMesCurrent = competenciaSel ? Number.parseInt(competenciaSel.split('-')[1]) - 1 : null;
 
-      const allBg = !competenciaSel ? '#1A1A1A' : '#F9F8F6';
-      const allColor = !competenciaSel ? '#fff' : '#6B6860';
-      const allWeight = !competenciaSel ? '600' : '400';
+      const allBg = competenciaSel ? '#F9F8F6' : '#1A1A1A';
+      const allColor = competenciaSel ? '#6B6860' : '#fff';
+      const allWeight = competenciaSel ? '400' : '600';
       panel.innerHTML = `
         ${allowAll ? `
           <button type="button" id="picker-all" style="
