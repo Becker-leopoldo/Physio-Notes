@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.291 — 2026-04-12
+
+### Correções
+- **Versionamento:** sincronizado `secretaria/index.html` para Beta-0.291 (estava em Beta-0.287)
+- **QA agent:** corrigida chave hardcoded do SonarCloud apontando para projeto errado
+
+---
+
 ## Beta-0.290 — 2026-04-12
 
 ### Correções

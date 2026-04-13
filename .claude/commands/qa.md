@@ -61,10 +61,10 @@ Exemplo de código de teste para os casos mais críticos na linguagem/framework 
 ### 5b. Análise SonarCloud (busca automática)
 
 **Sempre** busque os dados reais do SonarCloud antes de avaliar esta seção.
-Use o seguinte comando para obter as métricas atuais do projeto:
+Use o arquivo `scripts/sonar_issues.json` (já exportado pelo `/sonar`) para avaliar esta seção. Se o arquivo não existir ou estiver desatualizado, rode primeiro:
 
 ```bash
-curl -s "https://sonarcloud.io/api/measures/component?component=Becker-leopoldo_poc-rede-americas-reconhecimento-facial&metricKeys=alert_status,bugs,vulnerabilities,security_hotspots,code_smells,coverage,duplicated_lines_density,sqale_index"
+python scripts/export_sonar.py
 ```
 
 Com os dados retornados, avalie:
