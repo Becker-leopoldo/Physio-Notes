@@ -1727,7 +1727,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.325'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.326'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5324,20 +5324,40 @@
     }
   });
 
-  document.getElementById('sec-desvincular-btn').addEventListener('click', async () => {
-    const confirmacao = prompt('Para confirmar o cancelamento, digite CANCELAR (em maiúsculas):');
-    if (confirmacao !== 'CANCELAR') {
-      return; // Aborta se não digitou corretamente
-    }
-
-    const fb = document.getElementById('sec-feedback');
-    try {
-      await apiFetch('/admin/secretaria/desvincular', { method: 'DELETE' });
-      fb.textContent = 'Convite cancelado.'; fb.style.color = 'var(--color-text-muted)'; fb.style.display = '';
-      await secCarregarStatus();
-    } catch(e) {
-      fb.textContent = 'Erro: ' + e.message; fb.style.color = 'var(--color-danger)'; fb.style.display = '';
-    }
+  document.getElementById('sec-desvincular-btn').addEventListener('click', () => {
+    const FRASE = 'EU QUERO REMOVER';
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:var(--space-6);';
+    overlay.innerHTML = `
+      <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-8);max-width:360px;width:100%;box-shadow:var(--shadow-lg);">
+        <div style="font-size:28px;text-align:center;margin-bottom:var(--space-4);">⚠️</div>
+        <h3 style="font-family:var(--font-body);font-size:var(--text-lg);font-weight:600;margin:0 0 var(--space-2);text-align:center;">Remover secretária</h3>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);text-align:center;margin:0 0 var(--space-5);">Esta ação encerrará o vínculo. Digite exatamente:</p>
+        <p style="text-align:center;margin:0 0 var(--space-4);"><strong style="color:var(--color-text);font-family:monospace;font-size:var(--text-xs);background:var(--color-accent-light);padding:2px 6px;border-radius:4px;letter-spacing:.03em;">${FRASE}</strong></p>
+        <input type="text" id="_sec-rm-input" class="form-input" placeholder="Digite a frase acima" style="margin-bottom:var(--space-4);text-align:center;">
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <button id="_sec-rm-ok" class="btn btn-danger btn-full" disabled>Remover secretária</button>
+          <button id="_sec-rm-cancel" class="btn btn-ghost btn-full">Cancelar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#_sec-rm-input');
+    const okBtn = overlay.querySelector('#_sec-rm-ok');
+    setTimeout(() => input.focus(), 100);
+    input.addEventListener('input', () => { okBtn.disabled = input.value.trim() !== FRASE; });
+    overlay.querySelector('#_sec-rm-cancel').addEventListener('click', () => overlay.remove());
+    okBtn.addEventListener('click', async () => {
+      okBtn.disabled = true; okBtn.textContent = 'Removendo…';
+      overlay.remove();
+      const fb = document.getElementById('sec-feedback');
+      try {
+        await apiFetch('/admin/secretaria/desvincular', { method: 'DELETE' });
+        fb.textContent = 'Secretária removida.'; fb.style.color = 'var(--color-text-muted)'; fb.style.display = '';
+        await secCarregarStatus();
+      } catch(e) {
+        fb.textContent = 'Erro: ' + e.message; fb.style.color = 'var(--color-danger)'; fb.style.display = '';
+      }
+    });
   });
 
   document.getElementById('drawer-configuracoes-btn').addEventListener('click', async () => {

@@ -700,15 +700,49 @@
       await carregar();
     }
 
-    async function rejeitarFisio(email, btn) {
-      if (!confirm(`Negar acesso de ${email}?\n\nO usuário poderá solicitar novamente no futuro.`)) return;
-      btn.disabled = true;
-      btn.textContent = '…';
-      await fetch(`/admin/usuarios/${encodeURIComponent(email)}/rejeitar`, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+    function _modalConfirmar({ titulo, descricao, frase, labelBtn, onConfirm }) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px;';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
+          <div style="font-size:28px;text-align:center;margin-bottom:16px;">⚠️</div>
+          <h3 style="font-size:18px;font-weight:600;margin:0 0 8px;text-align:center;">${titulo}</h3>
+          <p style="font-size:14px;color:#6B6860;text-align:center;margin:0 0 20px;">${descricao}</p>
+          <p style="text-align:center;margin:0 0 16px;"><strong style="font-family:monospace;font-size:12px;background:#F0EFED;padding:2px 6px;border-radius:4px;letter-spacing:.03em;">${frase}</strong></p>
+          <input type="text" class="_mc-input" placeholder="Digite a frase acima" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #E8E6E1;border-radius:8px;font-size:14px;margin-bottom:16px;text-align:center;outline:none;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="_mc-ok" style="width:100%;padding:10px;background:#9B1C1C;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;opacity:.4;pointer-events:none;" disabled>${labelBtn}</button>
+            <button class="_mc-cancel" style="width:100%;padding:10px;background:none;border:none;font-size:14px;cursor:pointer;color:#6B6860;">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const input = overlay.querySelector('._mc-input');
+      const okBtn = overlay.querySelector('._mc-ok');
+      setTimeout(() => input.focus(), 100);
+      input.addEventListener('input', () => {
+        const ok = input.value.trim() === frase;
+        okBtn.disabled = !ok;
+        okBtn.style.opacity = ok ? '1' : '.4';
+        okBtn.style.pointerEvents = ok ? '' : 'none';
       });
-      await carregar();
+      overlay.querySelector('._mc-cancel').addEventListener('click', () => overlay.remove());
+      okBtn.addEventListener('click', () => { overlay.remove(); onConfirm(); });
+    }
+
+    async function rejeitarFisio(email, btn) {
+      _modalConfirmar({
+        titulo: 'Negar acesso',
+        descricao: `Negar solicitação de <strong>${escHtml(email)}</strong>.<br>O usuário poderá solicitar novamente no futuro.`,
+        frase: 'EU QUERO NEGAR',
+        labelBtn: 'Negar acesso',
+        onConfirm: async () => {
+          btn.disabled = true; btn.textContent = '…';
+          await fetch(`/admin/usuarios/${encodeURIComponent(email)}/rejeitar`, {
+            method: 'DELETE', headers: { Authorization: 'Bearer ' + token }
+          });
+          await carregar();
+        }
+      });
     }
 
     async function aprovarSecretaria(email, btn) {
@@ -722,14 +756,19 @@
     }
 
     async function rejeitarSecretaria(email, btn) {
-      if (!confirm(`Rejeitar convite de ${email}?`)) return;
-      btn.disabled = true;
-      btn.textContent = '…';
-      await fetch(`/admin/secretaria/${encodeURIComponent(email)}/rejeitar`, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+      _modalConfirmar({
+        titulo: 'Rejeitar secretária',
+        descricao: `Rejeitar convite de <strong>${escHtml(email)}</strong>.<br>O vínculo será encerrado.`,
+        frase: 'EU QUERO REJEITAR',
+        labelBtn: 'Rejeitar secretária',
+        onConfirm: async () => {
+          btn.disabled = true; btn.textContent = '…';
+          await fetch(`/admin/secretaria/${encodeURIComponent(email)}/rejeitar`, {
+            method: 'DELETE', headers: { Authorization: 'Bearer ' + token }
+          });
+          await carregar();
+        }
       });
-      await carregar();
     }
 
     /* ─── Busca ─── */

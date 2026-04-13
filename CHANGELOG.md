@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.326 — 2026-04-13
+
+### UX — Modal de confirmação para remoção de secretária (padrão "EU QUERO EXCLUIR")
+- **Fisio app:** desvincular secretária agora usa modal com digitação obrigatória de `EU QUERO REMOVER` (substituído o `prompt()` nativo feio)
+- **Admin — Rejeitar secretária:** modal com `EU QUERO REJEITAR` (substituído `confirm()` nativo)
+- **Admin — Negar fisio pendente:** modal com `EU QUERO NEGAR` (substituído `confirm()` nativo)
+- Helper `_modalConfirmar()` reutilizável no admin para padronizar futuros modais de confirmação
+
+---
+
 ## Beta-0.325 — 2026-04-13
 
 ### Admin — Botão "Negar" para fisio pendente
