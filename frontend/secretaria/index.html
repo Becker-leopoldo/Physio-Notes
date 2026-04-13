@@ -136,14 +136,15 @@
     .sidebar.collapsed { width: 56px; }
     .sidebar.collapsed .brand-name,
     .sidebar.collapsed .brand-badge,
-    .sidebar.collapsed .user-name,
-    .sidebar.collapsed .user-role { display: none; }
+    .sidebar.collapsed #user-display-name,
+    .sidebar.collapsed #user-display-email { display: none; }
     .sidebar.collapsed .nav-item { justify-content: center; padding: var(--space-2); font-size: 0; gap: 0; }
     .sidebar.collapsed .nav-item svg { width: 18px; height: 18px; }
     .sidebar.collapsed .sidebar-brand { padding: 0 var(--space-3) var(--space-6); justify-content: center; }
     .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
     .sidebar.collapsed .sidebar-footer { padding: var(--space-4) var(--space-3); }
-    .sidebar.collapsed .user-info { justify-content: center; }
+    .sidebar.collapsed #btn-logout { justify-content: center; font-size: 0; }
+    .sidebar.collapsed #btn-logout svg { flex-shrink: 0; }
 
     /* ── Main content ── */
     .main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-y: auto; }
@@ -556,25 +557,23 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-menu" id="user-menu">
-        <button class="user-menu-item danger" id="btn-logout">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Sair
-        </button>
-      </div>
-      <div class="user-info" id="btn-user-menu">
-        <div class="user-avatar" id="user-avatar-wrap" style="overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);margin-bottom:var(--space-1);border-radius:var(--radius-md);">
+        <div id="user-avatar-wrap" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:600;flex-shrink:0;overflow:hidden;">
           <img id="user-avatar-foto" style="width:100%;height:100%;object-fit:cover;display:none;" alt="">
           <span id="user-avatar-initials">??</span>
         </div>
-        <div>
-          <div class="user-name" id="user-display-name">Secretaria</div>
-          <div class="user-role">Secretária</div>
+        <div style="min-width:0;">
+          <div id="user-display-name" style="font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;"></div>
+          <div id="user-display-email" style="font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
       </div>
+      <button id="btn-logout" style="display:flex;align-items:center;gap:var(--space-2);width:100%;padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);background:none;border:none;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-body);font-weight:500;color:rgba(255,100,100,0.85);transition:background 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,80,80,0.12)'" onmouseout="this.style.background='none'">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sair
+      </button>
       <div style="padding:var(--space-3) var(--space-3) 0;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:var(--text-xs);color:var(--color-text-muted);">powered by <strong style="color:var(--color-text-secondary);">up it</strong></span>
-        <span id="app-version-label" style="font-size:var(--text-xs);color:var(--color-text-muted);font-variant-numeric:tabular-nums;"></span>
+        <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.25);">powered by <strong style="color:rgba(255,255,255,0.4);">up it</strong></span>
+        <span id="app-version-label" style="font-size:var(--text-xs);color:rgba(255,255,255,0.25);font-variant-numeric:tabular-nums;"></span>
       </div>
     </div>
   </aside>
@@ -1006,6 +1005,7 @@ try {
 } catch { _currentUser = secUser(); }
 
 document.getElementById('user-display-name').textContent = _currentUser.nome || 'Secretária';
+document.getElementById('user-display-email').textContent = _currentUser.email || '';
 if (_currentUser.foto) {
   const img = document.getElementById('user-avatar-foto');
   img.src = _currentUser.foto;
@@ -1062,12 +1062,6 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('collapsed');
 });
 
-/* ── User menu ── */
-document.getElementById('btn-user-menu').addEventListener('click', (e) => {
-  e.stopPropagation();
-  document.getElementById('user-menu').classList.toggle('open');
-});
-document.addEventListener('click', () => document.getElementById('user-menu').classList.remove('open'));
 
 /* ══════════════════════════════════════════════
    AGENDA
@@ -2279,7 +2273,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.318';
+const APP_VERSION = 'Beta-0.319';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

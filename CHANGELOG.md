@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.319 — 2026-04-13
+
+### Secretaria — Rodapé da sidebar padronizado com o app fisio
+- **Footer da sidebar** redesenhado: foto/avatar + nome + e-mail sempre visíveis (igual ao drawer do fisio)
+- **Botão "Sair"** agora sempre visível abaixo do usuário — removido popup de menu de contexto
+- **powered by up it** e versão exibidos no mesmo estilo visual do app fisio (cor sutil no tema escuro)
+- Sidebar recolhida: nome/e-mail ocultados, botão Sair mostra só ícone (centralizado)
+
+---
+
 ## Beta-0.318 — 2026-04-13
 
 ### Secretaria — Remover pacote com confirmação obrigatória
