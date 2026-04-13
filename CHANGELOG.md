@@ -4,6 +4,51 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.297 — 2026-04-13
+
+### Melhorias
+- **Cards nas abas da secretaria:** calendário (Agenda), formulário (Atestado), lista (Pacientes) e seletor (Pacotes) agora são exibidos em cards brancos com borda e sombra sutil — elimina o efeito de conteúdo "flutuando" no fundo `#F9F8F6`
+- **Pacientes:** barra de busca integrada ao topo do card com separador visual (`border-bottom`), lista de itens flui diretamente abaixo
+- **Agenda:** botões de navegação do calendário (`mes-btn`) com `background: transparent` — ficam limpos sobre o card branco
+
+---
+
+## Beta-0.296 — 2026-04-13
+
+### Melhorias
+- **Toast system (secretaria):** substituiu todos os `alert()` nativos por notificações flutuantes não bloqueantes. Toasts verdes para sucesso, vermelhos para erro, amarelos para aviso — auto-fechamento em 3,5s
+- **Timer de gravação:** botão de microfone (Agenda e Atestado) exibe contador em tempo real (`0:00`, `1:23`...) enquanto grava — usuário sabe exatamente quanto tempo está gravando
+- **Botão "Hoje" no calendário:** navegação direta para o mês atual sem precisar clicar prev/next várias vezes
+- **Fisio vinculado na sidebar:** nome do fisioterapeuta exibido abaixo do badge "Secretaria" — secretaria sabe imediatamente para qual clínica está trabalhando
+- **Cabeçalhos de aba:** abas Atestado, Pacientes e Pacotes ganham `.page-header` com `<h1>` — orientação visual clara ao trocar de aba
+- **Toasts de sucesso:** confirmação visual após agendamento criado, agendamento cancelado, paciente cadastrado, paciente editado e pacote criado
+
+---
+
+## Beta-0.295 — 2026-04-13
+
+### Funcionalidades
+- **Unicidade de conta Google:** um e-mail não pode ser fisioterapeuta e secretaria ao mesmo tempo. Ao convidar uma secretaria, o sistema valida que o e-mail não tem conta de fisio (HTTP 409). No login, fisioterapeuta sempre tem precedência sobre vínculo de secretaria.
+
+### Melhorias
+- **Modelo de IA migrado para Gemini 2.5 Flash Lite** — ~8–10× mais barato que Claude Haiku anterior ($0.10/$0.40 por 1M tokens vs $0.80/$4.00). Interface de chamada mantida; billing e histórico continuam funcionando.
+- Nova variável de ambiente: `GOOGLE_AI_KEY` (substitui `ANTHROPIC_API_KEY`)
+- `requirements.txt`: substituído `anthropic` por `google-genai`
+
+### Correções
+- **Segurança:** cotação em `/creditos/saldo` validada no intervalo 1.0–20.0 (impede manipulação via query param)
+- **Segurança:** `/billing` agora exige owner autenticado antes de consultar o banco (impedia vazamento de dados agregados)
+- **Segurança:** `/creditos/recarregar` com rate limit `10/min` e teto de R$ 50.000 por recarga
+- **Performance:** migração inline de `api_uso` (PRAGMA + ALTER TABLE) trocada por flag global — executa só 1× por processo
+- **Billing:** `por_tipo` agora usa `ROUND(SUM(custo_usd), 6)` — elimina imprecisão de ponto flutuante nos gráficos
+- **Créditos:** `pct_restante` retorna `0` quando não há créditos cadastrados (antes retornava `100`, confundindo o indicador)
+- **Frontend:** `fetchCotacao` com TTL de 5 min e validação do retorno (NaN, fora de range) — fallback preserva cache anterior
+- **Frontend:** `semCreditos` usa `< 0.001` em vez de `=== 0` (comparação segura com float)
+- **Frontend:** cotação exibida no painel de créditos usa `data.cotacao_usd_brl` (valor efetivamente usado no cálculo do servidor)
+- **Frontend:** input de recarga com `step="0.01"` — aceita centavos (antes `step="1"` bloqueava decimais)
+
+---
+
 ## Beta-0.293 — 2026-04-12
 
 ### Correções

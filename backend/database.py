@@ -91,6 +91,25 @@ def get_conn():
     return conn
 
 
+# Flag para evitar PRAGMA + ALTER TABLE repetido a cada chamada de IA
+_api_uso_cols_ok: bool = False
+
+
+def _ensure_api_uso_cols(conn) -> None:
+    """Garante que as colunas owner_email e sec_email existem em api_uso.
+    Executa PRAGMA table_info apenas uma vez por processo (flag global)."""
+    global _api_uso_cols_ok
+    if _api_uso_cols_ok:
+        return
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(api_uso)").fetchall()]
+    if "owner_email" not in cols:
+        conn.execute("ALTER TABLE api_uso ADD COLUMN owner_email TEXT")
+    if "sec_email" not in cols:
+        conn.execute("ALTER TABLE api_uso ADD COLUMN sec_email TEXT")
+    conn.commit()
+    _api_uso_cols_ok = True
+
+
 def init_db():
     with get_conn() as conn:
         conn.executescript("""
@@ -695,21 +714,18 @@ def get_historico_paciente(paciente_id: int) -> list[dict]:
 
 # ---------- Billing ----------
 
-def registrar_uso(tipo: str, modelo: str, input_tokens: int, output_tokens: int, custo_usd: float, owner_email: str | None = None):
+def registrar_uso(tipo: str, modelo: str, input_tokens: int, output_tokens: int, custo_usd: float, owner_email: str | None = None, sec_email: str | None = None):
     with get_conn() as conn:
-        # Adiciona owner_email na api_uso se ainda não existir
-        cols = [r[1] for r in conn.execute("PRAGMA table_info(api_uso)").fetchall()]
-        if "owner_email" not in cols:
-            conn.execute("ALTER TABLE api_uso ADD COLUMN owner_email TEXT")
+        _ensure_api_uso_cols(conn)
         conn.execute(
-            "INSERT INTO api_uso (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, _now()),
+            "INSERT INTO api_uso (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, sec_email, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, sec_email, _now()),
         )
         conn.commit()
 
 
 def get_billing_mes(ano_mes: str, owner_email: str | None = None) -> dict:
-    """ano_mes no formato YYYY-MM. Retorna totais e breakdown por tipo."""
+    """ano_mes no formato YYYY-MM. Retorna totais, breakdown por tipo e por origem (fisio vs secretaria)."""
     owner_filter = "AND owner_email = ?" if owner_email else ""
     params_mes = [ano_mes, owner_email] if owner_email else [ano_mes]
     with get_conn() as conn:
@@ -728,9 +744,25 @@ def get_billing_mes(ano_mes: str, owner_email: str | None = None) -> dict:
                       COUNT(*) as chamadas,
                       SUM(input_tokens) as input_tokens,
                       SUM(output_tokens) as output_tokens,
-                      SUM(custo_usd) as custo_usd
+                      ROUND(SUM(custo_usd), 6) as custo_usd
                FROM api_uso WHERE strftime('%Y-%m', criado_em) = ? {owner_filter}
                GROUP BY tipo ORDER BY custo_usd DESC""",
+            params_mes,
+        ).fetchall()
+
+        _ensure_api_uso_cols(conn)
+
+        # Breakdown por origem: fisio (sec_email IS NULL) vs secretaria (sec_email IS NOT NULL)
+        por_origem = conn.execute(
+            f"""SELECT
+                  CASE WHEN sec_email IS NULL THEN 'fisio' ELSE 'secretaria' END as origem,
+                  COUNT(*) as chamadas,
+                  SUM(input_tokens) as input_tokens,
+                  SUM(output_tokens) as output_tokens,
+                  ROUND(SUM(custo_usd), 6) as custo_usd,
+                  sec_email
+               FROM api_uso WHERE strftime('%Y-%m', criado_em) = ? {owner_filter}
+               GROUP BY origem, sec_email""",
             params_mes,
         ).fetchall()
 
@@ -742,6 +774,7 @@ def get_billing_mes(ano_mes: str, owner_email: str | None = None) -> dict:
             "total_usd": round(totais["total_usd"] or 0, 6),
             "dias_com_uso": totais["dias_com_uso"] or 0,
             "por_tipo": [_row_to_dict(r) for r in por_tipo],
+            "por_origem": [_row_to_dict(r) for r in por_origem],
         }
 
 
@@ -782,6 +815,71 @@ def get_billing_por_usuario(ano_mes: str) -> list[dict]:
             ORDER BY total_usd DESC
         """, (ano_mes,)).fetchall()
         return [_row_to_dict(r) for r in rows]
+
+
+# ---------- Créditos / Recarga ----------
+
+def _init_recarga_table():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS recarga (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_email TEXT    NOT NULL,
+                valor_brl   REAL    NOT NULL,
+                descricao   TEXT,
+                criado_em   TEXT    NOT NULL
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_recarga_owner ON recarga(owner_email)")
+        conn.commit()
+
+
+def registrar_recarga(owner_email: str, valor_brl: float, descricao: str | None = None) -> dict:
+    _init_recarga_table()
+    now = _now()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO recarga (owner_email, valor_brl, descricao, criado_em) VALUES (?, ?, ?, ?)",
+            (owner_email, valor_brl, descricao, now),
+        )
+        conn.commit()
+        return {"id": cur.lastrowid, "owner_email": owner_email, "valor_brl": valor_brl,
+                "descricao": descricao, "criado_em": now}
+
+
+def get_creditos(owner_email: str, cotacao_usd_brl: float) -> dict:
+    """Retorna saldo de créditos do fisio: total carregado - total gasto (em BRL)."""
+    _init_recarga_table()
+    with get_conn() as conn:
+        row_rec = conn.execute(
+            "SELECT COALESCE(SUM(valor_brl), 0) as total FROM recarga WHERE owner_email = ?",
+            (owner_email,),
+        ).fetchone()
+        total_carregado = float(row_rec["total"] or 0)
+
+        row_uso = conn.execute(
+            "SELECT COALESCE(SUM(custo_usd), 0) as total FROM api_uso WHERE owner_email = ?",
+            (owner_email,),
+        ).fetchone()
+        total_gasto_usd = float(row_uso["total"] or 0)
+        total_gasto_brl = round(total_gasto_usd * cotacao_usd_brl, 2)
+
+        saldo = round(total_carregado - total_gasto_brl, 2)
+        pct_restante = round((saldo / total_carregado * 100), 1) if total_carregado > 0 else 0.0
+
+        historico = conn.execute(
+            "SELECT * FROM recarga WHERE owner_email = ? ORDER BY criado_em DESC LIMIT 50",
+            (owner_email,),
+        ).fetchall()
+
+        return {
+            "total_carregado_brl": round(total_carregado, 2),
+            "total_gasto_brl": total_gasto_brl,
+            "saldo_brl": saldo,
+            "pct_restante": pct_restante,
+            "cotacao_usd_brl": cotacao_usd_brl,
+            "historico": [_row_to_dict(r) for r in historico],
+        }
 
 
 # ---------- Documentos ----------
@@ -1179,6 +1277,38 @@ def revogar_usuario(email: str):
         conn.commit()
 
 
+def get_nome_fisio(email: str) -> str | None:
+    """Retorna o nome do fisioterapeuta pelo e-mail, ou None se não encontrado."""
+    _init_usuario_table()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT nome FROM usuario_google WHERE email = ?",
+            (email.lower().strip(),)
+        ).fetchone()
+        return row["nome"] if row else None
+
+
+def email_existe_como_fisio(email: str) -> bool:
+    """Retorna True se o e-mail já tem conta de fisioterapeuta cadastrada (ativa ou pendente)."""
+    _init_usuario_table()
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT COUNT(*) FROM usuario_google WHERE email = ?",
+            (email.lower().strip(),)
+        ).fetchone()[0] > 0
+
+
+def email_e_fisio_ativo(email: str) -> bool:
+    """Retorna True apenas se o e-mail está aprovado como fisioterapeuta (ativo=1).
+    Fisio pendente (ativo=0) NÃO conta — permite que o e-mail faça login como secretaria."""
+    _init_usuario_table()
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT COUNT(*) FROM usuario_google WHERE email = ? AND ativo = 1",
+            (email.lower().strip(),)
+        ).fetchone()[0] > 0
+
+
 # ---------- Secretaria ----------
 
 def _init_secretaria_table():
@@ -1297,6 +1427,16 @@ def listar_convites_secretaria_pendentes() -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(
             "SELECT * FROM secretaria_link WHERE status = 'pendente' AND deletado_em IS NULL ORDER BY criado_em DESC"
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+
+def listar_todos_links_secretaria() -> list[dict]:
+    """Lista todos os vínculos não deletados (pendentes e ativos) para o admin."""
+    _init_secretaria_table()
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM secretaria_link WHERE deletado_em IS NULL ORDER BY criado_em DESC"
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
 

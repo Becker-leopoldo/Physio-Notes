@@ -11,7 +11,7 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 |-------------|-------------------------------------------------|
 | Backend     | Python 3.12 + FastAPI + SQLite                  |
 | Transcrição | Groq Whisper (`whisper-large-v3-turbo`)         |
-| IA clínica  | Anthropic Claude (`claude-haiku-4-5-20251001`)  |
+| IA clínica  | Google Gemini (`gemini-2.5-flash-lite`)          |
 | Frontend    | HTML/JS vanilla — SPA, PWA instalável           |
 | Deploy      | Docker + docker-compose                         |
 
@@ -25,10 +25,24 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 |----------------------|-----------|
 | `Dockerfile`         | Build da imagem Python 3.12-slim. Copia backend e frontend, expõe porta 8000. Roda `uvicorn main:app` a partir de `/app/backend`. |
 | `docker-compose.yml` | Sobe o serviço com volume persistente `/data` para o SQLite e carrega variáveis do `.env`. |
-| `.env.example`       | Template das variáveis de ambiente (`ANTHROPIC_API_KEY`, `GROQ_API_KEY`). Copiar para `.env` e preencher antes de subir. |
+| `.env.example`       | Template das variáveis de ambiente (`GOOGLE_AI_KEY`, `GROQ_API_KEY`). Copiar para `.env` e preencher antes de subir. |
 | `.gitignore`         | Exclui `.env`, `*.db` e `__pycache__` do controle de versão. |
 | `.dockerignore`      | Exclui arquivos sensíveis/desnecessários da imagem Docker. |
 | `DOC.md`             | Este arquivo. |
+| `CHANGELOG.md`       | Histórico de versões do app por release (formato `Beta-0.XX`). |
+
+### Automação Claude (`.claude/commands/`)
+
+| Arquivo              | Descrição |
+|----------------------|-----------|
+| `sonar.md`           | Slash command `/sonar`: exporta issues do SonarCloud via `scripts/export_sonar.py`, lê o JSON gerado e entrega análise priorizada com recomendações de correção. |
+
+### Scripts (`scripts/`)
+
+| Arquivo              | Descrição |
+|----------------------|-----------|
+| `export_sonar.py`    | Exporta issues abertos do SonarCloud para `scripts/sonar_issues.json`. Requer `SONAR_TOKEN` via env ou argumento. |
+| `sonar_issues.json`  | Cache local dos issues exportados pelo SonarCloud (gerado automaticamente, não versionado). |
 
 ---
 
@@ -38,9 +52,9 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 |--------------------|-----------|
 | `main.py`          | Aplicação FastAPI. Define todos os endpoints REST (ver seção Endpoints abaixo). Monta o frontend como `StaticFiles` ao final — deve ficar por último para não interceptar as rotas da API. |
 | `database.py`      | Camada de acesso ao SQLite. Gerencia 7 tabelas: `paciente`, `sessao`, `audio_chunk`, `sessao_consolidada`, `api_uso`, `documento` e `pacote`. Inclui `init_db()` para criação inicial e `_migrate()` para adicionar colunas/tabelas sem quebrar bancos existentes. O caminho do banco é configurável via `DB_PATH`. Inclui `get_faturamento_pacientes()` com filtros por mês de competência e paciente. |
-| `ai.py`            | Integração com a API Anthropic. Funções: `consolidar_sessao` (gera nota clínica profissional a partir da transcrição bruta), `resumir_historico` (gera resumo narrativo do paciente para CREFITO), `extrair_dados_paciente` (extrai apenas nome/CPF/endereço/data do áudio de cadastro — anamnese e conduta são registradas separadamente), `extrair_dados_pacote` (extrai total de sessões, valor, data e descrição do pacote a partir de áudio), `responder_pergunta` (responde perguntas sobre o histórico), `resumir_documento` (resume PDFs clínicos), `complementar_anamnese` (integra nova transcrição à anamnese existente), `complementar_conduta` (integra nova transcrição à conduta de tratamento existente). Registra uso de tokens e custo em `api_uso` após cada chamada. |
+| `ai.py`            | Integração com Google Gemini via `google-genai`. Modelo padrão: `gemini-2.0-flash-lite`. Expõe wrapper compatível com a interface Anthropic para manter o restante do código inalterado. Funções: `consolidar_sessao`, `resumir_historico`, `extrair_dados_paciente`, `extrair_dados_pacote`, `responder_pergunta`, `resumir_documento`, `complementar_anamnese`, `complementar_conduta`, `sugerir_conduta`, `gerar_sugestao_paciente`, `formatar_anamnese_texto`, `formatar_conduta_texto`, `sugestao_do_dia`, `feedback_clinico`, `interpretar_agendamento`, `interpretar_atestado`. Registra uso de tokens e custo em `api_uso` após cada chamada. |
 | `transcribe.py`    | Integração com Groq Whisper via SDK OpenAI (compatível). Recebe bytes de áudio e retorna transcrição em português. |
-| `requirements.txt` | Dependências: `fastapi`, `uvicorn[standard]`, `python-multipart`, `openai`, `anthropic`, `python-dotenv`, `aiofiles`, `pypdf`. |
+| `requirements.txt` | Dependências: `fastapi`, `uvicorn[standard]`, `python-multipart`, `openai`, `google-genai`, `python-dotenv`, `aiofiles`, `pypdf`. |
 | `start.bat`        | Script Windows para desenvolvimento local. Instala dependências e inicia o servidor em `localhost:8000` com hot-reload. |
 
 ---

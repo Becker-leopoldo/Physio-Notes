@@ -879,14 +879,49 @@ def faturamento_pacientes(mes: str | None = None, paciente_id: int | None = None
     return db.get_faturamento_pacientes(ano_mes=mes, paciente_id=paciente_id, owner_email=_owner_email(request))
 
 
+class RecargaBody(BaseModel):
+    valor_brl: float
+    descricao: str | None = None
+
+@app.post("/creditos/recarregar", status_code=201)
+@limiter.limit("10/minute")
+def creditos_recarregar(body: RecargaBody, request: Request):
+    """Registra uma recarga de créditos para o fisio logado."""
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    if body.valor_brl <= 0:
+        raise HTTPException(status_code=400, detail="Valor deve ser positivo.")
+    if body.valor_brl > 50_000:
+        raise HTTPException(status_code=400, detail="Valor máximo por recarga é R$ 50.000,00.")
+    recarga = db.registrar_recarga(owner, body.valor_brl, body.descricao)
+    db.registrar_audit(owner, "credito_recarga", f"valor_brl={body.valor_brl}", _client_ip(request))
+    return recarga
+
+@app.get("/creditos/saldo")
+def creditos_saldo(cotacao: float = 5.80, request: Request = None):
+    """Retorna saldo de créditos do fisio (total carregado - gasto em BRL)."""
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    if not (1.0 <= cotacao <= 20.0):
+        raise HTTPException(status_code=400, detail="Cotação fora do intervalo permitido (1.00–20.00).")
+    return db.get_creditos(owner, cotacao)
+
+
 @app.get("/billing")
 def billing(mes: str | None = None, request: Request = None):
     from datetime import date
     owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
     ano_mes = mes or date.today().strftime("%Y-%m")
+    link_sec = db.get_secretaria_do_fisio(owner)
+    sec_email = link_sec["secretaria_email"] if link_sec and link_sec.get("status") == "ativa" else None
     return {
         "mes_atual": db.get_billing_mes(ano_mes, owner),
         "historico": db.get_billing_meses(owner),
+        "secretaria_email": sec_email,
     }
 
 
@@ -1654,16 +1689,21 @@ async def auth_google_login(request: Request, body: GoogleLoginBody):
     if not email:
         raise HTTPException(status_code=401, detail="E-mail não disponível no token Google.")
 
-    # Verifica se há convite de secretaria (ativo ou pendente)
-    status_sec = db.get_status_secretaria(email)
-    if status_sec == "ativa":
-        fisio_email = db.get_fisio_da_secretaria(email)
-        token = google_auth.criar_jwt(email, nome, foto, role="secretaria", fisio_email=fisio_email)
-        db.registrar_audit(email, "login_secretaria", f"fisio={fisio_email}", _client_ip(request))
-        return {"token": token, "nome": nome, "email": email, "foto": foto, "role": "secretaria"}
-    if status_sec == "pendente":
-        db.registrar_audit(email, "login_secretaria_pendente", "convite aguarda aprovação", _client_ip(request))
-        raise HTTPException(status_code=403, detail="Convite pendente de aprovação do administrador. Aguarde a liberação.")
+    # Fisioterapeuta aprovado tem precedência — um e-mail só pode ter um papel no sistema.
+    # Se o e-mail é fisio ATIVO (ativo=1), ignora vínculo de secretaria.
+    # Fisio pendente (ativo=0) + secretaria ativa → permite login como secretaria.
+    if not db.email_e_fisio_ativo(email):
+        # Verifica se há convite de secretaria (ativo ou pendente) apenas para e-mails que NÃO são fisios
+        status_sec = db.get_status_secretaria(email)
+        if status_sec == "ativa":
+            fisio_email = db.get_fisio_da_secretaria(email)
+            fisio_nome = db.get_nome_fisio(fisio_email) if fisio_email else None
+            token = google_auth.criar_jwt(email, nome, foto, role="secretaria", fisio_email=fisio_email, fisio_nome=fisio_nome)
+            db.registrar_audit(email, "login_secretaria", f"fisio={fisio_email}", _client_ip(request))
+            return {"token": token, "nome": nome, "email": email, "foto": foto, "role": "secretaria"}
+        if status_sec == "pendente":
+            db.registrar_audit(email, "login_secretaria_pendente", "convite aguarda aprovação", _client_ip(request))
+            raise HTTPException(status_code=403, detail="Convite pendente de aprovação do administrador. Aguarde a liberação.")
 
     # Login normal do fisioterapeuta
     admin_email = os.environ.get("ADMIN_EMAIL", "")
@@ -1939,6 +1979,11 @@ def admin_vincular_secretaria(body: SecretariaVincularBody, request: Request = N
     fisio_email = _owner_email(request)
     if not fisio_email:
         raise HTTPException(status_code=401, detail="Não autenticado")
+    if db.email_existe_como_fisio(body.secretaria_email):
+        raise HTTPException(
+            status_code=409,
+            detail="Este e-mail já tem uma conta de fisioterapeuta. Um e-mail não pode ter dois papéis no sistema."
+        )
     db.convidar_secretaria(body.secretaria_email, fisio_email)
     db.registrar_audit(fisio_email, "convidar_secretaria", body.secretaria_email, _client_ip(request))
     return {"ok": True, "secretaria_email": body.secretaria_email, "status": "pendente"}
@@ -1961,6 +2006,12 @@ def admin_get_secretaria(request: Request = None):
         return {"secretaria": None}
     link = db.get_secretaria_do_fisio(fisio_email)
     return {"secretaria": link}
+
+@app.get("/admin/secretaria/todas")
+def admin_listar_todas_secretarias(request: Request):
+    """Admin lista todos os vínculos de secretaria (pendentes e ativos)."""
+    _verificar_admin(request)
+    return db.listar_todos_links_secretaria()
 
 @app.get("/admin/secretaria/pendentes")
 def admin_listar_convites_pendentes(request: Request):
@@ -2047,8 +2098,8 @@ async def sec_agendamento_interpretar(body: SecAgendamentoInterpretarBody, reque
     refresh_token = db.get_google_refresh_token(fisio_email)
     
     try:
-        # Usar fisio_email para que o contexto da IA (logs/audit) seja o da dona da agenda
-        parsed = await ai.interpretar_agendamento(body.texto, date.today().isoformat(), fisio_email)
+        # Usar fisio_email para que o billing seja atribuído ao fisio; sec_email registra quem chamou
+        parsed = await ai.interpretar_agendamento(body.texto, date.today().isoformat(), fisio_email, sec_email=sec_email)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
 
@@ -2176,7 +2227,7 @@ class SecAtestadoInterpretarBody(BaseModel):
 async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Request = None):
     """IA interpreta pedido de atestado feito pela secretaria."""
     from datetime import date
-    _, fisio_email = _sec_context(request)
+    sec_email, fisio_email = _sec_context(request)
     paciente_nome = ""
     if body.paciente_id:
         pac = db.get_paciente(body.paciente_id)
@@ -2184,7 +2235,7 @@ async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Re
             _verificar_dono(pac, fisio_email)
             paciente_nome = pac["nome"]
     try:
-        parsed = await ai.interpretar_atestado(body.texto, date.today().isoformat(), paciente_nome, fisio_email)
+        parsed = await ai.interpretar_atestado(body.texto, date.today().isoformat(), paciente_nome, fisio_email, sec_email=sec_email)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
     return parsed

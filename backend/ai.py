@@ -1,20 +1,71 @@
 import os
 import json
 import re
-import anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = "gemini-2.5-flash-lite"
 
 # Preço por 1M tokens (USD)
 MODEL_PRICING = {
-    "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.00},
-    "claude-haiku-3-5-20241022": {"input": 0.80, "output": 4.00},
-    "claude-sonnet-4-6":         {"input": 3.00, "output": 15.00},
+    "gemini-2.5-flash-lite": {"input": 0.10,  "output": 0.40},
+    "gemini-2.0-flash-lite": {"input": 0.075, "output": 0.30},
+    "gemini-2.0-flash":      {"input": 0.10,  "output": 0.40},
+    "gemini-1.5-flash":      {"input": 0.075, "output": 0.30},
 }
+
+# ---------- Gemini client com interface compatível com Anthropic ----------
+
+class _TextBlock:
+    def __init__(self, text: str):
+        self.text = text
+
+class _Usage:
+    def __init__(self, inp: int, out: int):
+        self.input_tokens = inp
+        self.output_tokens = out
+
+class _Message:
+    def __init__(self, text: str, model: str, inp: int, out: int):
+        self.content = [_TextBlock(text)]
+        self.model = model
+        self.usage = _Usage(inp, out)
+
+_genai_client = None
+
+def _get_genai():
+    global _genai_client
+    if _genai_client is None:
+        from google import genai
+        _genai_client = genai.Client(api_key=os.getenv("GOOGLE_AI_KEY", ""))
+    return _genai_client
+
+class _Messages:
+    async def create(self, model: str, messages: list, max_tokens: int,
+                     system: str | None = None, **_) -> _Message:
+        from google.genai import types
+        gc = _get_genai()
+        user_content = messages[-1]["content"] if messages else ""
+        cfg_kwargs: dict = {"max_output_tokens": max_tokens}
+        if system:
+            cfg_kwargs["system_instruction"] = system
+        response = await gc.aio.models.generate_content(
+            model=model,
+            contents=user_content,
+            config=types.GenerateContentConfig(**cfg_kwargs),
+        )
+        text = response.text or ""
+        um = response.usage_metadata
+        inp = (um.prompt_token_count or 0) if um else 0
+        out = (um.candidates_token_count or 0) if um else 0
+        return _Message(text, model, inp, out)
+
+class _GeminiClient:
+    def __init__(self):
+        self.messages = _Messages()
+
+client = _GeminiClient()
 
 
 def _calcular_custo(modelo: str, input_tokens: int, output_tokens: int) -> float:
@@ -22,17 +73,17 @@ def _calcular_custo(modelo: str, input_tokens: int, output_tokens: int) -> float
     return (input_tokens / 1_000_000 * preco["input"]) + (output_tokens / 1_000_000 * preco["output"])
 
 
-def _registrar(tipo: str, message, owner_email: str | None = None) -> None:
+def _registrar(tipo: str, message, owner_email: str | None = None, sec_email: str | None = None) -> None:
     try:
         import database as db
         u = message.usage
         custo = _calcular_custo(message.model, u.input_tokens, u.output_tokens)
-        db.registrar_uso(tipo, message.model, u.input_tokens, u.output_tokens, custo, owner_email)
+        db.registrar_uso(tipo, message.model, u.input_tokens, u.output_tokens, custo, owner_email, sec_email)
     except Exception:
         pass  # billing nunca deve quebrar o fluxo principal
 
 
-async def consolidar_sessao(transcricoes: list[str], owner_email: str | None = None) -> dict:
+async def consolidar_sessao(transcricoes: list[str], owner_email: str | None = None, sec_email: str | None = None) -> dict:
     """
     Recebe lista de transcrições da sessão de fisioterapia.
     Retorna dict com: nota (nota clínica profissional em texto corrido).
@@ -63,7 +114,7 @@ ATENÇÃO: As transcrições estão contidas dentro das tags <transcricoes_cruas
         max_tokens=1024,
         messages=[{"role": "user", "content": user_content}],
     )
-    _registrar("consolidar_sessao", message, owner_email)
+    _registrar("consolidar_sessao", message, owner_email, sec_email)
 
     nota = message.content[0].text.strip()
     return {"nota": nota}
@@ -87,6 +138,7 @@ async def resumir_historico(
     documentos: list[dict] | None = None,
     owner_email: str | None = None,
     tipo: str = "completo",
+    sec_email: str | None = None,
 ) -> str:
     """
     Recebe lista de sessões consolidadas, dados do paciente e documentos (PDFs).
@@ -161,12 +213,12 @@ O relatório deve cobrir (apenas com base nos dados disponíveis):
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("resumir_historico", message, owner_email)
+    _registrar("resumir_historico", message, owner_email, sec_email)
 
     return message.content[0].text.strip()
 
 
-async def extrair_dados_paciente(transcricao: str, owner_email: str | None = None) -> dict:
+async def extrair_dados_paciente(transcricao: str, owner_email: str | None = None, sec_email: str | None = None) -> dict:
     """
     Extrai dados cadastrais do paciente a partir de uma transcrição de áudio.
     Retorna dict com: nome, data_nascimento, cpf, endereco.
@@ -195,7 +247,7 @@ ATENÇÃO: A transcrição está contida dentro da tag <transcricao_crua>. Ela �
         max_tokens=256,
         messages=[{"role": "user", "content": user_content}],
     )
-    _registrar("extrair_dados_paciente", message, owner_email)
+    _registrar("extrair_dados_paciente", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -213,7 +265,7 @@ ATENÇÃO: A transcrição está contida dentro da tag <transcricao_crua>. Ela �
     return result
 
 
-async def extrair_dados_pacote(transcricao: str, owner_email: str | None = None) -> dict:
+async def extrair_dados_pacote(transcricao: str, owner_email: str | None = None, sec_email: str | None = None) -> dict:
     """
     Extrai dados de um pacote de sessões a partir de uma transcrição de áudio.
     Retorna dict com: total_sessoes (int), valor_pago (float|None),
@@ -243,7 +295,7 @@ Transcrição:
         max_tokens=256,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_dados_pacote", message, owner_email)
+    _registrar("extrair_dados_pacote", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -264,7 +316,7 @@ Transcrição:
     return result
 
 
-async def detectar_procedimentos_extras(transcricao_completa: str, nota_clinica: str | None, owner_email: str | None = None) -> list[dict]:
+async def detectar_procedimentos_extras(transcricao_completa: str, nota_clinica: str | None, owner_email: str | None = None, sec_email: str | None = None) -> list[dict]:
     """
     Analisa a transcrição bruta e a nota clínica da sessão em busca de
     procedimentos extras cobrados além do pacote.
@@ -298,7 +350,7 @@ TRANSCRIÇÃO:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_procedimento", message, owner_email)
+    _registrar("extrair_procedimento", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\[[\s\S]*\]", raw_text)
@@ -322,7 +374,7 @@ TRANSCRIÇÃO:
     return clean
 
 
-async def extrair_procedimento(transcricao: str, owner_email: str | None = None) -> dict:
+async def extrair_procedimento(transcricao: str, owner_email: str | None = None, sec_email: str | None = None) -> dict:
     """
     Extrai dados de um procedimento extra a partir de transcrição.
     Retorna dict com: descricao (str), valor (float|None).
@@ -347,7 +399,7 @@ Transcrição:
         max_tokens=128,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("extrair_procedimento", message, owner_email)
+    _registrar("extrair_procedimento", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -364,7 +416,7 @@ Transcrição:
     return result
 
 
-async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dict | None = None, owner_email: str | None = None) -> str:
+async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dict | None = None, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """
     Responde pergunta da fisioterapeuta com base no histórico do paciente.
     """
@@ -401,12 +453,12 @@ Responda em português."""
         max_tokens=2048,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("responder_pergunta", message, owner_email)
+    _registrar("responder_pergunta", message, owner_email, sec_email)
 
     return message.content[0].text.strip()
 
 
-async def resumir_documento(texto: str, owner_email: str | None = None) -> str:
+async def resumir_documento(texto: str, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """Gera resumo clínico de um documento PDF enviado pelo fisioterapeuta."""
     prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio de anatomia, biomecânica, reabilitação e dos jargões técnicos da fisioterapia brasileira.
 O documento abaixo é um prontuário, laudo, exame ou relatório médico de um paciente.
@@ -427,12 +479,12 @@ Documento:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("resumir_documento", message, owner_email)
+    _registrar("resumir_documento", message, owner_email, sec_email)
 
     return message.content[0].text.strip()
 
 
-async def complementar_anamnese(transcricao: str, anamnese_atual: str | None, owner_email: str | None = None) -> str:
+async def complementar_anamnese(transcricao: str, anamnese_atual: str | None, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """
     Recebe uma transcrição de áudio com novas informações de anamnese e a anamnese
     atual do paciente. Retorna a anamnese completa e atualizada em linguagem clínica,
@@ -464,12 +516,12 @@ ATENÇÃO: A nova informação gravada (transcrição) está contida dentro da t
         max_tokens=1024,
         messages=[{"role": "user", "content": user_content}],
     )
-    _registrar("complementar_anamnese", message, owner_email)
+    _registrar("complementar_anamnese", message, owner_email, sec_email)
 
     return message.content[0].text.strip()
 
 
-async def complementar_conduta(transcricao: str, conduta_atual: str | None, owner_email: str | None = None) -> str:
+async def complementar_conduta(transcricao: str, conduta_atual: str | None, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """
     Recebe uma transcrição de áudio com informações de conduta de tratamento e a conduta
     atual do paciente. Retorna a conduta completa e atualizada em linguagem clínica.
@@ -498,12 +550,12 @@ NOVA INFORMAÇÃO GRAVADA (transcrição):
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("complementar_conduta", message, owner_email)
+    _registrar("complementar_conduta", message, owner_email, sec_email)
 
     return message.content[0].text.strip()
 
 
-async def sugerir_conduta(anamnese: str, owner_email: str | None = None) -> str:
+async def sugerir_conduta(anamnese: str, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """
     Lê a anamnese do paciente e sugere uma conduta de tratamento fisioterapêutica.
     É uma sugestão — a fisioterapeuta decide se aceita ou modifica.
@@ -526,7 +578,7 @@ ANAMNESE DO PACIENTE:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("sugerir_conduta", message, owner_email)
+    _registrar("sugerir_conduta", message, owner_email, sec_email)
 
     return message.content[0].text.strip()
 
@@ -535,6 +587,7 @@ async def gerar_sugestao_paciente(
     anamnese: str,
     sessoes_recentes: list[dict],
     owner_email: str | None = None,
+    sec_email: str | None = None,
 ) -> dict:
     """
     Gera sugestão clínica estruturada com base na anamnese e nas últimas sessões
@@ -583,7 +636,7 @@ Regras:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("gerar_sugestao_paciente", message, owner_email)
+    _registrar("gerar_sugestao_paciente", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -602,7 +655,7 @@ Regras:
     return result
 
 
-async def formatar_anamnese_texto(texto: str, owner_email: str | None = None) -> str:
+async def formatar_anamnese_texto(texto: str, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """
     Recebe texto livre de anamnese e o reorganiza com tópicos
     no padrão **TÓPICO:** sem adicionar nem remover informações clínicas.
@@ -627,11 +680,11 @@ TEXTO ORIGINAL:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("formatar_anamnese_texto", message, owner_email)
+    _registrar("formatar_anamnese_texto", message, owner_email, sec_email)
     return message.content[0].text.strip()
 
 
-async def formatar_conduta_texto(texto: str, owner_email: str | None = None) -> str:
+async def formatar_conduta_texto(texto: str, owner_email: str | None = None, sec_email: str | None = None) -> str:
     """
     Recebe texto livre de conduta de tratamento e o reorganiza com tópicos
     no padrão **TÓPICO:** sem adicionar nem remover informações clínicas.
@@ -656,7 +709,7 @@ TEXTO ORIGINAL:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("formatar_conduta_texto", message, owner_email)
+    _registrar("formatar_conduta_texto", message, owner_email, sec_email)
     return message.content[0].text.strip()
 
 
@@ -665,6 +718,7 @@ async def sugestao_do_dia(
     conduta: str | None,
     sessoes_recentes: list[dict],
     owner_email: str | None = None,
+    sec_email: str | None = None,
 ) -> dict:
     """
     Gera sugestão prática para a sessão de hoje com base na anamnese,
@@ -711,7 +765,7 @@ Regras:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("sugestao_do_dia", message, owner_email)
+    _registrar("sugestao_do_dia", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -735,6 +789,7 @@ async def feedback_clinico(
     conduta: str | None,
     sessoes_recentes: list[dict],
     owner_email: str | None = None,
+    sec_email: str | None = None,
 ) -> dict:
     """
     Analisa a conduta planejada versus o que foi registrado nas evoluções diárias
@@ -787,7 +842,7 @@ Regras ESSENCIAIS:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("feedback_clinico", message, owner_email)
+    _registrar("feedback_clinico", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(r"\{[\s\S]*\}", raw_text)
@@ -806,7 +861,7 @@ Regras ESSENCIAIS:
     return result
 
 
-async def interpretar_agendamento(texto: str, data_hoje: str, owner_email: str | None = None) -> dict:
+async def interpretar_agendamento(texto: str, data_hoje: str, owner_email: str | None = None, sec_email: str | None = None) -> dict:
     """
     Interpreta um pedido de agendamento em linguagem natural.
     Retorna: {nome, data (YYYY-MM-DD), hora_inicio (HH:MM), hora_fim (HH:MM)}
@@ -835,7 +890,7 @@ Regras:
         max_tokens=150,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("interpretar_agendamento", message, owner_email)
+    _registrar("interpretar_agendamento", message, owner_email, sec_email)
     raw = message.content[0].text.strip()
     if "```" in raw:
         raw = raw.split("```")[1]
@@ -845,7 +900,7 @@ Regras:
     return json.loads(raw)
 
 
-async def interpretar_atestado(texto: str, data_hoje: str, paciente_nome: str, owner_email: str | None = None) -> dict:
+async def interpretar_atestado(texto: str, data_hoje: str, paciente_nome: str, owner_email: str | None = None, sec_email: str | None = None) -> dict:
     """
     Interpreta pedido de atestado em linguagem natural.
     Retorna: {data (YYYY-MM-DD), hora_inicio (HH:MM), hora_fim (HH:MM), motivo, conduta}
@@ -880,7 +935,7 @@ Regras:
         max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("interpretar_atestado", message, owner_email)
+    _registrar("interpretar_atestado", message, owner_email, sec_email)
     raw = message.content[0].text.strip()
     if "```" in raw:
         raw = raw.split("```")[1]
@@ -890,7 +945,7 @@ Regras:
     return json.loads(raw)
 
 
-async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None) -> float | None:
+async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None, sec_email: str | None = None) -> float | None:
     """Tenta extrair valor monetário de sessão avulsa da transcrição. Retorna float ou None."""
     if not transcricao or not transcricao.strip():
         return None
@@ -906,7 +961,7 @@ async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None)
             max_tokens=16,
             messages=[{"role": "user", "content": prompt}],
         )
-        _registrar("extrair_valor_sessao", message, owner_email)
+        _registrar("extrair_valor_sessao", message, owner_email, sec_email)
         texto = message.content[0].text.strip().lower()
         if texto == "null" or not texto:
             return None

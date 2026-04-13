@@ -1110,6 +1110,13 @@
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14M4 10h3M10 10h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Billing IA
     </button>
+    <button class="drawer-item" id="drawer-creditos" style="justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:var(--space-2);">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v1.5M8 9.5V11M6.5 6.5a1.5 1.5 0 0 1 3 0c0 1-1.5 1.5-1.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Créditos
+      </span>
+      <span id="creditos-dot" style="width:8px;height:8px;border-radius:50%;background:var(--color-success);flex-shrink:0;display:none;"></span>
+    </button>
     <div class="drawer-nav-label" style="margin-top:var(--space-2);">Conta</div>
     <a id="drawer-admin-link" href="/admin.html" class="drawer-item" style="display:none;text-decoration:none;">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM3 13c0-2.8 2.2-4 5-4s5 1.2 5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1389,6 +1396,19 @@
       <span class="top-bar-title">Billing — Uso de IA</span>
     </div>
     <div class="section-body" id="billing-body" style="padding:var(--space-5);max-width:760px;margin:0 auto;">
+    </div>
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </section>
+
+  <!-- ======================== SECTION: CRÉDITOS ======================== -->
+  <section id="sec-creditos" class="section">
+    <div class="top-bar">
+      <button class="top-bar-back" id="back-home-from-creditos" title="Voltar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="top-bar-title">Créditos</span>
+    </div>
+    <div class="section-body" id="creditos-body" style="padding:var(--space-5);max-width:640px;margin:0 auto;">
     </div>
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
@@ -1713,7 +1733,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.294'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.297'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5134,10 +5154,21 @@
   ============================================================ */
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;
 
-  // Popula usuário no drawer
+  // Popula usuário no drawer — lê sempre do JWT para garantir dados do usuário atual
   (function() {
     try {
-      const u = JSON.parse(localStorage.getItem('physio_user') || '{}');
+      // Decodifica claims do JWT (não valida assinatura — só lê payload)
+      let u = {};
+      try {
+        const token = localStorage.getItem('physio_token') || '';
+        const b64 = token.split('.')[1] || '';
+        const payload = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload.sub) {
+          u = { nome: payload.nome || '', email: payload.sub, foto: payload.foto || null };
+          localStorage.setItem('physio_user', JSON.stringify(u)); // mantém em sincronia
+        }
+      } catch { u = JSON.parse(localStorage.getItem('physio_user') || '{}'); }
+
       if (u.nome) document.getElementById('drawer-user-nome').textContent = u.nome;
       if (u.email) document.getElementById('drawer-user-email').textContent = u.email;
       if (u.foto) {
@@ -5325,6 +5356,18 @@
     openBilling();
   });
 
+  document.getElementById('drawer-creditos').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-creditos');
+    openCreditos();
+  });
+
+  document.getElementById('back-home-from-creditos').addEventListener('click', () => {
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+  });
+
 
   /* ============================================================
      BILLING
@@ -5338,16 +5381,25 @@
     resumir_documento:     'Resumo de documento',
   };
 
-  let _usdBrl = null; // cotação em cache
+  let _usdBrl = null;      // cotação em cache
+  let _usdBrlTs = 0;       // timestamp do cache (ms)
+  const _COTACAO_TTL = 5 * 60 * 1000; // 5 minutos
 
   async function fetchCotacao() {
-    if (_usdBrl) return _usdBrl;
+    const agora = Date.now();
+    if (_usdBrl !== null && (agora - _usdBrlTs) < _COTACAO_TTL) return _usdBrl;
     try {
       const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
       const j = await r.json();
-      _usdBrl = parseFloat(j.USDBRL.bid);
+      const v = parseFloat(j?.USDBRL?.bid);
+      if (isFinite(v) && v >= 1.0 && v <= 20.0) {
+        _usdBrl = v;
+        _usdBrlTs = agora;
+      } else {
+        _usdBrl = _usdBrl ?? 5.70; // mantém cache anterior se existir
+      }
     } catch {
-      _usdBrl = 5.70; // fallback se API indisponível
+      _usdBrl = _usdBrl ?? 5.70; // fallback se API indisponível
     }
     return _usdBrl;
   }
@@ -5379,7 +5431,7 @@
 
   function renderBilling(data, cotacao, adminData) {
     const body = document.getElementById('billing-body');
-    const { mes_atual, historico } = data;
+    const { mes_atual, historico, secretaria_email } = data;
 
     const maxCusto = Math.max(...(mes_atual.por_tipo || []).map(t => t.custo_usd), 0.0001);
     const TIPO_ICON = {
@@ -5516,6 +5568,7 @@
         </div>
       </div>` : ''}
 
+      <div id="billing-sec-slot"></div>
       <div id="billing-admin-slot"></div>
     `;
 
@@ -5523,6 +5576,63 @@
       openBilling(novoMes);
     });
     body.querySelector('#billing-picker-mes-slot').appendChild(pickerBilling);
+
+    // Seção secretaria: breakdown fisio vs secretaria
+    const secSlot = body.querySelector('#billing-sec-slot');
+    const porOrigem = mes_atual.por_origem || [];
+    const origemFisio = porOrigem.find(o => o.origem === 'fisio') || { chamadas: 0, custo_usd: 0, input_tokens: 0, output_tokens: 0 };
+    const origemSec   = porOrigem.filter(o => o.origem === 'secretaria');
+    const totalSecUsd = origemSec.reduce((s, o) => s + (o.custo_usd || 0), 0);
+    const totalSecChamadas = origemSec.reduce((s, o) => s + (o.chamadas || 0), 0);
+
+    if (secretaria_email && mes_atual.total_chamadas > 0) {
+      const pctFisio = mes_atual.total_usd > 0 ? Math.round((origemFisio.custo_usd / mes_atual.total_usd) * 100) : 0;
+      const pctSec   = mes_atual.total_usd > 0 ? Math.round((totalSecUsd / mes_atual.total_usd) * 100) : 0;
+      const secInicial = (secretaria_email || '?').split('@')[0].slice(0, 2).toUpperCase();
+      secSlot.innerHTML = `
+        <div class="card" style="padding:0;overflow:hidden;margin-top:var(--space-6);">
+          <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:var(--text-sm);font-weight:700;">Uso por origem</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Você + Secretária</div>
+            </div>
+            <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(mes_atual.total_usd, cotacao)}</span>
+          </div>
+
+          <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+              <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">EU</div>
+                <div>
+                  <div style="font-size:var(--text-sm);font-weight:600;">Você (fisioterapeuta)</div>
+                  <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${origemFisio.chamadas} chamada${origemFisio.chamadas !== 1 ? 's' : ''} · ${pctFisio}% do total</div>
+                </div>
+              </div>
+              <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:var(--space-3);">${fmtBRL(origemFisio.custo_usd, cotacao)}</span>
+            </div>
+            <div style="background:var(--color-border);border-radius:var(--radius-full);height:3px;overflow:hidden;">
+              <div style="width:${pctFisio}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+            </div>
+          </div>
+
+          <div style="padding:var(--space-4) var(--space-5);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+              <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--color-text-secondary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${secInicial}</div>
+                <div>
+                  <div style="font-size:var(--text-sm);font-weight:600;">Secretária</div>
+                  <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${secretaria_email} · ${totalSecChamadas} chamada${totalSecChamadas !== 1 ? 's' : ''} · ${pctSec}% do total</div>
+                </div>
+              </div>
+              <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:var(--space-3);">${fmtBRL(totalSecUsd, cotacao)}</span>
+            </div>
+            <div style="background:var(--color-border);border-radius:var(--radius-full);height:3px;overflow:hidden;">
+              <div style="width:${pctSec}%;height:100%;background:var(--color-text-secondary);border-radius:var(--radius-full);"></div>
+            </div>
+            ${totalSecChamadas === 0 ? `<div style="margin-top:var(--space-3);font-size:var(--text-xs);color:var(--color-text-muted);">Nenhuma chamada da secretaria neste mês.</div>` : ''}
+          </div>
+        </div>`;
+    }
 
     // Seção admin: custo por usuário
     if (adminData && adminData.usuarios && adminData.usuarios.length > 0) {
@@ -5768,6 +5878,218 @@
      INIT
   ============================================================ */
   loadPacientes();
+
+  /* ============================================================
+     CRÉDITOS
+  ============================================================ */
+
+  const CREDITOS_PRESETS = [10, 20, 50, 100];
+
+  function _atualizarIndicadorCreditos(pct) {
+    const dot = document.getElementById('creditos-dot');
+    if (!dot) return;
+    if (pct <= 0) {
+      dot.style.display = '';
+      dot.style.background = 'var(--color-danger)';
+    } else if (pct < 20) {
+      dot.style.display = '';
+      dot.style.background = 'var(--color-danger)';
+    } else if (pct < 50) {
+      dot.style.display = '';
+      dot.style.background = 'var(--color-warning)';
+    } else {
+      dot.style.display = 'none';
+    }
+  }
+
+  async function _carregarSaldoIndicador() {
+    try {
+      const cotacao = await fetchCotacao();
+      const saldo = await apiFetch(`/creditos/saldo?cotacao=${cotacao}`);
+      if (saldo.total_carregado_brl > 0) {
+        _atualizarIndicadorCreditos(saldo.pct_restante);
+      }
+    } catch { /* silencioso — não quebra o app */ }
+  }
+
+  async function openCreditos() {
+    showSection('sec-creditos');
+    const body = document.getElementById('creditos-body');
+    body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
+    try {
+      const cotacao = await fetchCotacao();
+      const data = await apiFetch(`/creditos/saldo?cotacao=${cotacao}`);
+      renderCreditos(data, cotacao);
+    } catch (e) {
+      body.innerHTML = `<div class="alert alert-error">Erro ao carregar créditos: ${e.message}</div>`;
+    }
+  }
+
+  function renderCreditos(data, cotacao) {
+    const body = document.getElementById('creditos-body');
+    const fmtR = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const pct = Math.max(0, Math.min(100, data.pct_restante || 0));
+    const semCreditos = (data.total_carregado_brl ?? 0) < 0.001;
+
+    _atualizarIndicadorCreditos(pct);
+
+    let barColor = 'var(--color-success)';
+    let statusLabel = '';
+    if (!semCreditos) {
+      if (pct < 20) {
+        barColor = 'var(--color-danger)';
+        statusLabel = `<span style="font-size:var(--text-xs);font-weight:700;background:var(--color-danger-bg);color:var(--color-danger);padding:2px 8px;border-radius:var(--radius-full);">Créditos baixos</span>`;
+      } else if (pct < 50) {
+        barColor = 'var(--color-warning)';
+        statusLabel = `<span style="font-size:var(--text-xs);font-weight:700;background:var(--color-warning-bg);color:var(--color-warning);padding:2px 8px;border-radius:var(--radius-full);">Atenção</span>`;
+      }
+    }
+
+    const historicoHtml = (data.historico || []).length > 0
+      ? `<div class="card" style="padding:0;overflow:hidden;margin-top:var(--space-6);">
+          <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);font-size:var(--text-sm);font-weight:600;">Histórico de recargas</div>
+          <div class="table-wrapper" style="margin:0;">
+            <table class="table">
+              <thead><tr><th>Data</th><th>Descrição</th><th class="text-right">Valor</th></tr></thead>
+              <tbody>
+                ${data.historico.map(r => `
+                  <tr>
+                    <td style="white-space:nowrap;color:var(--color-text-muted);font-size:var(--text-xs);">${r.criado_em ? r.criado_em.slice(0,10) : '—'}</td>
+                    <td style="font-size:var(--text-sm);">${r.descricao || '—'}</td>
+                    <td class="text-right" style="font-weight:600;font-variant-numeric:tabular-nums;">${fmtR(r.valor_brl)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`
+      : '';
+
+    body.innerHTML = `
+      <!-- Saldo atual -->
+      <div class="card" style="padding:var(--space-6);margin-bottom:var(--space-5);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-5);">
+          <div>
+            <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:var(--space-1);">Saldo disponível</div>
+            <div style="font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;">${fmtR(data.saldo_brl)}</div>
+          </div>
+          ${statusLabel}
+        </div>
+
+        ${semCreditos ? '' : `
+        <div style="margin-bottom:var(--space-2);">
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-2);">
+            <span>${fmtR(data.total_gasto_brl)} utilizados</span>
+            <span>${pct.toFixed(0)}% restante</span>
+          </div>
+          <div style="background:var(--color-border);border-radius:var(--radius-full);height:6px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:var(--radius-full);transition:width 0.5s;"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-4);">
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Total carregado<br><span style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);">${fmtR(data.total_carregado_brl)}</span></div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);">Gasto total<br><span style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);">${fmtR(data.total_gasto_brl)}</span></div>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-3);">USD/BRL: R$ ${(data.cotacao_usd_brl ?? cotacao).toFixed(2)}</div>
+        `}
+      </div>
+
+      <!-- Recarregar -->
+      <div class="card" style="padding:var(--space-6);">
+        <div style="font-size:var(--text-sm);font-weight:700;margin-bottom:var(--space-4);">Adicionar créditos</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-2);margin-bottom:var(--space-4);" id="creditos-presets"></div>
+        <div style="display:flex;gap:var(--space-3);align-items:flex-end;">
+          <div style="flex:1;">
+            <label style="font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);display:block;margin-bottom:var(--space-1);">Outro valor (R$)</label>
+            <input id="creditos-valor-custom" type="number" min="0.01" step="0.01" placeholder="0,00"
+              style="width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);background:var(--color-surface);color:var(--color-text);outline:none;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);display:block;margin-bottom:var(--space-1);">Descrição (opcional)</label>
+            <input id="creditos-descricao" type="text" placeholder="Ex: recarga mensal"
+              style="width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);background:var(--color-surface);color:var(--color-text);outline:none;">
+          </div>
+        </div>
+        <button id="creditos-recarregar-btn"
+          style="margin-top:var(--space-4);width:100%;padding:var(--space-3) var(--space-4);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;cursor:pointer;transition:background .15s;">
+          Confirmar recarga
+        </button>
+        <div id="creditos-feedback" style="display:none;margin-top:var(--space-3);font-size:var(--text-sm);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);"></div>
+      </div>
+
+      ${historicoHtml}
+    `;
+
+    // Presets
+    let valorSelecionado = 0;
+    const presetsEl = body.querySelector('#creditos-presets');
+    CREDITOS_PRESETS.forEach(v => {
+      const btn = document.createElement('button');
+      btn.textContent = `R$ ${v}`;
+      btn.style.cssText = 'padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);font-weight:500;cursor:pointer;background:var(--color-surface);color:var(--color-text);transition:all .15s;';
+      btn.addEventListener('click', () => {
+        valorSelecionado = v;
+        body.querySelector('#creditos-valor-custom').value = '';
+        presetsEl.querySelectorAll('button').forEach(b => {
+          b.style.background = 'var(--color-surface)';
+          b.style.borderColor = 'var(--color-border)';
+          b.style.color = 'var(--color-text)';
+        });
+        btn.style.background = 'var(--color-accent)';
+        btn.style.borderColor = 'var(--color-accent)';
+        btn.style.color = '#fff';
+      });
+      presetsEl.appendChild(btn);
+    });
+
+    const inputCustom = body.querySelector('#creditos-valor-custom');
+    inputCustom.addEventListener('input', () => {
+      valorSelecionado = 0;
+      presetsEl.querySelectorAll('button').forEach(b => {
+        b.style.background = 'var(--color-surface)';
+        b.style.borderColor = 'var(--color-border)';
+        b.style.color = 'var(--color-text)';
+      });
+    });
+
+    body.querySelector('#creditos-recarregar-btn').addEventListener('click', async () => {
+      const customVal = parseFloat(inputCustom.value.replace(',', '.'));
+      const valor = customVal > 0 ? customVal : valorSelecionado;
+      const fb = body.querySelector('#creditos-feedback');
+      if (!valor || valor <= 0) {
+        fb.style.display = '';
+        fb.style.background = 'var(--color-danger-bg)';
+        fb.style.color = 'var(--color-danger)';
+        fb.textContent = 'Selecione ou informe um valor para recarregar.';
+        return;
+      }
+      const descricao = body.querySelector('#creditos-descricao').value.trim() || null;
+      const btn = body.querySelector('#creditos-recarregar-btn');
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        await apiFetch('/creditos/recarregar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ valor_brl: valor, descricao }),
+        });
+        fb.style.display = '';
+        fb.style.background = 'var(--color-success-bg)';
+        fb.style.color = 'var(--color-success)';
+        fb.textContent = `R$ ${valor.toFixed(2).replace('.', ',')} adicionados com sucesso!`;
+        setTimeout(() => openCreditos(), 900);
+      } catch (e) {
+        fb.style.display = '';
+        fb.style.background = 'var(--color-danger-bg)';
+        fb.style.color = 'var(--color-danger)';
+        fb.textContent = `Erro: ${e.message}`;
+        btn.disabled = false;
+        btn.textContent = 'Confirmar recarga';
+      }
+    });
+  }
+
+  // Carrega indicador ao iniciar
+  _carregarSaldoIndicador();
 
   /* ============================================================
      FATURAMENTO DE PACIENTES
@@ -7975,6 +8297,7 @@
     // Garante que o microfone é liberado antes de sair
     try { resetRecorder(); } catch {}
     localStorage.removeItem('physio_token');
+    localStorage.removeItem('physio_user');
     window.location.replace('/login.html');
   }
 
