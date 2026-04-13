@@ -806,6 +806,16 @@ def get_billing_meses(owner_email: str | None = None) -> list[dict]:
         return [_row_to_dict(r) for r in rows]
 
 
+def get_gasto_hoje_usd(owner_email: str, hoje: str) -> float:
+    """Retorna soma de custo_usd do owner hoje (YYYY-MM-DD)."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(custo_usd), 0) FROM api_uso WHERE owner_email = ? AND DATE(criado_em) = ?",
+            (owner_email, hoje),
+        ).fetchone()
+    return float(row[0]) if row else 0.0
+
+
 def get_billing_por_usuario(ano_mes: str) -> list[dict]:
     """Admin: retorna custo agrupado por owner_email no mês."""
     with get_conn() as conn:
@@ -843,7 +853,7 @@ def get_activity_log(owner_email: str, mes: str | None = None, limit: int = 100,
             f"""SELECT id, criado_em, tipo, modelo, paciente_nome,
                        input_tokens, output_tokens, custo_usd,
                        CASE WHEN sec_email IS NULL THEN 'fisio' ELSE 'secretaria' END AS origem,
-                       sec_email
+                       sec_email, owner_email
                 FROM api_uso
                WHERE owner_email = ? {mes_filter}
                ORDER BY criado_em DESC
@@ -1397,9 +1407,19 @@ def aprovar_usuario(email: str):
 
 
 def revogar_usuario(email: str):
+    """Remove o fisioterapeuta do sistema (hard delete).
+    O audit_log preserva o histórico. Na próxima solicitação de acesso,
+    um novo registro será criado com ativo=0 (pendente de aprovação)."""
     _init_usuario_table()
+    agora = _now()
     with get_conn() as conn:
-        conn.execute("UPDATE usuario_google SET ativo = 0 WHERE email = ?", (email,))
+        # Encerra vínculos ativos de secretaria vinculados a este fisio
+        conn.execute(
+            "UPDATE secretaria_link SET deletado_em = ? WHERE fisio_email = ? AND deletado_em IS NULL",
+            (agora, email),
+        )
+        # Remove o registro do fisio — abre porta para nova solicitação futura
+        conn.execute("DELETE FROM usuario_google WHERE email = ?", (email,))
         conn.commit()
 
 

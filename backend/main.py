@@ -2007,8 +2007,9 @@ def admin_aprovar_usuario(email: str, request: Request):
 @app.post("/admin/usuarios/{email}/revogar")
 def admin_revogar_usuario(email: str, request: Request):
     _verificar_admin(request)
+    nome = db.get_nome_fisio(email) or ""
     db.revogar_usuario(email)
-    db.registrar_audit(_owner_email(request), "admin_revogar_usuario", f"target={email}", _client_ip(request))
+    db.registrar_audit(_owner_email(request), "admin_revogar_usuario", f"target={email} nome={nome} (hard_delete)", _client_ip(request))
     return {"ok": True}
 
 
