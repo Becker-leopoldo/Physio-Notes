@@ -4,6 +4,55 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.317 — 2026-04-13
+
+### Billing — Previsão do mês e KPIs redesenhados
+- **Card "Previsão do mês"** substitui "Seu plano mensal": exibe projeção de gasto até fim do mês (com barra de progresso e indicador "dia X de Y") quando há dados no mês atual; para meses históricos, exibe total do mês
+- **Grid de KPIs** reduzido de 4 para 3 cards ("Uso no mês" · "Uso hoje" · "Previsão"): eliminada repetição visual, labels sem corte de texto, "R$" exibido como rótulo separado acima do valor
+- **Renomeação:** "Gasto no mês" → "Uso no mês" · "Gasto hoje" → "Uso hoje"
+
+### Log de atividades — tabelas inline removidas
+- **Tabelas inline de detalhes de uso removidas** (fisio e admin): eliminado problema estrutural de overflow horizontal que empurrava botões para fora da tela
+- Acesso ao relatório detalhado agora exclusivamente via botão **Abrir PDF**
+
+### Compatibilidade de navegadores (PWA)
+- **Safari:** adicionado `::-webkit-scrollbar { display: none }` para `drawer-nav` (complemento ao `scrollbar-width:none` que Safari ignorava)
+- **Safari clipboard:** botão de copiar PIX agora tem fallback `document.execCommand('copy')` quando `navigator.clipboard` não está disponível
+- Regras de compatibilidade Chrome + Safari + Edge documentadas em `CLAUDE.md`
+
+### Segurança — exclusão de pacote com confirmação obrigatória
+- **Modal de confirmação** ao remover pacote: usuário deve digitar exatamente `EU QUERO EXCLUIR` antes de o botão ficar habilitado
+- Botão de remoção desabilitado por padrão; habilita somente quando a frase bate exatamente (case-sensitive, sem espaços extras)
+
+---
+
+## Beta-0.316 — 2026-04-13
+
+### Billing — Custo por chamada e margens no log
+
+**Admin (log de uso por fisio):**
+- 3 novas colunas: **Custo** (custo interno em BRL antes da margem) · **Valor ganho** (com margem + imposto) · **Lucro** (valor ganho − custo), em verde
+- PDF admin: KPIs extras de Custo total / Valor ganho / Lucro total + mesmas 3 colunas na tabela
+- `GET /admin/billing/log` aceita `?cotacao=X` e calcula tudo server-side via `config_precificacao`
+
+**Fisio (log pessoal):**
+- Nova coluna **Custo** mostrando o valor cobrado por chamada (preço de lista = custo × fator de markup)
+- PDF fisio: coluna Custo na tabela + KPI "Custo total" no cabeçalho
+- `GET /billing/log` aceita `?cotacao=X`; `custo_usd` interno removido da resposta
+
+---
+
+## Beta-0.315 — 2026-04-13
+
+### Detalhes de uso — Coluna Usuário
+- **Email completo exibido:** coluna "Usuário" no log de atividades agora mostra o e-mail SSO completo em vez do prefixo truncado
+- Secretaria: e-mail completo com badge azul + tooltip
+- Fisio: e-mail do `owner_email` com estilo muted + tooltip
+- PDF de relatório atualizado para exibir e-mail completo (sem truncamento `@`)
+- Backend (`get_activity_log`): `owner_email` adicionado ao SELECT para disponibilidade no frontend
+
+---
+
 ## Beta-0.314 — 2026-04-13
 
 ### Admin — Precificação
