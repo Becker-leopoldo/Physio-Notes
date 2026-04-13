@@ -1748,7 +1748,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.313'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.314'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5585,7 +5585,6 @@
     const body = document.getElementById('billing-body');
     const { mes_atual, historico, secretaria_email } = data;
 
-    const maxCusto = Math.max(...(mes_atual.por_tipo || []).map(t => t.custo_usd), 0.0001);
     const TIPO_ICON = {
       consolidar_sessao:      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
       resumir_historico:      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
@@ -5593,8 +5592,9 @@
       extrair_dados_paciente: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
       resumir_documento:      '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9H4V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M6 7h4M6 10h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
     };
+    const maxChamadas = Math.max(...(mes_atual.por_tipo || []).map(t => t.chamadas || 0), 1);
     const porTipoCards = (mes_atual.por_tipo || []).map(t => {
-      const pct = Math.round((t.custo_usd / maxCusto) * 100);
+      const pct = Math.round(((t.chamadas || 0) / maxChamadas) * 100);
       return `
         <div style="display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-4) var(--space-5);border-bottom:var(--border);">
           <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -5602,15 +5602,14 @@
               ${TIPO_ICON[t.tipo] || ''}
               <span style="font-size:var(--text-sm);font-weight:500;">${TIPO_LABEL[t.tipo] || t.tipo}</span>
             </div>
-            <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(t.custo_usd, cotacao)}</span>
+            <span style="font-size:var(--text-sm);font-weight:600;color:var(--color-text-secondary);">${t.chamadas} chamada${t.chamadas !== 1 ? 's' : ''}</span>
           </div>
           <div style="background:var(--color-border);border-radius:var(--radius-full);height:3px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
           </div>
           <div style="display:flex;gap:var(--space-4);">
-            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${t.chamadas} chamada${t.chamadas !== 1 ? 's' : ''}</span>
-            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↑ ${fmtTokens(t.input_tokens)} tokens</span>
-            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↓ ${fmtTokens(t.output_tokens)} tokens</span>
+            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↑ ${fmtTokens(t.input_tokens)} tokens entrada</span>
+            <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↓ ${fmtTokens(t.output_tokens)} tokens saída</span>
           </div>
         </div>`}).join('');
 
@@ -5660,26 +5659,27 @@
       </div>` : ''}
 
       <div id="billing-painel-meu">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-6);">
-        <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
-          <div id="billing-picker-mes-slot"></div>
-          ${isMesAtual ? `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--color-accent);color:#fff;padding:3px 9px;border-radius:var(--radius-full);white-space:nowrap;">Mês atual</span>` : ''}
-        </div>
-        <span style="font-size:var(--text-xs);color:var(--color-text-muted);white-space:nowrap;">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
+      <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-6);">
+        <div id="billing-picker-mes-slot"></div>
+        ${isMesAtual ? `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--color-accent);color:#fff;padding:3px 9px;border-radius:var(--radius-full);white-space:nowrap;">Mês atual</span>` : ''}
       </div>
 
       <div class="billing-kpi-grid">
         <div class="card" style="padding:var(--space-5);">
-          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Custo total</div>
-          <div style="font-size:var(--text-xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(mes_atual.total_usd, cotacao)}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">${mes_atual.total_chamadas} chamada${mes_atual.total_chamadas !== 1 ? 's' : ''}</div>
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Chamadas no mês</div>
+          <div style="font-size:var(--text-xl);font-weight:600;font-variant-numeric:tabular-nums;">${mes_atual.total_chamadas}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">operações de IA</div>
         </div>
         <div class="card" style="padding:var(--space-5);">
-          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Custo diário</div>
-          <div style="font-size:var(--text-xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtBRL(custoPorDia, cotacao)}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">média · ${diasComUso} dia${diasComUso > 1 ? 's' : ''} com uso</div>
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Tokens processados</div>
+          <div style="font-size:var(--text-xl);font-weight:600;font-variant-numeric:tabular-nums;">${fmtTokens((mes_atual.total_input_tokens||0)+(mes_atual.total_output_tokens||0))}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">${diasComUso} dia${diasComUso > 1 ? 's' : ''} com uso</div>
         </div>
-        ${cardProjecao}
+        <div class="card" style="padding:var(--space-5);">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);margin-bottom:var(--space-2);">Média diária</div>
+          <div style="font-size:var(--text-xl);font-weight:600;font-variant-numeric:tabular-nums;">${diasComUso > 0 ? Math.round(mes_atual.total_chamadas / diasComUso) : 0}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">chamadas / dia</div>
+        </div>
       </div>
 
       <div class="billing-meta-grid">
@@ -5712,7 +5712,7 @@
         <div class="table-wrapper" style="margin:0;">
           <table class="table">
             <thead>
-              <tr><th>Mês</th><th class="text-right">Chamadas</th><th class="text-right">Tokens entrada</th><th class="text-right">Tokens saída</th><th class="text-right">Custo</th></tr>
+              <tr><th>Mês</th><th class="text-right">Chamadas</th><th class="text-right">Tokens entrada</th><th class="text-right">Tokens saída</th></tr>
             </thead>
             <tbody>
               ${historico.map(h => {
@@ -5722,7 +5722,6 @@
                   <td class="text-right">${h.total_chamadas}</td>
                   <td class="text-right">${fmtTokens(h.total_input_tokens)}</td>
                   <td class="text-right">${fmtTokens(h.total_output_tokens)}</td>
-                  <td class="text-right" style="font-variant-numeric:tabular-nums;">${fmtBRL(h.total_usd, cotacao)}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -5951,12 +5950,108 @@
       const maxAdmin = Math.max(...(adminData.usuarios || []).map(u => u.total_usd || 0), 0.0001);
       const adminMes = adminData.mes || mes_atual.mes;
 
+      // ---- Card Precificação (carrega assíncrono) ----
+      const _renderPrecificacao = (p, saving = false) => {
+        const fmtPct = v => Number(v).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+        const fmtR2  = v => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        const fmtU   = v => '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits:4, maximumFractionDigits:6});
+        const precoFinal = p.preco_sugerido_brl;
+        const semDados = !p.tem_dados_reais;
+        document.getElementById('admin-precificacao-card').innerHTML = `
+          <div style="padding:var(--space-5) var(--space-6);border-bottom:var(--border);display:flex;align-items:center;gap:var(--space-2);">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color:var(--color-text-secondary);flex-shrink:0;" aria-hidden="true">
+              <path d="M8 1v14M11 4H6.5a2.5 2.5 0 0 0 0 5h3a2.5 2.5 0 0 1 0 5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <span style="font-size:var(--text-sm);font-weight:600;">Precificação</span>
+          </div>
+          <div style="padding:var(--space-5) var(--space-6);">
+            <!-- Linha 1: modelo + cotação -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-5);">
+              <div>
+                <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:var(--space-1);">Modelo IA</div>
+                <div style="font-size:var(--text-sm);font-weight:600;">${p.modelo}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">in ${fmtU(p.preco_input_usd_1m)}/1M · out ${fmtU(p.preco_output_usd_1m)}/1M</div>
+              </div>
+              <div>
+                <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:var(--space-1);">Cotação USD/BRL</div>
+                <div style="font-size:var(--text-sm);font-weight:600;">R$ ${p.cotacao_usd_brl.toFixed(2)}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">tempo real · awesomeapi</div>
+              </div>
+              <div>
+                <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);margin-bottom:var(--space-1);">Custo médio / usuário / mês</div>
+                <div style="font-size:var(--text-sm);font-weight:600;">${fmtR2(p.custo_medio_brl)}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">
+                  ${semDados ? 'estimativa padrão (sem dados)' : `${p.meses_analisados} ${p.meses_analisados===1?'mês':'meses'} · ${p.usuarios_ativos} usuário${p.usuarios_ativos!==1?'s':''}`}
+                </div>
+              </div>
+            </div>
+
+            <!-- Linha 2: margem + imposto + resultado -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:var(--space-4);align-items:end;">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label" style="font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.06em;">Margem (%)</label>
+                <input id="prec-margem" class="form-input" type="number" min="0" max="10000" step="0.1" value="${fmtPct(p.margem_pct)}" style="font-variant-numeric:tabular-nums;">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label" style="font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.06em;">Imposto (%)</label>
+                <input id="prec-imposto" class="form-input" type="number" min="0" max="100" step="0.1" value="${fmtPct(p.imposto_pct)}" style="font-variant-numeric:tabular-nums;">
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;background:var(--color-accent);color:#fff;border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);">
+                <div>
+                  <div style="font-size:var(--text-xs);opacity:.7;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Preço sugerido</div>
+                  <div id="prec-resultado" style="font-size:var(--text-2xl);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;">${fmtR2(precoFinal)}<span style="font-size:var(--text-xs);opacity:.6;">/mês</span></div>
+                </div>
+                <button id="prec-salvar-btn" class="btn btn-secondary" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:#fff;flex-shrink:0;" ${saving ? 'disabled' : ''}>
+                  ${saving ? 'Salvando…' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Linha 3: breakdown do cálculo -->
+            <div style="margin-top:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-accent-light);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--color-text-secondary);">
+              Fórmula: custo médio ${fmtR2(p.custo_medio_brl)} × (1 + ${fmtPct(p.margem_pct)}% margem) × (1 + ${fmtPct(p.imposto_pct)}% imposto) = <strong>${fmtR2(precoFinal)}/mês</strong>
+            </div>
+          </div>
+        `;
+
+        // atualiza preço em tempo real ao digitar
+        const calcPreco = () => {
+          const m = parseFloat(document.getElementById('prec-margem')?.value || p.margem_pct) / 100;
+          const i = parseFloat(document.getElementById('prec-imposto')?.value || p.imposto_pct) / 100;
+          const novo = p.custo_medio_brl * (1 + m) * (1 + i);
+          const el = document.getElementById('prec-resultado');
+          if (el) el.innerHTML = fmtR2(novo) + '<span style="font-size:var(--text-xs);opacity:.6;">/mês</span>';
+        };
+        document.getElementById('prec-margem')?.addEventListener('input', calcPreco);
+        document.getElementById('prec-imposto')?.addEventListener('input', calcPreco);
+
+        document.getElementById('prec-salvar-btn')?.addEventListener('click', async () => {
+          const margem  = parseFloat(document.getElementById('prec-margem').value);
+          const imposto = parseFloat(document.getElementById('prec-imposto').value);
+          if (isNaN(margem) || isNaN(imposto)) return;
+          try {
+            const novo = await apiFetch('/admin/precificacao', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({margem_pct: margem, imposto_pct: imposto}),
+            });
+            _renderPrecificacao({...p, margem_pct: novo.margem_pct, imposto_pct: novo.imposto_pct,
+              preco_sugerido_brl: p.custo_medio_brl * (1 + novo.margem_pct/100) * (1 + novo.imposto_pct/100)});
+          } catch(e) {
+            alert('Erro ao salvar: ' + (e.message || e));
+          }
+        });
+      };
+
       adminPainel.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-6);">
           <div style="display:flex;align-items:center;gap:var(--space-3);">
             <div id="billing-admin-picker-mes-slot"></div>
           </div>
           <span style="font-size:var(--text-xs);color:var(--color-text-muted);">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
+        </div>
+        <div id="admin-precificacao-card" class="card" style="padding:0;overflow:hidden;margin-bottom:var(--space-5);">
+          <div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm);"><span class="spinner" style="width:16px;height:16px;"></span></div>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);display:flex;align-items:center;justify-content:space-between;">
@@ -6015,6 +6110,14 @@
         openBilling(novoMes);
       });
       adminPainel.querySelector('#billing-admin-picker-mes-slot').appendChild(pickerAdmin);
+
+      // Carrega card de precificação
+      apiFetch(`/admin/precificacao?cotacao=${cotacao}`)
+        .then(p => _renderPrecificacao(p))
+        .catch(() => {
+          const el = document.getElementById('admin-precificacao-card');
+          if (el) el.innerHTML = '<div style="padding:var(--space-5);font-size:var(--text-sm);color:var(--color-text-muted);">Não foi possível carregar precificação.</div>';
+        });
 
       // Toggle de linha + load do log
       adminPainel.querySelectorAll('[data-email]').forEach(header => {

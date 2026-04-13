@@ -4,6 +4,22 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.314 — 2026-04-13
+
+### Admin — Precificação
+- **Card "Precificação" no painel admin:** exibe modelo de IA, preço por token (input/output), cotação USD/BRL em tempo real, custo médio real por usuário/mês (calculado do DB, últimos 3 meses)
+- **Margem e imposto configuráveis:** admin define margem % e imposto % — preço sugerido atualiza em tempo real ao digitar, fórmula exibida abaixo
+- **Persistência:** configuração salva em tabela `config_precificacao` (singleton)
+- **Endpoint público:** `GET /precificacao/publico` retorna apenas `{preco_mensal_brl}` sem nenhum dado interno
+
+### Segurança / Privacidade
+- **Isolamento de dados financeiros internos:** painel do fisio não exibe mais cotação USD/BRL, custos monetários por chamada, coluna "Custo" no histórico mensal, nem valores BRL por tipo de operação
+- KPIs do fisio passam a mostrar **Chamadas / Tokens / Média diária** — sem exposição da estrutura de custo interna
+- `GET /admin/precificacao` protegido por `_verificar_admin` — fisio que tentar acessar recebe 403
+- Cotação e margem jamais aparecem em contexto de usuário final
+
+---
+
 ## Beta-0.313 — 2026-04-13
 
 ### UX

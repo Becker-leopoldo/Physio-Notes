@@ -1851,3 +1851,86 @@ def atualizar_pagamento_pacote(pacote_id: int, pago: bool):
     with get_conn() as conn:
         conn.execute("UPDATE pacote SET pago = ? WHERE id = ?", (pago, pacote_id))
         conn.commit()
+
+
+# ---------- Config Precificação ----------
+
+def _init_config_precificacao_table():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS config_precificacao (
+                id           INTEGER PRIMARY KEY CHECK (id = 1),
+                margem_pct   REAL NOT NULL DEFAULT 100.0,
+                imposto_pct  REAL NOT NULL DEFAULT 14.0,
+                atualizado_em TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+
+
+def get_config_precificacao() -> dict:
+    _init_config_precificacao_table()
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM config_precificacao WHERE id = 1").fetchone()
+    if row:
+        return _row_to_dict(row)
+    return {"margem_pct": 100.0, "imposto_pct": 14.0}
+
+
+def salvar_config_precificacao(margem_pct: float, imposto_pct: float) -> dict:
+    _init_config_precificacao_table()
+    now = _now()
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO config_precificacao (id, margem_pct, imposto_pct, atualizado_em)
+            VALUES (1, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                margem_pct    = excluded.margem_pct,
+                imposto_pct   = excluded.imposto_pct,
+                atualizado_em = excluded.atualizado_em
+        """, (margem_pct, imposto_pct, now))
+        conn.commit()
+    return {"margem_pct": margem_pct, "imposto_pct": imposto_pct, "atualizado_em": now}
+
+
+def get_custo_medio_mensal_usd() -> dict:
+    """Retorna custo médio mensal por usuário ativo nos últimos 3 meses completos.
+    Retorna {custo_medio_usd, usuarios_ativos, meses_analisados, tem_dados}."""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT
+                strftime('%Y-%m', criado_em) AS mes,
+                owner_email,
+                SUM(custo_usd) AS custo_mes
+            FROM api_uso
+            WHERE owner_email IS NOT NULL
+              AND criado_em >= date('now', '-3 months')
+            GROUP BY mes, owner_email
+        """).fetchall()
+
+    if not rows:
+        return {"custo_medio_usd": 0.50, "usuarios_ativos": 0, "meses_analisados": 0, "tem_dados": False}
+
+    from collections import defaultdict
+    por_mes: dict = defaultdict(float)
+    usuarios_por_mes: dict = defaultdict(set)
+    for r in rows:
+        mes, email, custo = r[0], r[1], r[2] or 0.0
+        por_mes[mes] += custo
+        usuarios_por_mes[mes].add(email)
+
+    medias = []
+    for mes, total in por_mes.items():
+        n = len(usuarios_por_mes[mes])
+        if n > 0:
+            medias.append(total / n)
+
+    custo_medio = sum(medias) / len(medias) if medias else 0.50
+    usuarios_ativos = len({r[1] for r in rows})
+
+    return {
+        "custo_medio_usd": round(custo_medio, 6),
+        "usuarios_ativos": usuarios_ativos,
+        "meses_analisados": len(por_mes),
+        "tem_dados": True,
+    }

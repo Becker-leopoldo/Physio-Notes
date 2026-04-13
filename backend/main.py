@@ -912,6 +912,22 @@ def creditos_recarregar(body: RecargaBody, request: Request):
     db.registrar_audit(owner, "credito_recarga", f"valor_brl={body.valor_brl}", _client_ip(request))
     return recarga
 
+@app.get("/precificacao/publico")
+def precificacao_publico(cotacao: float = 5.80):
+    """Retorna APENAS o preço sugerido ao cliente final — sem margens, cotação ou modelo."""
+    if not (1.0 <= cotacao <= 20.0):
+        raise HTTPException(status_code=400, detail="Cotação fora do intervalo permitido.")
+    from ai import MODEL, MODEL_PRICING
+    preco_modelo = MODEL_PRICING.get(MODEL, {"input": 0.10, "output": 0.40})
+    config       = db.get_config_precificacao()
+    uso          = db.get_custo_medio_mensal_usd()
+    custo_brl    = uso["custo_medio_usd"] * cotacao
+    margem       = config["margem_pct"] / 100
+    imposto      = config["imposto_pct"] / 100
+    preco        = round(custo_brl * (1 + margem) * (1 + imposto), 2)
+    return {"preco_mensal_brl": preco}
+
+
 @app.get("/creditos/saldo", responses={400: {"description": "Bad Request"}, 401: {"description": "Unauthorized"}})
 def creditos_saldo(cotacao: float = 5.80, request: Request = None):
     """Retorna saldo de créditos do fisio (total carregado - gasto em BRL)."""
@@ -2002,6 +2018,56 @@ def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offs
         raise HTTPException(status_code=400, detail="Parâmetro 'owner' obrigatório.")
     limit = max(1, min(limit, 200))
     return db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
+
+
+@app.get("/admin/precificacao")
+def admin_precificacao(cotacao: float = 5.80, request: Request = None):
+    """Retorna modelo de IA, cotação USD/BRL, custo médio/usuário/mês e preço sugerido."""
+    _verificar_admin(request)
+    if not (1.0 <= cotacao <= 20.0):
+        raise HTTPException(status_code=400, detail="Cotação fora do intervalo permitido.")
+
+    from ai import MODEL, MODEL_PRICING
+    preco_modelo = MODEL_PRICING.get(MODEL, {"input": 0.10, "output": 0.40})
+    config       = db.get_config_precificacao()
+    uso          = db.get_custo_medio_mensal_usd()
+
+    custo_medio_usd = uso["custo_medio_usd"]
+    custo_medio_brl = round(custo_medio_usd * cotacao, 4)
+
+    margem  = config["margem_pct"] / 100
+    imposto = config["imposto_pct"] / 100
+    preco_sugerido_brl = round(custo_medio_brl * (1 + margem) * (1 + imposto), 2)
+
+    return {
+        "modelo":              MODEL,
+        "preco_input_usd_1m":  preco_modelo["input"],
+        "preco_output_usd_1m": preco_modelo["output"],
+        "cotacao_usd_brl":     cotacao,
+        "custo_medio_usd":     custo_medio_usd,
+        "custo_medio_brl":     custo_medio_brl,
+        "usuarios_ativos":     uso["usuarios_ativos"],
+        "meses_analisados":    uso["meses_analisados"],
+        "tem_dados_reais":     uso["tem_dados"],
+        "margem_pct":          config["margem_pct"],
+        "imposto_pct":         config["imposto_pct"],
+        "preco_sugerido_brl":  preco_sugerido_brl,
+    }
+
+
+class PrecificacaoBody(BaseModel):
+    margem_pct:  float
+    imposto_pct: float
+
+@app.post("/admin/precificacao")
+def admin_precificacao_salvar(body: PrecificacaoBody, request: Request = None):
+    """Salva configuração de margem e imposto para precificação."""
+    _verificar_admin(request)
+    if not (0 <= body.margem_pct <= 10000):
+        raise HTTPException(status_code=400, detail="Margem deve estar entre 0% e 10000%.")
+    if not (0 <= body.imposto_pct <= 100):
+        raise HTTPException(status_code=400, detail="Imposto deve estar entre 0% e 100%.")
+    return db.salvar_config_precificacao(body.margem_pct, body.imposto_pct)
 
 
 # ---------- Auth WebAuthn ----------
