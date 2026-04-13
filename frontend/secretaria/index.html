@@ -85,7 +85,7 @@
     .brand-name { font-family: var(--font-display); font-size: var(--text-lg); color: #fff; }
     .brand-badge {
       font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); /* NOSONAR */
+      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.45);
       padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap;
     }
     .sidebar-toggle {
@@ -111,8 +111,8 @@
       transition: background 0.15s, color 0.15s;
       white-space: nowrap; width: 100%;
     }
-    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; } /* NOSONAR */
-    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; } /* NOSONAR */
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
     .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
 
     .sidebar-footer { padding: var(--space-5); border-top: 1px solid rgba(255,255,255,0.08); position: relative; margin-top: auto; }
@@ -134,7 +134,7 @@
     .user-info:hover { background: rgba(255,255,255,0.07); }
     .user-avatar {
       width: 32px; height: 32px; border-radius: var(--radius-full);
-      background: rgba(255,255,255,0.15); color: #fff; /* NOSONAR */
+      background: rgba(255,255,255,0.15); color: #fff;
       display: flex; align-items: center; justify-content: center;
       font-size: 12px; font-weight: 600; flex-shrink: 0;
     }
@@ -1230,7 +1230,10 @@ function renderDia(dataKey) {
   document.getElementById('dia-titulo').textContent = nome + (dataKey === hoje ? ' · Hoje' : '');
   document.getElementById('dia-count').textContent  = itens.length ? `${itens.length} evento${itens.length !== 1 ? 's' : ''}` : '';
 
-  if (itens.length) {
+  if (!itens.length) {
+    document.getElementById('dia-itens').innerHTML =
+      `<div style="padding:12px 16px;font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum evento.</div>`;
+  } else {
     document.getElementById('dia-itens').innerHTML = itens.map(item => {
       if (item._tipo === 'physio') {
         const cor     = item.status === 'aberta' ? '#1E3A5F' : '#2D6A4F';
@@ -1266,9 +1269,6 @@ function renderDia(dataKey) {
         cancelOpen(el.dataset.gcalId, el.dataset.gcalTitulo, el.dataset.gcalData, el.dataset.gcalHora);
       });
     });
-  } else {
-    document.getElementById('dia-itens').innerHTML =
-      `<div style="padding:12px 16px;font-size:var(--text-sm);color:var(--color-text-muted);">Nenhum evento.</div>`;
   }
 }
 
@@ -2243,7 +2243,7 @@ function renderPacoteCard(pk, isAtivo, mostrarNome) {
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;">
         <div style="font-size:11px;color:var(--color-text-muted);">${pk.sessoes_usadas} usadas ${pk.descricao ? ' · '+escHtml(pk.descricao) : ''}</div>
         <div style="display:flex;align-items:center;gap:var(--space-2);">
-          ${pk.pago ? '<span style="color:var(--color-success);font-weight:700;font-size:9px;text-transform:uppercase;">Pago</span>' : '<span style="background:var(--color-warning-bg);color:var(--color-warning);padding:2px 8px;border-radius:999px;font-weight:700;font-size:9px;text-transform:uppercase;border:1px solid #f6d186;">Pendente</span>'}
+          ${!pk.pago ? '<span style="background:var(--color-warning-bg);color:var(--color-warning);padding:2px 8px;border-radius:999px;font-weight:700;font-size:9px;text-transform:uppercase;border:1px solid #f6d186;">Pendente</span>' : '<span style="color:var(--color-success);font-weight:700;font-size:9px;text-transform:uppercase;">Pago</span>'}
           <button class="btn btn-ghost btn-sm" onclick="togglePagamento(${pk.id}, ${!pk.pago})" style="padding:4px 8px;font-size:10px;text-decoration:underline;">
             ${pk.pago ? 'Marcar pendente' : 'Marcar pago'}
           </button>
@@ -2320,7 +2320,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.331';
+const APP_VERSION = 'Beta-0.330';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

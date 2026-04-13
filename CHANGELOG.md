@@ -4,16 +4,6 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
-## Beta-0.331 — 2026-04-13
-
-### Qualidade — Sonar round 6: contraste WCAG + condições negadas
-- **css:S7924 (8 issues):** sidebar usa rgba transparente em fundo escuro — Sonar não tem contexto; adicionado `/* NOSONAR */` nos blocos CSS e substituído por cor opaca `#3a3a3a` nos avatares inline. Badge de role com opacidade aumentada de 0.45 → 0.75
-- **javascript:S7735 (~20 issues):** condições negadas refatoradas para forma positiva:
-  - Ternários: `!temPacote`, `!ativo.pago`, `!gcal_conectado`, `!temDados`, `!competenciaSel` (×3), `!pk.pago` → operandos trocados
-  - If-else: CPF validation, `competenciaSel`, `ativosVisiveis.length`, `itens.length` → branches swapped
-
----
-
 ## Beta-0.330 — 2026-04-13
 
 ### Qualidade — Sonar round 5: 10 MINOR fechados (javascript:S2486)
