@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.333 — 2026-04-13
+
+### Correção — 4 bugs mobile na Visão Admin de Billing
+- **"USD/BRL" truncado:** `white-space:nowrap` + `flex-shrink:0` no span — nunca mais é cortado pela borda
+- **Inputs Margem/Imposto vazios:** `value` trocado de `fmtPct()` (locale pt-BR com vírgula) para `.toFixed(1)` (ponto) — `<input type="number">` aceita corretamente em todos os browsers
+- **Fórmula truncada:** `overflow-wrap:break-word` na div + `white-space:nowrap` no `<strong>` final — texto quebra mas valor final nunca parte
+- **Grid 3 colunas apertado:** `repeat(3,1fr)` → `repeat(auto-fit,minmax(120px,1fr))` — colapsa para 1 coluna em telas < 420px
+
+---
+
 ## Beta-0.332 — 2026-04-13
 
 ### Funcionalidade — Concessão manual de créditos pelo admin

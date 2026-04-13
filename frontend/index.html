@@ -1727,7 +1727,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.332'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.333'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5989,7 +5989,7 @@
           </div>
 
           <!-- Dados de referência -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);padding:var(--space-5) var(--space-6);gap:var(--space-4);border-bottom:var(--border);">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));padding:var(--space-5) var(--space-6);gap:var(--space-4);border-bottom:var(--border);">
             <div>
               <div style="font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500;margin-bottom:var(--space-2);">Modelo IA</div>
               <div style="font-size:var(--text-sm);font-weight:700;margin-bottom:3px;">${p.modelo}</div>
@@ -6017,7 +6017,7 @@
               <!-- Margem -->
               <div style="flex:0 0 110px;">
                 <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--color-text-secondary);margin-bottom:var(--space-1);">Margem (%)</label>
-                <input id="prec-margem" class="form-input" type="number" min="0" max="10000" step="0.1" value="${fmtPct(p.margem_pct)}" style="font-variant-numeric:tabular-nums;">
+                <input id="prec-margem" class="form-input" type="number" min="0" max="10000" step="0.1" value="${Number(p.margem_pct).toFixed(1)}" style="font-variant-numeric:tabular-nums;">
               </div>
 
               <!-- Conector + -->
@@ -6026,7 +6026,7 @@
               <!-- Imposto -->
               <div style="flex:0 0 110px;">
                 <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--color-text-secondary);margin-bottom:var(--space-1);">Imposto (%)</label>
-                <input id="prec-imposto" class="form-input" type="number" min="0" max="100" step="0.1" value="${fmtPct(p.imposto_pct)}" style="font-variant-numeric:tabular-nums;">
+                <input id="prec-imposto" class="form-input" type="number" min="0" max="100" step="0.1" value="${Number(p.imposto_pct).toFixed(1)}" style="font-variant-numeric:tabular-nums;">
               </div>
 
               <!-- Conector = -->
@@ -6045,8 +6045,8 @@
             </div>
 
             <!-- Fórmula -->
-            <div style="margin-top:var(--space-3);font-size:11px;color:var(--color-text-muted);line-height:1.5;">
-              R$ ${fmtPct(p.custo_medio_brl)} (custo) × ${(1 + p.margem_pct/100).toFixed(2)} (margem) × ${(1 + p.imposto_pct/100).toFixed(2)} (imposto) = <strong style="color:var(--color-text);">${fmtR2(precoFinal)}/mês</strong>
+            <div style="margin-top:var(--space-3);font-size:11px;color:var(--color-text-muted);line-height:1.5;overflow-wrap:break-word;word-break:break-word;">
+              R$ ${fmtPct(p.custo_medio_brl)} (custo) × ${(1 + p.margem_pct/100).toFixed(2)} (margem) × ${(1 + p.imposto_pct/100).toFixed(2)} (imposto) = <strong style="color:var(--color-text);white-space:nowrap;">${fmtR2(precoFinal)}/mês</strong>
             </div>
           </div>
         `;
@@ -6085,10 +6085,10 @@
 
       adminPainel.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-6);">
-          <div style="display:flex;align-items:center;gap:var(--space-3);">
+          <div style="display:flex;align-items:center;gap:var(--space-3);min-width:0;">
             <div id="billing-admin-picker-mes-slot"></div>
           </div>
-          <span style="font-size:var(--text-xs);color:var(--color-text-muted);">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
+          <span style="font-size:var(--text-xs);color:var(--color-text-muted);white-space:nowrap;flex-shrink:0;">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
         </div>
         <div id="admin-precificacao-card" class="card" style="padding:0;overflow:hidden;margin-bottom:var(--space-5);">
           <div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm);"><span class="spinner" style="width:16px;height:16px;"></span></div>
