@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.328 — 2026-04-13
+
+### Qualidade — Sonar round 3: ~55 issues fechados
+- **S7781 (39 issues):** regex simples de um char substituídos por string literal em `.replaceAll()` — `/&/g` → `'&'`, `/-/g` → `'-'`, etc. + `/**` e `\n`
+- **S1481/S1854 (8 issues):** variáveis mortas removidas — `anoAtual`, `mesAtual`, `mesesPT`, `totalPhysio`
+- **S7748 (5 issues):** frações zero eliminadas — `2.0` → `2`, `1.0` → `1`, `5.70` → `5.7`
+- **S7744 (2 issues):** spread de objeto vazio removido — `...(opts.headers || {})` → `...opts.headers` e ternário com `{}` → `&&` short-circuit
+
+---
+
 ## Beta-0.327 — 2026-04-13
 
 ### Qualidade — Sonar round 2: ~162 issues fechados (mecânicos)

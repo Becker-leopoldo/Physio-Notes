@@ -26,7 +26,7 @@
       }
     })();
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Physio Notes</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -1727,11 +1727,11 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.327'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.328'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
-    return String(s).replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;').replaceAll(/"/g,'&quot;').replaceAll(/'/g,'&#39;');
+    return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
   }
 
   function _getAudioMimeType() {
@@ -1911,7 +1911,7 @@
     // Detecta se há padrão de tópico: linha começando com **Algo:**
     if (!/^\*\*[^*\n]+\*\*:/m.test(text)) return anamneseToHtml(text);
 
-    const esc = s => s.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;');
+    const esc = s => s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
     const bold = s => s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
     // Divide em seções pelo padrão **Tópico:**
@@ -1925,7 +1925,7 @@
       if (m) {
         if (current) sections.push(current);
         // Header: texto entre ** até **:
-        const headerRaw = m[1].replaceAll(/\*\*/g, '').replace(/:$/, '');
+        const headerRaw = m[1].replaceAll('**', '').replace(/:$/, '');
         const rest = m[2].trim();
         current = { header: headerRaw, lines: rest ? [rest] : [] };
       } else {
@@ -1967,7 +1967,7 @@
 
   function anamneseToHtml(text) {
     if (!text) return '';
-    const esc = s => s.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;');
+    const esc = s => s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
     const bold = s => s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     const lines = esc(text).split('\n');
     const out = [];
@@ -2007,13 +2007,13 @@
 
   function anamnesePreviewText(text) {
     if (!text) return 'Nenhuma anamnese registrada.';
-    const stripped = text.replaceAll(/^#+\s*/gm, '').replaceAll(/\*\*/g, '').replaceAll(/\n/g, ' ').trim();
+    const stripped = text.replaceAll(/^#+\s*/gm, '').replaceAll('**', '').replaceAll('\n', ' ').trim();
     return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
   }
 
   function condutaPreviewText(text) {
     if (!text) return 'Nenhuma conduta registrada.';
-    const stripped = text.replaceAll(/^#+\s*/gm, '').replaceAll(/\*\*/g, '').replaceAll(/\n/g, ' ').trim();
+    const stripped = text.replaceAll(/^#+\s*/gm, '').replaceAll('**', '').replaceAll('\n', ' ').trim();
     return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
   }
 
@@ -2082,7 +2082,7 @@
 
   async function apiFetch(path, opts = {}) {
     const token = localStorage.getItem('physio_token');
-    opts.headers = { ...(opts.headers || {}), ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
+    opts.headers = { ...opts.headers, ...(token && { 'Authorization': `Bearer ${token}` }) };
     let res;
     try {
       res = await fetch(API_BASE + path, opts);
@@ -4426,10 +4426,10 @@
   function _gerarHtmlPdf(data) {
     const { tipo, paciente, idadeStr, hoje, sessoes, procedimentosPorSessao, sintese, fmtR, nomeFisio } = data;
 
-    function esc(s) { return String(s || '').replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;'); }
+    function esc(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); }
     function mdHtml(text) {
       if (!text) return '';
-      const escT = s => s.replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;');
+      const escT = s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
       const bold = s => s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       const lines = escT(text).split('\n');
       const out = []; let inList = false;
@@ -4514,7 +4514,7 @@
 
     return `<!DOCTYPE html>
 <html lang="pt-BR"><head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Relatório Clínico — ${esc(paciente.nome)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -5209,7 +5209,7 @@
       try {
         const token = localStorage.getItem('physio_token') || '';
         const b64 = token.split('.')[1] || '';
-        const payload = JSON.parse(atob(b64.replaceAll(/-/g, '+').replaceAll(/_/g, '/')));
+        const payload = JSON.parse(atob(b64.replaceAll('-', '+').replaceAll('_', '/')));
         if (payload.sub) {
           u = { nome: payload.nome || '', email: payload.sub, foto: payload.foto || null };
           localStorage.setItem('physio_user', JSON.stringify(u)); // mantém em sincronia
@@ -5521,7 +5521,7 @@
   }
 
   async function _loadAdminLog(container, ownerEmail, mes, offset, cotacao) {
-    cotacao = cotacao || 5.80;
+    cotacao = cotacao || 5.8;
     const limit = 50;
     const fmtBrl = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:4, maximumFractionDigits:4});
     if (offset === 0) container.innerHTML = '<div style="padding:var(--space-4) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);">Carregando...</div>';
@@ -5619,14 +5619,14 @@
       const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
       const j = await r.json();
       const v = Number.parseFloat(j?.USDBRL?.bid);
-      if (isFinite(v) && v >= 1.0 && v <= 20.0) {
+      if (isFinite(v) && v >= 1 && v <= 20) {
         _usdBrl = v;
         _usdBrlTs = agora;
       } else {
-        _usdBrl = _usdBrl ?? 5.70; // mantém cache anterior se existir
+        _usdBrl = _usdBrl ?? 5.7; // mantém cache anterior se existir
       }
     } catch {
-      _usdBrl = _usdBrl ?? 5.70; // fallback se API indisponível
+      _usdBrl = _usdBrl ?? 5.7; // fallback se API indisponível
     }
     return _usdBrl;
   }
@@ -5713,8 +5713,6 @@
 
     // (cardPrevisao removido — agora é o card preto de destaque acima do grid)
 
-    const [anoAtual, mesAtual] = mes_atual.mes.split('-').map(Number);
-    const mesesPT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
     body.innerHTML = `
       ${adminData ? `
@@ -6307,7 +6305,7 @@
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
         // Converte VAPID public key de base64url para Uint8Array
-        const raw = vapid_public_key.replaceAll(/-/g, '+').replaceAll(/_/g, '/');
+        const raw = vapid_public_key.replaceAll('-', '+').replaceAll('_', '/');
         const pad = raw.padEnd(raw.length + (4 - raw.length % 4) % 4, '=');
         const bin = atob(pad);
         const key = new Uint8Array(bin.length);
@@ -6917,7 +6915,6 @@
         </div>`;
     }
 
-    const totalPhysio = _agendaSessoes.length;
     const totalGcal   = _agendaGoogle.length;
 
     // CSS (injetado uma vez)
@@ -7923,7 +7920,7 @@
   function _gerarHtmlExtrato(params) {
     const { todosItens, periodoLabel, pacienteLabel, hoje, fmtR, fmtData,
             total_pacotes_valor, total_procedimentos_valor, total_recebido, nomeFisio } = params;
-    function esc(s) { return String(s || '').replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;'); }
+    function esc(s) { return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); }
 
     const linhas = todosItens.map((i, idx) => `
       <tr style="${idx % 2 === 1 ? 'background:#F9F8F6;' : ''}">
@@ -8467,7 +8464,7 @@
     const { pacotes, procedimentos = [], total_recebido,
             pacientes_disponiveis } = data;
 
-    const iss = 2.0;
+    const iss = 2;
     const valor = total_recebido || 0;
     const calcIss = (v) => Math.round(v * iss * 100) / 10000;
     const calcLiquido = (v) => Math.round((v - calcIss(v)) * 100) / 100;

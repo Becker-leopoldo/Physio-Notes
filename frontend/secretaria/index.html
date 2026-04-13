@@ -1015,14 +1015,14 @@ const secToken = () => localStorage.getItem('sec_token');
 const secUser  = () => JSON.parse(localStorage.getItem('sec_user') || '{}');
 
 function escHtml(s) {
-  return String(s).replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;').replaceAll(/"/g,'&quot;');
+  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 }
 function initials(name) {
   return (name || '').split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase() || '?';
 }
 
 async function apiFetch(path, opts = {}) {
-  opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${secToken()}` };
+  opts.headers = { ...opts.headers, Authorization: `Bearer ${secToken()}` };
   const res = await fetch(API_BASE + path, opts);
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('sec_token');
@@ -1040,7 +1040,7 @@ let _currentUser = {};
 try {
   const token = localStorage.getItem('sec_token') || '';
   const b64 = token.split('.')[1] || '';
-  const payload = JSON.parse(atob(b64.replaceAll(/-/g, '+').replaceAll(/_/g, '/')));
+  const payload = JSON.parse(atob(b64.replaceAll('-', '+').replaceAll('_', '/')));
   if (payload.sub) {
     _currentUser = { nome: payload.nome || '', email: payload.sub, foto: payload.foto || null,
                      fisioNome: payload.fisio_nome || '', fisioEmail: payload.fisio_email || '' };
@@ -2318,7 +2318,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.327';
+const APP_VERSION = 'Beta-0.328';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;
