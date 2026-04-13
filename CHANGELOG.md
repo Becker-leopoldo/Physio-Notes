@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.313 — 2026-04-13
+
+### UX
+- **Histórico de recargas redesenhado:** layout de lista com ícone `+` circular verde, badge de origem (PIX / Admin), data legível (ex: `13 abr 2026`), valor em verde com prefixo `+`, descrição inteligente ("Crédito administrativo" quando sem descrição)
+- **Indicador de créditos na sidebar:** dot no item "Créditos" ganha pulse animado — amarelo suave (2,4s) quando 20–49% restante, vermelho mais rápido (1,8s) quando < 20%; tooltip mostra percentual exato ao passar o mouse
+
+---
+
 ## Beta-0.312 — 2026-04-13
 
 ### Segurança / Qualidade (módulo PIX)

@@ -1,5 +1,693 @@
 [
   {
+    "key": "AZ2IGDZjmfwhnJEJPwag",
+    "rule": "python:S8415",
+    "severity": "MAJOR",
+    "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 952,
+    "hash": "8464a4c5f3f26125edaffc36422f6a11",
+    "textRange": {
+      "startLine": 952,
+      "endLine": 952,
+      "startOffset": 14,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Document this HTTPException with status code 401 in the \"responses\" parameter.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "documentation",
+      "fastapi",
+      "openapi"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "HIGH"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDZjmfwhnJEJPwah",
+    "rule": "python:S8415",
+    "severity": "MAJOR",
+    "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 1001,
+    "hash": "ae17bbc24f62fbcc69492343375ee3ec",
+    "textRange": {
+      "startLine": 1001,
+      "endLine": 1001,
+      "startOffset": 18,
+      "endOffset": 31
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Document this HTTPException with status code 409 in the \"responses\" parameter.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "documentation",
+      "fastapi",
+      "openapi"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "HIGH"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDZjmfwhnJEJPwai",
+    "rule": "python:S8415",
+    "severity": "MAJOR",
+    "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 1021,
+    "hash": "7984e33622f91365ccc8297713f9e32b",
+    "textRange": {
+      "startLine": 1021,
+      "endLine": 1021,
+      "startOffset": 14,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Document this HTTPException with status code 400 in the \"responses\" parameter.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "documentation",
+      "fastapi",
+      "openapi"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "HIGH"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDZjmfwhnJEJPwak",
+    "rule": "python:S7494",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 1066,
+    "hash": "fb4c04642345569726dbf39b93bea59f",
+    "textRange": {
+      "startLine": 1066,
+      "endLine": 1066,
+      "startOffset": 21,
+      "endOffset": 25
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Replace dict constructor call with a dictionary comprehension.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDZjmfwhnJEJPwaj",
+    "rule": "python:S8415",
+    "severity": "MAJOR",
+    "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 1072,
+    "hash": "6ad40082265439ebad3c925a0195c7dc",
+    "textRange": {
+      "startLine": 1072,
+      "endLine": 1072,
+      "startOffset": 18,
+      "endOffset": 31
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Document this HTTPException with status code 401 in the \"responses\" parameter.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "documentation",
+      "fastapi",
+      "openapi"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "HIGH"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDZjmfwhnJEJPwal",
+    "rule": "python:S8415",
+    "severity": "MAJOR",
+    "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 2002,
+    "hash": "4081452165cdfedb8f8b18b40a482a31",
+    "textRange": {
+      "startLine": 2002,
+      "endLine": 2002,
+      "startOffset": 14,
+      "endOffset": 27
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Document this HTTPException with status code 400 in the \"responses\" parameter.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "documentation",
+      "fastapi",
+      "openapi"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "HIGH"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwam",
+    "rule": "javascript:S6535",
+    "severity": "MAJOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 5447,
+    "hash": "7cbfd8c886d312c6a71ddfb04d7d19c8",
+    "textRange": {
+      "startLine": 5447,
+      "endLine": 5447,
+      "startOffset": 42,
+      "endOffset": 43
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Unnecessary escape character: \\/.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwan",
+    "rule": "javascript:S7781",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 5488,
+    "hash": "e996513b5ca5a06299073ce6c8d02a5e",
+    "textRange": {
+      "startLine": 5488,
+      "endLine": 5488,
+      "startOffset": 43,
+      "endOffset": 50
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+    "effort": "5min",
+    "debt": "5min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "es2021",
+      "readability"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      },
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwao",
+    "rule": "javascript:S7735",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 5952,
+    "hash": "77b2989716cd1a7be83b57370a863434",
+    "textRange": {
+      "startLine": 5952,
+      "endLine": 5952,
+      "startOffset": 151,
+      "endOffset": 188
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Unexpected negated condition.",
+    "effort": "2min",
+    "debt": "2min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "readability"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwap",
+    "rule": "javascript:S7735",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 5969,
+    "hash": "29a38eb4c21771750b43a16dfbb7b06d",
+    "textRange": {
+      "startLine": 5969,
+      "endLine": 5969,
+      "startOffset": 53,
+      "endOffset": 73
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Unexpected negated condition.",
+    "effort": "2min",
+    "debt": "2min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "readability"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CLEAR",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwaq",
+    "rule": "javascript:S7773",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 6359,
+    "hash": "932f9c0566629bb682353318a7504c27",
+    "textRange": {
+      "startLine": 6359,
+      "endLine": 6359,
+      "startOffset": 10,
+      "endOffset": 15
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `Number.isNaN` over `isNaN`.",
+    "effort": "2min",
+    "debt": "2min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "convention",
+      "es2015"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      },
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwar",
+    "rule": "javascript:S7773",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 6491,
+    "hash": "5ef84b15e073b02a77140e39c7890d53",
+    "textRange": {
+      "startLine": 6491,
+      "endLine": 6491,
+      "startOffset": 26,
+      "endOffset": 34
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `Number.parseInt` over `parseInt`.",
+    "effort": "2min",
+    "debt": "2min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "convention",
+      "es2015"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      },
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwas",
+    "rule": "javascript:S7773",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 6493,
+    "hash": "e9e8ef08aa0d64e3640b629e1788b59a",
+    "textRange": {
+      "startLine": 6493,
+      "endLine": 6493,
+      "startOffset": 24,
+      "endOffset": 32
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `Number.parseInt` over `parseInt`.",
+    "effort": "2min",
+    "debt": "2min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "convention",
+      "es2015"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      },
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwat",
+    "rule": "javascript:S7773",
+    "severity": "MINOR",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 6494,
+    "hash": "b315941e04d918d7318b6581d014a5d7",
+    "textRange": {
+      "startLine": 6494,
+      "endLine": 6494,
+      "startOffset": 24,
+      "endOffset": 32
+    },
+    "flows": [],
+    "status": "OPEN",
+    "message": "Prefer `Number.parseInt` over `parseInt`.",
+    "effort": "2min",
+    "debt": "2min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "convention",
+      "es2015"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "CONVENTIONAL",
+    "cleanCodeAttributeCategory": "CONSISTENT",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      },
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
+    "key": "AZ2IGDd3mfwhnJEJPwau",
+    "rule": "javascript:S2004",
+    "severity": "CRITICAL",
+    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+    "project": "Becker-leopoldo_Physio-Notes",
+    "line": 6541,
+    "hash": "978d0e84da94910cbb8189ce3b72a5aa",
+    "textRange": {
+      "startLine": 6541,
+      "endLine": 6541,
+      "startOffset": 26,
+      "endOffset": 28
+    },
+    "flows": [
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 6336,
+              "endLine": 6336,
+              "startOffset": 11,
+              "endOffset": 25
+            },
+            "msg": "Nesting +1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 6510,
+              "endLine": 6510,
+              "startOffset": 76,
+              "endOffset": 78
+            },
+            "msg": "Nesting +1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 6537,
+              "endLine": 6537,
+              "startOffset": 75,
+              "endOffset": 77
+            },
+            "msg": "Nesting +1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 6538,
+              "endLine": 6538,
+              "startOffset": 61,
+              "endOffset": 63
+            },
+            "msg": "Nesting +1"
+          }
+        ]
+      }
+    ],
+    "status": "OPEN",
+    "message": "Refactor this code to not nest functions more than 4 levels deep.",
+    "effort": "20min",
+    "debt": "20min",
+    "assignee": "Becker-leopoldo-yhzBW@github",
+    "author": "lbecker@upitservices.com.br",
+    "tags": [
+      "brain-overload"
+    ],
+    "creationDate": "2026-04-13T18:25:37+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
+    "type": "CODE_SMELL",
+    "organization": "becker-leopoldo",
+    "cleanCodeAttribute": "FOCUSED",
+    "cleanCodeAttributeCategory": "ADAPTABLE",
+    "impacts": [
+      {
+        "softwareQuality": "MAINTAINABILITY",
+        "severity": "HIGH"
+      }
+    ],
+    "issueStatus": "OPEN",
+    "projectName": "Physio-Notes",
+    "internalTags": []
+  },
+  {
     "key": "AZ2HXMYxdequgXJ-zceo",
     "rule": "css:S7924",
     "severity": "MAJOR",
@@ -306,11 +994,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 2171,
+    "line": 2385,
     "hash": "2672e20f6480357a91a0095140d3c761",
     "textRange": {
-      "startLine": 2171,
-      "endLine": 2171,
+      "startLine": 2385,
+      "endLine": 2385,
       "startOffset": 4,
       "endOffset": 13
     },
@@ -389,11 +1077,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 2212,
+    "line": 2426,
     "hash": "8ffd6fea8cfb0227962f62e0db717105",
     "textRange": {
-      "startLine": 2212,
-      "endLine": 2212,
+      "startLine": 2426,
+      "endLine": 2426,
       "startOffset": 10,
       "endOffset": 35
     },
@@ -403,8 +1091,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2218,
-              "endLine": 2218,
+              "startLine": 2432,
+              "endLine": 2432,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -417,8 +1105,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2220,
-              "endLine": 2220,
+              "startLine": 2434,
+              "endLine": 2434,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -431,8 +1119,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2228,
-              "endLine": 2228,
+              "startLine": 2442,
+              "endLine": 2442,
               "startOffset": 4,
               "endOffset": 10
             },
@@ -445,8 +1133,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2229,
-              "endLine": 2229,
+              "startLine": 2443,
+              "endLine": 2443,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -459,8 +1147,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2236,
-              "endLine": 2236,
+              "startLine": 2450,
+              "endLine": 2450,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -473,8 +1161,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2241,
-              "endLine": 2241,
+              "startLine": 2455,
+              "endLine": 2455,
               "startOffset": 12,
               "endOffset": 14
             },
@@ -487,8 +1175,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2246,
-              "endLine": 2246,
+              "startLine": 2460,
+              "endLine": 2460,
               "startOffset": 8,
               "endOffset": 14
             },
@@ -501,8 +1189,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2248,
-              "endLine": 2248,
+              "startLine": 2462,
+              "endLine": 2462,
               "startOffset": 8,
               "endOffset": 14
             },
@@ -515,8 +1203,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2253,
-              "endLine": 2253,
+              "startLine": 2467,
+              "endLine": 2467,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -529,8 +1217,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2255,
-              "endLine": 2255,
+              "startLine": 2469,
+              "endLine": 2469,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -543,8 +1231,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2268,
-              "endLine": 2268,
+              "startLine": 2482,
+              "endLine": 2482,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -664,11 +1352,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6217,
+    "line": 6715,
     "hash": "eece35960334d13342bb130c0d1cb2a0",
     "textRange": {
-      "startLine": 6217,
-      "endLine": 6217,
+      "startLine": 6715,
+      "endLine": 6715,
       "startOffset": 79,
       "endOffset": 90
     },
@@ -704,11 +1392,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6217,
+    "line": 6715,
     "hash": "eece35960334d13342bb130c0d1cb2a0",
     "textRange": {
-      "startLine": 6217,
-      "endLine": 6217,
+      "startLine": 6715,
+      "endLine": 6715,
       "startOffset": 79,
       "endOffset": 101
     },
@@ -744,11 +1432,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6442,
+    "line": 6940,
     "hash": "74c0ac011f19d469b22fb1d1236b7912",
     "textRange": {
-      "startLine": 6442,
-      "endLine": 6442,
+      "startLine": 6940,
+      "endLine": 6940,
       "startOffset": 49,
       "endOffset": 64
     },
@@ -784,11 +1472,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6913,
+    "line": 7411,
     "hash": "1fff1f0939c8eb7bb93d3b23717aa6d4",
     "textRange": {
-      "startLine": 6913,
-      "endLine": 6913,
+      "startLine": 7411,
+      "endLine": 7411,
       "startOffset": 42,
       "endOffset": 53
     },
@@ -824,11 +1512,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7677,
+    "line": 8175,
     "hash": "af624492113287a97a27423b4d6d72e0",
     "textRange": {
-      "startLine": 7677,
-      "endLine": 7677,
+      "startLine": 8175,
+      "endLine": 8175,
       "startOffset": 43,
       "endOffset": 74
     },
@@ -864,11 +1552,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7777,
+    "line": 8275,
     "hash": "ef01b2d78a1d3de3db263b53f87dd2d5",
     "textRange": {
-      "startLine": 7777,
-      "endLine": 7777,
+      "startLine": 8275,
+      "endLine": 8275,
       "startOffset": 20,
       "endOffset": 35
     },
@@ -904,11 +1592,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7778,
+    "line": 8276,
     "hash": "636c016dc486ddff21d4e8b90474eaed",
     "textRange": {
-      "startLine": 7778,
-      "endLine": 7778,
+      "startLine": 8276,
+      "endLine": 8276,
       "startOffset": 23,
       "endOffset": 38
     },
@@ -944,11 +1632,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7779,
+    "line": 8277,
     "hash": "2ad03caff71686513ffd6bb5cb6db7f6",
     "textRange": {
-      "startLine": 7779,
-      "endLine": 7779,
+      "startLine": 8277,
+      "endLine": 8277,
       "startOffset": 24,
       "endOffset": 39
     },
@@ -1029,11 +1717,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1684,
+    "line": 1888,
     "hash": "4b51ba3428d644a0858a2f4019ef87e0",
     "textRange": {
-      "startLine": 1684,
-      "endLine": 1684,
+      "startLine": 1888,
+      "endLine": 1888,
       "startOffset": 10,
       "endOffset": 27
     },
@@ -1043,8 +1731,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1689,
-              "endLine": 1689,
+              "startLine": 1893,
+              "endLine": 1893,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -1057,8 +1745,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1689,
-              "endLine": 1689,
+              "startLine": 1893,
+              "endLine": 1893,
               "startOffset": 40,
               "endOffset": 42
             },
@@ -1071,8 +1759,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1693,
-              "endLine": 1693,
+              "startLine": 1897,
+              "endLine": 1897,
               "startOffset": 4,
               "endOffset": 10
             },
@@ -1085,8 +1773,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1698,
-              "endLine": 1698,
+              "startLine": 1902,
+              "endLine": 1902,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -1099,8 +1787,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1703,
-              "endLine": 1703,
+              "startLine": 1907,
+              "endLine": 1907,
               "startOffset": 4,
               "endOffset": 10
             },
@@ -1113,8 +1801,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1709,
-              "endLine": 1709,
+              "startLine": 1913,
+              "endLine": 1913,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -1127,8 +1815,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1715,
-              "endLine": 1715,
+              "startLine": 1919,
+              "endLine": 1919,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -1141,8 +1829,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1718,
-              "endLine": 1718,
+              "startLine": 1922,
+              "endLine": 1922,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -1155,8 +1843,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1720,
-              "endLine": 1720,
+              "startLine": 1924,
+              "endLine": 1924,
               "startOffset": 56,
               "endOffset": 58
             },
@@ -1169,8 +1857,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1724,
-              "endLine": 1724,
+              "startLine": 1928,
+              "endLine": 1928,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -1183,8 +1871,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1731,
-              "endLine": 1731,
+              "startLine": 1935,
+              "endLine": 1935,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -1197,8 +1885,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1737,
-              "endLine": 1737,
+              "startLine": 1941,
+              "endLine": 1941,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -1728,11 +2416,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5407,
+    "line": 5533,
     "hash": "07da783b9660d2ac6c543e74f56f0a43",
     "textRange": {
-      "startLine": 5407,
-      "endLine": 5407,
+      "startLine": 5533,
+      "endLine": 5533,
       "startOffset": 16,
       "endOffset": 26
     },
@@ -1773,11 +2461,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5408,
+    "line": 5534,
     "hash": "8ebf7542295b170a2c1db07f41cf8549",
     "textRange": {
-      "startLine": 5408,
-      "endLine": 5408,
+      "startLine": 5534,
+      "endLine": 5534,
       "startOffset": 10,
       "endOffset": 18
     },
@@ -1818,11 +2506,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5408,
+    "line": 5534,
     "hash": "8ebf7542295b170a2c1db07f41cf8549",
     "textRange": {
-      "startLine": 5408,
-      "endLine": 5408,
+      "startLine": 5534,
+      "endLine": 5534,
       "startOffset": 31,
       "endOffset": 33
     },
@@ -1859,11 +2547,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5408,
+    "line": 5534,
     "hash": "8ebf7542295b170a2c1db07f41cf8549",
     "textRange": {
-      "startLine": 5408,
-      "endLine": 5408,
+      "startLine": 5534,
+      "endLine": 5534,
       "startOffset": 44,
       "endOffset": 46
     },
@@ -1900,11 +2588,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5412,
+    "line": 5538,
     "hash": "a5a4954a84e433bf592f0ba833e8aa3c",
     "textRange": {
-      "startLine": 5412,
-      "endLine": 5412,
+      "startLine": 5538,
+      "endLine": 5538,
       "startOffset": 32,
       "endOffset": 33
     },
@@ -1941,11 +2629,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5415,
+    "line": 5541,
     "hash": "330f8d51f4425e307441cafa0ba79089",
     "textRange": {
-      "startLine": 5415,
-      "endLine": 5415,
+      "startLine": 5541,
+      "endLine": 5541,
       "startOffset": 30,
       "endOffset": 31
     },
@@ -1982,11 +2670,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5445,
+    "line": 5571,
     "hash": "339507f723924327f2bef9a1349c5458",
     "textRange": {
-      "startLine": 5445,
-      "endLine": 5445,
+      "startLine": 5571,
+      "endLine": 5571,
       "startOffset": 11,
       "endOffset": 24
     },
@@ -1996,8 +2684,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5481,
-              "endLine": 5481,
+              "startLine": 5607,
+              "endLine": 5607,
               "startOffset": 49,
               "endOffset": 51
             },
@@ -2010,8 +2698,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5486,
-              "endLine": 5486,
+              "startLine": 5612,
+              "endLine": 5612,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -2024,8 +2712,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5500,
-              "endLine": 5500,
+              "startLine": 5626,
+              "endLine": 5626,
               "startOffset": 6,
               "endOffset": 10
             },
@@ -2038,8 +2726,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5505,
-              "endLine": 5505,
+              "startLine": 5631,
+              "endLine": 5631,
               "startOffset": 139,
               "endOffset": 140
             },
@@ -2052,8 +2740,22 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5517,
-              "endLine": 5517,
+              "startLine": 5640,
+              "endLine": 5640,
+              "startOffset": 18,
+              "endOffset": 19
+            },
+            "msg": "+1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 5653,
+              "endLine": 5653,
               "startOffset": 23,
               "endOffset": 24
             },
@@ -2066,8 +2768,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5526,
-              "endLine": 5526,
+              "startLine": 5662,
+              "endLine": 5662,
               "startOffset": 173,
               "endOffset": 174
             },
@@ -2080,8 +2782,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5531,
-              "endLine": 5531,
+              "startLine": 5667,
+              "endLine": 5667,
               "startOffset": 147,
               "endOffset": 148
             },
@@ -2094,8 +2796,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5551,
-              "endLine": 5551,
+              "startLine": 5687,
+              "endLine": 5687,
               "startOffset": 37,
               "endOffset": 38
             },
@@ -2108,8 +2810,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5560,
-              "endLine": 5560,
+              "startLine": 5696,
+              "endLine": 5696,
               "startOffset": 29,
               "endOffset": 30
             },
@@ -2122,8 +2824,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5601,
-              "endLine": 5601,
+              "startLine": 5737,
+              "endLine": 5737,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -2136,8 +2838,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5601,
-              "endLine": 5601,
+              "startLine": 5737,
+              "endLine": 5737,
               "startOffset": 25,
               "endOffset": 27
             },
@@ -2150,8 +2852,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5602,
-              "endLine": 5602,
+              "startLine": 5738,
+              "endLine": 5738,
               "startOffset": 47,
               "endOffset": 48
             },
@@ -2164,8 +2866,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5603,
-              "endLine": 5603,
+              "startLine": 5739,
+              "endLine": 5739,
               "startOffset": 47,
               "endOffset": 48
             },
@@ -2178,8 +2880,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5621,
-              "endLine": 5621,
+              "startLine": 5757,
+              "endLine": 5757,
               "startOffset": 147,
               "endOffset": 148
             },
@@ -2192,8 +2894,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5637,
-              "endLine": 5637,
+              "startLine": 5773,
+              "endLine": 5773,
               "startOffset": 161,
               "endOffset": 162
             },
@@ -2206,8 +2908,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5645,
-              "endLine": 5645,
+              "startLine": 5781,
+              "endLine": 5781,
               "startOffset": 37,
               "endOffset": 38
             },
@@ -2220,8 +2922,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5651,
-              "endLine": 5651,
+              "startLine": 5931,
+              "endLine": 5931,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -2234,10 +2936,38 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5651,
-              "endLine": 5651,
-              "startOffset": 18,
-              "endOffset": 20
+              "startLine": 5952,
+              "endLine": 5952,
+              "startOffset": 188,
+              "endOffset": 189
+            },
+            "msg": "+2 (incl. 1 for nesting)"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 5958,
+              "endLine": 5958,
+              "startOffset": 14,
+              "endOffset": 15
+            },
+            "msg": "+2 (incl. 1 for nesting)"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
+            "textRange": {
+              "startLine": 6055,
+              "endLine": 6055,
+              "startOffset": 4,
+              "endOffset": 6
             },
             "msg": "+1"
           }
@@ -2245,16 +2975,16 @@
       }
     ],
     "status": "OPEN",
-    "message": "Refactor this function to reduce its Cognitive Complexity from 24 to the 15 allowed.",
-    "effort": "14min",
-    "debt": "14min",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 29 to the 15 allowed.",
+    "effort": "19min",
+    "debt": "19min",
     "assignee": "Becker-leopoldo-yhzBW@github",
     "author": "lbecker@upitservices.com.br",
     "tags": [
       "brain-overload"
     ],
     "creationDate": "2026-04-13T12:45:59+0000",
-    "updateDate": "2026-04-13T12:45:59+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
     "type": "CODE_SMELL",
     "organization": "becker-leopoldo",
     "cleanCodeAttribute": "FOCUSED",
@@ -2275,11 +3005,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5604,
+    "line": 5740,
     "hash": "2fe5946378f0fad389aefec5df6ae87a",
     "textRange": {
-      "startLine": 5604,
-      "endLine": 5604,
+      "startLine": 5740,
+      "endLine": 5740,
       "startOffset": 26,
       "endOffset": 42
     },
@@ -2289,8 +3019,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5601,
-              "endLine": 5601,
+              "startLine": 5737,
+              "endLine": 5737,
               "startOffset": 8,
               "endOffset": 24
             },
@@ -2332,11 +3062,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5621,
+    "line": 5757,
     "hash": "206b4a978d89e42f0d5f416995b554c8",
     "textRange": {
-      "startLine": 5621,
-      "endLine": 5621,
+      "startLine": 5757,
+      "endLine": 5757,
       "startOffset": 120,
       "endOffset": 146
     },
@@ -2372,11 +3102,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5637,
+    "line": 5773,
     "hash": "74903c20c8750d43660033f0141d18e4",
     "textRange": {
-      "startLine": 5637,
-      "endLine": 5637,
+      "startLine": 5773,
+      "endLine": 5773,
       "startOffset": 138,
       "endOffset": 160
     },
@@ -2412,11 +3142,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5907,
+    "line": 6299,
     "hash": "61fa57c8138e9e27bc829c0dd9868758",
     "textRange": {
-      "startLine": 5907,
-      "endLine": 5910,
+      "startLine": 6299,
+      "endLine": 6302,
       "startOffset": 25,
       "endOffset": 5
     },
@@ -2426,8 +3156,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 5904,
-              "endLine": 5907,
+              "startLine": 6296,
+              "endLine": 6299,
               "startOffset": 18,
               "endOffset": 5
             },
@@ -2437,7 +3167,7 @@
       }
     ],
     "status": "OPEN",
-    "message": "This branch's code block is the same as the block for the branch on line 5904.",
+    "message": "This branch's code block is the same as the block for the branch on line 6296.",
     "effort": "10min",
     "debt": "10min",
     "assignee": "Becker-leopoldo-yhzBW@github",
@@ -2447,7 +3177,7 @@
       "suspicious"
     ],
     "creationDate": "2026-04-13T12:45:59+0000",
-    "updateDate": "2026-04-13T15:01:05+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
     "type": "CODE_SMELL",
     "organization": "becker-leopoldo",
     "cleanCodeAttribute": "DISTINCT",
@@ -2463,61 +3193,16 @@
     "internalTags": []
   },
   {
-    "key": "AZ2G4QQjvJDY5d0wKnKR",
-    "rule": "javascript:S7773",
-    "severity": "MINOR",
-    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
-    "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6068,
-    "hash": "9318a4cbdf4c6ac02dce1306907fb4bc",
-    "textRange": {
-      "startLine": 6068,
-      "endLine": 6068,
-      "startOffset": 24,
-      "endOffset": 34
-    },
-    "flows": [],
-    "status": "OPEN",
-    "message": "Prefer `Number.parseFloat` over `parseFloat`.",
-    "effort": "2min",
-    "debt": "2min",
-    "assignee": "Becker-leopoldo-yhzBW@github",
-    "author": "lbecker@upitservices.com.br",
-    "tags": [
-      "convention",
-      "es2015"
-    ],
-    "creationDate": "2026-04-13T12:45:59+0000",
-    "updateDate": "2026-04-13T12:45:59+0000",
-    "type": "CODE_SMELL",
-    "organization": "becker-leopoldo",
-    "cleanCodeAttribute": "CONVENTIONAL",
-    "cleanCodeAttributeCategory": "CONSISTENT",
-    "impacts": [
-      {
-        "softwareQuality": "RELIABILITY",
-        "severity": "MEDIUM"
-      },
-      {
-        "softwareQuality": "MAINTAINABILITY",
-        "severity": "LOW"
-      }
-    ],
-    "issueStatus": "OPEN",
-    "projectName": "Physio-Notes",
-    "internalTags": []
-  },
-  {
     "key": "AZ2G4QQjvJDY5d0wKnKS",
     "rule": "javascript:S7785",
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6105,
+    "line": 6603,
     "hash": "e1cda6aed16903e7a2b971db3e3f00b8",
     "textRange": {
-      "startLine": 6105,
-      "endLine": 6105,
+      "startLine": 6603,
+      "endLine": 6603,
       "startOffset": 2,
       "endOffset": 27
     },
@@ -2881,11 +3566,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6164,
+    "line": 6662,
     "hash": "52e3fbe9fa0111c74be07cff9e362940",
     "textRange": {
-      "startLine": 6164,
-      "endLine": 6164,
+      "startLine": 6662,
+      "endLine": 6662,
       "startOffset": 8,
       "endOffset": 29
     },
@@ -2921,11 +3606,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 32,
+    "line": 34,
     "hash": "0069e6a1e47916f76fe57c99812de816",
     "textRange": {
-      "startLine": 32,
-      "endLine": 32,
+      "startLine": 34,
+      "endLine": 34,
       "startOffset": 24,
       "endOffset": 41
     },
@@ -2935,8 +3620,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1629,
-              "endLine": 1629,
+              "startLine": 1833,
+              "endLine": 1833,
               "startOffset": 52,
               "endOffset": 69
             },
@@ -2949,8 +3634,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1638,
-              "endLine": 1638,
+              "startLine": 1842,
+              "endLine": 1842,
               "startOffset": 52,
               "endOffset": 69
             },
@@ -2963,8 +3648,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1657,
-              "endLine": 1657,
+              "startLine": 1861,
+              "endLine": 1861,
               "startOffset": 52,
               "endOffset": 69
             },
@@ -2977,8 +3662,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1664,
-              "endLine": 1664,
+              "startLine": 1868,
+              "endLine": 1868,
               "startOffset": 52,
               "endOffset": 69
             },
@@ -2991,8 +3676,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2001,
-              "endLine": 2001,
+              "startLine": 2215,
+              "endLine": 2215,
               "startOffset": 52,
               "endOffset": 69
             },
@@ -3032,11 +3717,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 33,
+    "line": 35,
     "hash": "2b48fb4bc13ab3ce8bdb428c13f2dc3e",
     "textRange": {
-      "startLine": 33,
-      "endLine": 33,
+      "startLine": 35,
+      "endLine": 35,
       "startOffset": 25,
       "endOffset": 50
     },
@@ -3046,8 +3731,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 307,
-              "endLine": 307,
+              "startLine": 309,
+              "endLine": 309,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3060,8 +3745,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 327,
-              "endLine": 327,
+              "startLine": 329,
+              "endLine": 329,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3074,8 +3759,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 338,
-              "endLine": 338,
+              "startLine": 340,
+              "endLine": 340,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3088,8 +3773,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 368,
-              "endLine": 368,
+              "startLine": 371,
+              "endLine": 371,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3102,8 +3787,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 402,
-              "endLine": 402,
+              "startLine": 405,
+              "endLine": 405,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3116,8 +3801,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 417,
-              "endLine": 417,
+              "startLine": 420,
+              "endLine": 420,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3130,8 +3815,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 431,
-              "endLine": 431,
+              "startLine": 434,
+              "endLine": 434,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3144,8 +3829,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 453,
-              "endLine": 453,
+              "startLine": 456,
+              "endLine": 456,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3158,8 +3843,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 487,
-              "endLine": 487,
+              "startLine": 490,
+              "endLine": 490,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3172,8 +3857,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 500,
-              "endLine": 500,
+              "startLine": 503,
+              "endLine": 503,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3186,8 +3871,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 518,
-              "endLine": 518,
+              "startLine": 522,
+              "endLine": 522,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3200,8 +3885,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 651,
-              "endLine": 651,
+              "startLine": 656,
+              "endLine": 656,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3214,8 +3899,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 877,
-              "endLine": 877,
+              "startLine": 884,
+              "endLine": 884,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3228,8 +3913,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1356,
-              "endLine": 1356,
+              "startLine": 1560,
+              "endLine": 1560,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3242,8 +3927,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1373,
-              "endLine": 1373,
+              "startLine": 1577,
+              "endLine": 1577,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3256,8 +3941,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1397,
-              "endLine": 1397,
+              "startLine": 1601,
+              "endLine": 1601,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3270,8 +3955,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1434,
-              "endLine": 1434,
+              "startLine": 1638,
+              "endLine": 1638,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3284,8 +3969,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1476,
-              "endLine": 1476,
+              "startLine": 1680,
+              "endLine": 1680,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3298,8 +3983,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1490,
-              "endLine": 1490,
+              "startLine": 1694,
+              "endLine": 1694,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3312,8 +3997,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1976,
-              "endLine": 1976,
+              "startLine": 2190,
+              "endLine": 2190,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3326,8 +4011,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2351,
-              "endLine": 2351,
+              "startLine": 2565,
+              "endLine": 2565,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3340,8 +4025,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2390,
-              "endLine": 2390,
+              "startLine": 2604,
+              "endLine": 2604,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3354,8 +4039,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 2401,
-              "endLine": 2401,
+              "startLine": 2615,
+              "endLine": 2615,
               "startOffset": 52,
               "endOffset": 77
             },
@@ -3395,11 +4080,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 259,
+    "line": 261,
     "hash": "ac5acc6550dc39fb2f2fb3bf12472515",
     "textRange": {
-      "startLine": 259,
-      "endLine": 259,
+      "startLine": 261,
+      "endLine": 261,
       "startOffset": 10,
       "endOffset": 23
     },
@@ -3437,11 +4122,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 265,
+    "line": 267,
     "hash": "5bfd8575d8b62983d9e30a1dc90bed6a",
     "textRange": {
-      "startLine": 265,
-      "endLine": 265,
+      "startLine": 267,
+      "endLine": 267,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -3688,11 +4373,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 557,
+    "line": 559,
     "hash": "60de8063ac745eea2552dcb08d77b467",
     "textRange": {
-      "startLine": 557,
-      "endLine": 557,
+      "startLine": 559,
+      "endLine": 559,
       "startOffset": 4,
       "endOffset": 19
     },
@@ -3702,22 +4387,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 567,
-              "endLine": 567,
-              "startOffset": 8,
-              "endOffset": 10
-            },
-            "msg": "+1"
-          }
-        ]
-      },
-      {
-        "locations": [
-          {
-            "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
-            "textRange": {
-              "startLine": 570,
-              "endLine": 570,
+              "startLine": 569,
+              "endLine": 569,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -3732,22 +4403,8 @@
             "textRange": {
               "startLine": 572,
               "endLine": 572,
-              "startOffset": 12,
-              "endOffset": 14
-            },
-            "msg": "+2 (incl 1 for nesting)"
-          }
-        ]
-      },
-      {
-        "locations": [
-          {
-            "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
-            "textRange": {
-              "startLine": 572,
-              "endLine": 572,
-              "startOffset": 47,
-              "endOffset": 50
+              "startOffset": 8,
+              "endOffset": 10
             },
             "msg": "+1"
           }
@@ -3760,6 +4417,34 @@
             "textRange": {
               "startLine": 574,
               "endLine": 574,
+              "startOffset": 12,
+              "endOffset": 14
+            },
+            "msg": "+2 (incl 1 for nesting)"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
+            "textRange": {
+              "startLine": 574,
+              "endLine": 574,
+              "startOffset": 47,
+              "endOffset": 50
+            },
+            "msg": "+1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
+            "textRange": {
+              "startLine": 576,
+              "endLine": 576,
               "startOffset": 16,
               "endOffset": 18
             },
@@ -3772,8 +4457,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 578,
-              "endLine": 578,
+              "startLine": 580,
+              "endLine": 580,
               "startOffset": 59,
               "endOffset": 61
             },
@@ -3786,8 +4471,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 579,
-              "endLine": 579,
+              "startLine": 581,
+              "endLine": 581,
               "startOffset": 16,
               "endOffset": 18
             },
@@ -3800,8 +4485,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 579,
-              "endLine": 579,
+              "startLine": 581,
+              "endLine": 581,
               "startOffset": 25,
               "endOffset": 28
             },
@@ -3814,8 +4499,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 580,
-              "endLine": 580,
+              "startLine": 582,
+              "endLine": 582,
               "startOffset": 49,
               "endOffset": 51
             },
@@ -3828,8 +4513,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 587,
-              "endLine": 587,
+              "startLine": 589,
+              "endLine": 589,
               "startOffset": 43,
               "endOffset": 45
             },
@@ -3869,11 +4554,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 602,
+    "line": 604,
     "hash": "70f977ad7c0161e06d12c84922aab345",
     "textRange": {
-      "startLine": 602,
-      "endLine": 602,
+      "startLine": 604,
+      "endLine": 604,
       "startOffset": 4,
       "endOffset": 34
     },
@@ -3909,11 +4594,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1457,
+    "line": 1575,
     "hash": "42f5e1af5211e8a9a99ac18af3ea8bf6",
     "textRange": {
-      "startLine": 1457,
-      "endLine": 1457,
+      "startLine": 1575,
+      "endLine": 1575,
       "startOffset": 4,
       "endOffset": 28
     },
@@ -3923,8 +4608,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1459,
-              "endLine": 1459,
+              "startLine": 1577,
+              "endLine": 1577,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -3937,8 +4622,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1466,
-              "endLine": 1466,
+              "startLine": 1584,
+              "endLine": 1584,
               "startOffset": 8,
               "endOffset": 11
             },
@@ -3951,8 +4636,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1472,
-              "endLine": 1472,
+              "startLine": 1590,
+              "endLine": 1590,
               "startOffset": 47,
               "endOffset": 49
             },
@@ -3965,8 +4650,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1472,
-              "endLine": 1472,
+              "startLine": 1590,
+              "endLine": 1590,
               "startOffset": 58,
               "endOffset": 61
             },
@@ -3979,8 +4664,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1475,
-              "endLine": 1475,
+              "startLine": 1593,
+              "endLine": 1593,
               "startOffset": 49,
               "endOffset": 51
             },
@@ -3993,8 +4678,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1476,
-              "endLine": 1476,
+              "startLine": 1594,
+              "endLine": 1594,
               "startOffset": 45,
               "endOffset": 47
             },
@@ -4007,8 +4692,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1478,
-              "endLine": 1478,
+              "startLine": 1596,
+              "endLine": 1596,
               "startOffset": 47,
               "endOffset": 49
             },
@@ -4021,8 +4706,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1478,
-              "endLine": 1478,
+              "startLine": 1596,
+              "endLine": 1596,
               "startOffset": 58,
               "endOffset": 61
             },
@@ -4035,8 +4720,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1480,
-              "endLine": 1480,
+              "startLine": 1598,
+              "endLine": 1598,
               "startOffset": 12,
               "endOffset": 14
             },
@@ -4049,8 +4734,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1480,
-              "endLine": 1480,
+              "startLine": 1598,
+              "endLine": 1598,
               "startOffset": 58,
               "endOffset": 60
             },
@@ -4063,8 +4748,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/database.py",
             "textRange": {
-              "startLine": 1486,
-              "endLine": 1486,
+              "startLine": 1604,
+              "endLine": 1604,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -4104,11 +4789,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 257,
+    "line": 259,
     "hash": "1a1dc91c907325c69271ddf0c944bc72",
     "textRange": {
-      "startLine": 257,
-      "endLine": 257,
+      "startLine": 259,
+      "endLine": 259,
       "startOffset": 12,
       "endOffset": 16
     },
@@ -4144,43 +4829,15 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 782,
+    "line": 788,
     "hash": "db2e7ee2f3683976bcc366db9ca414b1",
     "textRange": {
-      "startLine": 782,
-      "endLine": 782,
+      "startLine": 788,
+      "endLine": 788,
       "startOffset": 10,
       "endOffset": 25
     },
     "flows": [
-      {
-        "locations": [
-          {
-            "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
-            "textRange": {
-              "startLine": 783,
-              "endLine": 783,
-              "startOffset": 4,
-              "endOffset": 6
-            },
-            "msg": "+1"
-          }
-        ]
-      },
-      {
-        "locations": [
-          {
-            "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
-            "textRange": {
-              "startLine": 786,
-              "endLine": 786,
-              "startOffset": 4,
-              "endOffset": 6
-            },
-            "msg": "+1"
-          }
-        ]
-      },
       {
         "locations": [
           {
@@ -4200,8 +4857,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 793,
-              "endLine": 793,
+              "startLine": 792,
+              "endLine": 792,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4214,8 +4871,50 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 804,
-              "endLine": 804,
+              "startLine": 795,
+              "endLine": 795,
+              "startOffset": 4,
+              "endOffset": 6
+            },
+            "msg": "+1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+            "textRange": {
+              "startLine": 799,
+              "endLine": 799,
+              "startOffset": 4,
+              "endOffset": 6
+            },
+            "msg": "+1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+            "textRange": {
+              "startLine": 807,
+              "endLine": 807,
+              "startOffset": 55,
+              "endOffset": 57
+            },
+            "msg": "+1"
+          }
+        ]
+      },
+      {
+        "locations": [
+          {
+            "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
+            "textRange": {
+              "startLine": 811,
+              "endLine": 811,
               "startOffset": 4,
               "endOffset": 10
             },
@@ -4228,8 +4927,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 813,
-              "endLine": 813,
+              "startLine": 820,
+              "endLine": 820,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4242,8 +4941,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 816,
-              "endLine": 816,
+              "startLine": 823,
+              "endLine": 823,
               "startOffset": 12,
               "endOffset": 14
             },
@@ -4256,8 +4955,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 818,
-              "endLine": 818,
+              "startLine": 825,
+              "endLine": 825,
               "startOffset": 8,
               "endOffset": 14
             },
@@ -4270,8 +4969,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 823,
-              "endLine": 823,
+              "startLine": 830,
+              "endLine": 830,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4284,8 +4983,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 827,
-              "endLine": 827,
+              "startLine": 834,
+              "endLine": 834,
               "startOffset": 42,
               "endOffset": 44
             },
@@ -4298,8 +4997,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 830,
-              "endLine": 830,
+              "startLine": 837,
+              "endLine": 837,
               "startOffset": 8,
               "endOffset": 11
             },
@@ -4312,8 +5011,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 835,
-              "endLine": 835,
+              "startLine": 842,
+              "endLine": 842,
               "startOffset": 4,
               "endOffset": 10
             },
@@ -4326,8 +5025,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 841,
-              "endLine": 841,
+              "startLine": 848,
+              "endLine": 848,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -4340,8 +5039,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 841,
-              "endLine": 841,
+              "startLine": 848,
+              "endLine": 848,
               "startOffset": 52,
               "endOffset": 55
             },
@@ -4354,8 +5053,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 846,
-              "endLine": 846,
+              "startLine": 853,
+              "endLine": 853,
               "startOffset": 4,
               "endOffset": 10
             },
@@ -4368,8 +5067,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 852,
-              "endLine": 852,
+              "startLine": 859,
+              "endLine": 859,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4382,8 +5081,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 852,
-              "endLine": 852,
+              "startLine": 859,
+              "endLine": 859,
               "startOffset": 13,
               "endOffset": 16
             },
@@ -4396,8 +5095,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 854,
-              "endLine": 854,
+              "startLine": 861,
+              "endLine": 861,
               "startOffset": 91,
               "endOffset": 93
             },
@@ -4410,8 +5109,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 858,
-              "endLine": 858,
+              "startLine": 865,
+              "endLine": 865,
               "startOffset": 34,
               "endOffset": 36
             },
@@ -4424,8 +5123,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 859,
-              "endLine": 859,
+              "startLine": 866,
+              "endLine": 866,
               "startOffset": 36,
               "endOffset": 38
             },
@@ -4438,8 +5137,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 860,
-              "endLine": 860,
+              "startLine": 867,
+              "endLine": 867,
               "startOffset": 31,
               "endOffset": 33
             },
@@ -4449,16 +5148,16 @@
       }
     ],
     "status": "OPEN",
-    "message": "Refactor this function to reduce its Cognitive Complexity from 25 to the 15 allowed.",
-    "effort": "15min",
-    "debt": "15min",
+    "message": "Refactor this function to reduce its Cognitive Complexity from 26 to the 15 allowed.",
+    "effort": "16min",
+    "debt": "16min",
     "assignee": "Becker-leopoldo-yhzBW@github",
     "author": "lbecker@upitservices.com.br",
     "tags": [
       "brain-overload"
     ],
     "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-12T21:42:38+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
     "type": "CODE_SMELL",
     "organization": "becker-leopoldo",
     "cleanCodeAttribute": "FOCUSED",
@@ -4479,11 +5178,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1021,
+    "line": 1225,
     "hash": "c9af635087bfab6ff5881f46ef8a2daf",
     "textRange": {
-      "startLine": 1021,
-      "endLine": 1021,
+      "startLine": 1225,
+      "endLine": 1225,
       "startOffset": 4,
       "endOffset": 29
     },
@@ -4493,8 +5192,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1043,
-              "endLine": 1043,
+              "startLine": 1247,
+              "endLine": 1247,
               "startOffset": 65,
               "endOffset": 68
             },
@@ -4507,8 +5206,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1044,
-              "endLine": 1044,
+              "startLine": 1248,
+              "endLine": 1248,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4521,8 +5220,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1050,
-              "endLine": 1050,
+              "startLine": 1254,
+              "endLine": 1254,
               "startOffset": 4,
               "endOffset": 7
             },
@@ -4535,8 +5234,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1052,
-              "endLine": 1052,
+              "startLine": 1256,
+              "endLine": 1256,
               "startOffset": 67,
               "endOffset": 70
             },
@@ -4549,8 +5248,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1053,
-              "endLine": 1053,
+              "startLine": 1257,
+              "endLine": 1257,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -4563,8 +5262,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1056,
-              "endLine": 1056,
+              "startLine": 1260,
+              "endLine": 1260,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -4577,8 +5276,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1058,
-              "endLine": 1058,
+              "startLine": 1262,
+              "endLine": 1262,
               "startOffset": 8,
               "endOffset": 12
             },
@@ -4591,8 +5290,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1058,
-              "endLine": 1058,
+              "startLine": 1262,
+              "endLine": 1262,
               "startOffset": 27,
               "endOffset": 29
             },
@@ -4605,8 +5304,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1060,
-              "endLine": 1060,
+              "startLine": 1264,
+              "endLine": 1264,
               "startOffset": 8,
               "endOffset": 12
             },
@@ -4619,8 +5318,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1064,
-              "endLine": 1064,
+              "startLine": 1268,
+              "endLine": 1268,
               "startOffset": 83,
               "endOffset": 85
             },
@@ -4633,8 +5332,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1066,
-              "endLine": 1066,
+              "startLine": 1270,
+              "endLine": 1270,
               "startOffset": 12,
               "endOffset": 14
             },
@@ -4647,8 +5346,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1066,
-              "endLine": 1066,
+              "startLine": 1270,
+              "endLine": 1270,
               "startOffset": 27,
               "endOffset": 30
             },
@@ -4661,8 +5360,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1068,
-              "endLine": 1068,
+              "startLine": 1272,
+              "endLine": 1272,
               "startOffset": 12,
               "endOffset": 16
             },
@@ -4675,8 +5374,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1070,
-              "endLine": 1070,
+              "startLine": 1274,
+              "endLine": 1274,
               "startOffset": 12,
               "endOffset": 16
             },
@@ -4689,8 +5388,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1070,
-              "endLine": 1070,
+              "startLine": 1274,
+              "endLine": 1274,
               "startOffset": 37,
               "endOffset": 40
             },
@@ -4703,8 +5402,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1072,
-              "endLine": 1072,
+              "startLine": 1276,
+              "endLine": 1276,
               "startOffset": 12,
               "endOffset": 16
             },
@@ -4717,8 +5416,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1074,
-              "endLine": 1074,
+              "startLine": 1278,
+              "endLine": 1278,
               "startOffset": 12,
               "endOffset": 16
             },
@@ -4731,8 +5430,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1076,
-              "endLine": 1076,
+              "startLine": 1280,
+              "endLine": 1280,
               "startOffset": 12,
               "endOffset": 16
             },
@@ -4745,8 +5444,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1079,
-              "endLine": 1079,
+              "startLine": 1283,
+              "endLine": 1283,
               "startOffset": 8,
               "endOffset": 10
             },
@@ -4759,8 +5458,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1082,
-              "endLine": 1082,
+              "startLine": 1286,
+              "endLine": 1286,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4773,8 +5472,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1090,
-              "endLine": 1090,
+              "startLine": 1294,
+              "endLine": 1294,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4787,8 +5486,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1090,
-              "endLine": 1090,
+              "startLine": 1294,
+              "endLine": 1294,
               "startOffset": 17,
               "endOffset": 20
             },
@@ -4801,8 +5500,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1093,
-              "endLine": 1093,
+              "startLine": 1297,
+              "endLine": 1297,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4815,8 +5514,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1093,
-              "endLine": 1093,
+              "startLine": 1297,
+              "endLine": 1297,
               "startOffset": 17,
               "endOffset": 20
             },
@@ -4856,11 +5555,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1187,
+    "line": 1391,
     "hash": "4f8a76ca0bbbfc28725e955407452440",
     "textRange": {
-      "startLine": 1187,
-      "endLine": 1187,
+      "startLine": 1391,
+      "endLine": 1391,
       "startOffset": 10,
       "endOffset": 23
     },
@@ -4870,8 +5569,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1192,
-              "endLine": 1192,
+              "startLine": 1396,
+              "endLine": 1396,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4884,8 +5583,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1200,
-              "endLine": 1200,
+              "startLine": 1404,
+              "endLine": 1404,
               "startOffset": 58,
               "endOffset": 60
             },
@@ -4898,8 +5597,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1206,
-              "endLine": 1206,
+              "startLine": 1410,
+              "endLine": 1410,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -4912,8 +5611,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1217,
-              "endLine": 1217,
+              "startLine": 1421,
+              "endLine": 1421,
               "startOffset": 16,
               "endOffset": 19
             },
@@ -4926,8 +5625,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1230,
-              "endLine": 1230,
+              "startLine": 1434,
+              "endLine": 1434,
               "startOffset": 20,
               "endOffset": 22
             },
@@ -4940,8 +5639,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1231,
-              "endLine": 1231,
+              "startLine": 1435,
+              "endLine": 1435,
               "startOffset": 24,
               "endOffset": 27
             },
@@ -4954,8 +5653,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1233,
-              "endLine": 1233,
+              "startLine": 1437,
+              "endLine": 1437,
               "startOffset": 28,
               "endOffset": 30
             },
@@ -4968,8 +5667,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1233,
-              "endLine": 1233,
+              "startLine": 1437,
+              "endLine": 1437,
               "startOffset": 35,
               "endOffset": 38
             },
@@ -4982,8 +5681,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1239,
-              "endLine": 1239,
+              "startLine": 1443,
+              "endLine": 1443,
               "startOffset": 12,
               "endOffset": 15
             },
@@ -4996,8 +5695,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1240,
-              "endLine": 1240,
+              "startLine": 1444,
+              "endLine": 1444,
               "startOffset": 43,
               "endOffset": 45
             },
@@ -5010,8 +5709,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1241,
-              "endLine": 1241,
+              "startLine": 1445,
+              "endLine": 1445,
               "startOffset": 16,
               "endOffset": 18
             },
@@ -5024,8 +5723,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1245,
-              "endLine": 1245,
+              "startLine": 1449,
+              "endLine": 1449,
               "startOffset": 49,
               "endOffset": 51
             },
@@ -5038,8 +5737,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1245,
-              "endLine": 1245,
+              "startLine": 1449,
+              "endLine": 1449,
               "startOffset": 75,
               "endOffset": 77
             },
@@ -5052,8 +5751,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1246,
-              "endLine": 1246,
+              "startLine": 1450,
+              "endLine": 1450,
               "startOffset": 54,
               "endOffset": 56
             },
@@ -5066,8 +5765,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1247,
-              "endLine": 1247,
+              "startLine": 1451,
+              "endLine": 1451,
               "startOffset": 52,
               "endOffset": 54
             },
@@ -5080,8 +5779,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1250,
-              "endLine": 1250,
+              "startLine": 1454,
+              "endLine": 1454,
               "startOffset": 42,
               "endOffset": 44
             },
@@ -5094,8 +5793,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
             "textRange": {
-              "startLine": 1257,
-              "endLine": 1257,
+              "startLine": 1461,
+              "endLine": 1461,
               "startOffset": 8,
               "endOffset": 14
             },
@@ -5135,11 +5834,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1751,
+    "line": 1955,
     "hash": "fe21b684dc61bab867b8dc301112608c",
     "textRange": {
-      "startLine": 1751,
-      "endLine": 1751,
+      "startLine": 1955,
+      "endLine": 1955,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5177,11 +5876,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1836,
+    "line": 2050,
     "hash": "029fdf6d7d653369afe1d25a6e9857a2",
     "textRange": {
-      "startLine": 1836,
-      "endLine": 1836,
+      "startLine": 2050,
+      "endLine": 2050,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5219,11 +5918,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1858,
+    "line": 2072,
     "hash": "3f3b313edb202f9a1d149ba5aae5fe36",
     "textRange": {
-      "startLine": 1858,
-      "endLine": 1858,
+      "startLine": 2072,
+      "endLine": 2072,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5261,11 +5960,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1883,
+    "line": 2097,
     "hash": "b65875f0e2e43db4239aa03865fb9973",
     "textRange": {
-      "startLine": 1883,
-      "endLine": 1883,
+      "startLine": 2097,
+      "endLine": 2097,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5303,11 +6002,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1887,
+    "line": 2101,
     "hash": "b65875f0e2e43db4239aa03865fb9973",
     "textRange": {
-      "startLine": 1887,
-      "endLine": 1887,
+      "startLine": 2101,
+      "endLine": 2101,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5345,11 +6044,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1907,
+    "line": 2121,
     "hash": "3f51b9cd613f124c44225bc6943bb28d",
     "textRange": {
-      "startLine": 1907,
-      "endLine": 1907,
+      "startLine": 2121,
+      "endLine": 2121,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5387,11 +6086,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1911,
+    "line": 2125,
     "hash": "324ef7309107c9449f3d69b6667758dd",
     "textRange": {
-      "startLine": 1911,
-      "endLine": 1911,
+      "startLine": 2125,
+      "endLine": 2125,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5429,11 +6128,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1915,
+    "line": 2129,
     "hash": "bb70de2f2ab7352746be549e412ed15e",
     "textRange": {
-      "startLine": 1915,
-      "endLine": 1915,
+      "startLine": 2129,
+      "endLine": 2129,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5471,11 +6170,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1940,
+    "line": 2154,
     "hash": "015ca2a9c0f6b11e1c35dd9878cd125f",
     "textRange": {
-      "startLine": 1940,
-      "endLine": 1940,
+      "startLine": 2154,
+      "endLine": 2154,
       "startOffset": 14,
       "endOffset": 27
     },
@@ -5513,11 +6212,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:backend/main.py",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 1961,
+    "line": 2175,
     "hash": "3505e66b7609b282b98d81d8a19a2a0d",
     "textRange": {
-      "startLine": 1961,
-      "endLine": 1961,
+      "startLine": 2175,
+      "endLine": 2175,
       "startOffset": 0,
       "endOffset": 63
     },
@@ -11266,11 +11965,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5437,
+    "line": 5563,
     "hash": "5354c81c5c0c43c105cd36110921387b",
     "textRange": {
-      "startLine": 5437,
-      "endLine": 5437,
+      "startLine": 5563,
+      "endLine": 5563,
       "startOffset": 10,
       "endOffset": 16
     },
@@ -11307,11 +12006,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5472,
+    "line": 5598,
     "hash": "a069bd3e5d438336b9743895a07c9da0",
     "textRange": {
-      "startLine": 5472,
-      "endLine": 5472,
+      "startLine": 5598,
+      "endLine": 5598,
       "startOffset": 105,
       "endOffset": 121
     },
@@ -11347,11 +12046,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5511,
+    "line": 5637,
     "hash": "32ff865e63fa65b3f1af043c6b795ec2",
     "textRange": {
-      "startLine": 5511,
-      "endLine": 5511,
+      "startLine": 5637,
+      "endLine": 5637,
       "startOffset": 10,
       "endOffset": 18
     },
@@ -11388,11 +12087,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5511,
+    "line": 5637,
     "hash": "32ff865e63fa65b3f1af043c6b795ec2",
     "textRange": {
-      "startLine": 5511,
-      "endLine": 5511,
+      "startLine": 5637,
+      "endLine": 5637,
       "startOffset": 10,
       "endOffset": 18
     },
@@ -11428,216 +12127,13 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5526,
+    "line": 5662,
     "hash": "0336b027b639b48c498a0cd5620f7736",
     "textRange": {
-      "startLine": 5526,
-      "endLine": 5526,
+      "startLine": 5662,
+      "endLine": 5662,
       "startOffset": 142,
       "endOffset": 172
-    },
-    "flows": [],
-    "status": "OPEN",
-    "message": "Unexpected negated condition.",
-    "effort": "2min",
-    "debt": "2min",
-    "assignee": "Becker-leopoldo-yhzBW@github",
-    "author": "lbecker@upitservices.com.br",
-    "tags": [
-      "readability"
-    ],
-    "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-12T21:42:38+0000",
-    "type": "CODE_SMELL",
-    "organization": "becker-leopoldo",
-    "cleanCodeAttribute": "CLEAR",
-    "cleanCodeAttributeCategory": "INTENTIONAL",
-    "impacts": [
-      {
-        "softwareQuality": "MAINTAINABILITY",
-        "severity": "LOW"
-      }
-    ],
-    "issueStatus": "OPEN",
-    "projectName": "Physio-Notes",
-    "internalTags": []
-  },
-  {
-    "key": "AZ2DpiqXs0Fbzs2j2jP2",
-    "rule": "javascript:S1481",
-    "severity": "MINOR",
-    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
-    "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5666,
-    "hash": "3b1c559209e0763df578fc1212cdac53",
-    "textRange": {
-      "startLine": 5666,
-      "endLine": 5666,
-      "startOffset": 18,
-      "endOffset": 22
-    },
-    "flows": [],
-    "status": "OPEN",
-    "message": "Remove the declaration of the unused 'isMe' variable.",
-    "effort": "5min",
-    "debt": "5min",
-    "assignee": "Becker-leopoldo-yhzBW@github",
-    "author": "lbecker@upitservices.com.br",
-    "tags": [
-      "unused"
-    ],
-    "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-12T21:42:38+0000",
-    "type": "CODE_SMELL",
-    "organization": "becker-leopoldo",
-    "cleanCodeAttribute": "CLEAR",
-    "cleanCodeAttributeCategory": "INTENTIONAL",
-    "impacts": [
-      {
-        "softwareQuality": "MAINTAINABILITY",
-        "severity": "LOW"
-      }
-    ],
-    "issueStatus": "OPEN",
-    "projectName": "Physio-Notes",
-    "internalTags": []
-  },
-  {
-    "key": "AZ2DpiqXs0Fbzs2j2jP3",
-    "rule": "javascript:S1854",
-    "severity": "MAJOR",
-    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
-    "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5666,
-    "hash": "3b1c559209e0763df578fc1212cdac53",
-    "textRange": {
-      "startLine": 5666,
-      "endLine": 5666,
-      "startOffset": 18,
-      "endOffset": 22
-    },
-    "flows": [],
-    "status": "OPEN",
-    "message": "Remove this useless assignment to variable \"isMe\".",
-    "effort": "1min",
-    "debt": "1min",
-    "assignee": "Becker-leopoldo-yhzBW@github",
-    "author": "lbecker@upitservices.com.br",
-    "tags": [
-      "cwe",
-      "unused"
-    ],
-    "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-12T21:42:38+0000",
-    "type": "CODE_SMELL",
-    "organization": "becker-leopoldo",
-    "cleanCodeAttribute": "LOGICAL",
-    "cleanCodeAttributeCategory": "INTENTIONAL",
-    "impacts": [
-      {
-        "softwareQuality": "MAINTAINABILITY",
-        "severity": "MEDIUM"
-      }
-    ],
-    "issueStatus": "OPEN",
-    "projectName": "Physio-Notes",
-    "internalTags": []
-  },
-  {
-    "key": "AZ2DpiqXs0Fbzs2j2jP4",
-    "rule": "javascript:S7764",
-    "severity": "MINOR",
-    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
-    "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5666,
-    "hash": "3b1c559209e0763df578fc1212cdac53",
-    "textRange": {
-      "startLine": 5666,
-      "endLine": 5666,
-      "startOffset": 44,
-      "endOffset": 50
-    },
-    "flows": [],
-    "status": "OPEN",
-    "message": "Prefer `globalThis` over `window`.",
-    "effort": "2min",
-    "debt": "2min",
-    "assignee": "Becker-leopoldo-yhzBW@github",
-    "author": "lbecker@upitservices.com.br",
-    "tags": [
-      "es2020",
-      "portability"
-    ],
-    "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-12T21:42:38+0000",
-    "type": "CODE_SMELL",
-    "organization": "becker-leopoldo",
-    "cleanCodeAttribute": "CONVENTIONAL",
-    "cleanCodeAttributeCategory": "CONSISTENT",
-    "impacts": [
-      {
-        "softwareQuality": "MAINTAINABILITY",
-        "severity": "LOW"
-      }
-    ],
-    "issueStatus": "OPEN",
-    "projectName": "Physio-Notes",
-    "internalTags": []
-  },
-  {
-    "key": "AZ2DpiqXs0Fbzs2j2jP5",
-    "rule": "javascript:S7764",
-    "severity": "MINOR",
-    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
-    "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5666,
-    "hash": "3b1c559209e0763df578fc1212cdac53",
-    "textRange": {
-      "startLine": 5666,
-      "endLine": 5666,
-      "startOffset": 65,
-      "endOffset": 71
-    },
-    "flows": [],
-    "status": "OPEN",
-    "message": "Prefer `globalThis` over `window`.",
-    "effort": "2min",
-    "debt": "2min",
-    "assignee": "Becker-leopoldo-yhzBW@github",
-    "author": "lbecker@upitservices.com.br",
-    "tags": [
-      "es2020",
-      "portability"
-    ],
-    "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-12T21:42:38+0000",
-    "type": "CODE_SMELL",
-    "organization": "becker-leopoldo",
-    "cleanCodeAttribute": "CONVENTIONAL",
-    "cleanCodeAttributeCategory": "CONSISTENT",
-    "impacts": [
-      {
-        "softwareQuality": "MAINTAINABILITY",
-        "severity": "LOW"
-      }
-    ],
-    "issueStatus": "OPEN",
-    "projectName": "Physio-Notes",
-    "internalTags": []
-  },
-  {
-    "key": "AZ2DpiqXs0Fbzs2j2jP6",
-    "rule": "javascript:S7735",
-    "severity": "MINOR",
-    "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
-    "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5685,
-    "hash": "93b21b14092088daba17bec911385803",
-    "textRange": {
-      "startLine": 5685,
-      "endLine": 5685,
-      "startOffset": 115,
-      "endOffset": 137
     },
     "flows": [],
     "status": "OPEN",
@@ -11671,11 +12167,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5699,
+    "line": 6082,
     "hash": "1669e14983a564f20faf1fec41bededd",
     "textRange": {
-      "startLine": 5699,
-      "endLine": 5699,
+      "startLine": 6082,
+      "endLine": 6082,
       "startOffset": 46,
       "endOffset": 51
     },
@@ -11714,11 +12210,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5727,
+    "line": 6110,
     "hash": "30ba32598b9aacb3c96d7287d72693e3",
     "textRange": {
-      "startLine": 5727,
-      "endLine": 5727,
+      "startLine": 6110,
+      "endLine": 6110,
       "startOffset": 10,
       "endOffset": 20
     },
@@ -11755,11 +12251,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5741,
+    "line": 6124,
     "hash": "5a7e7b7ccbe4c66aaf8f51695c9e3b77",
     "textRange": {
-      "startLine": 5741,
-      "endLine": 5741,
+      "startLine": 6124,
+      "endLine": 6124,
       "startOffset": 57,
       "endOffset": 64
     },
@@ -11800,11 +12296,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5769,
+    "line": 6152,
     "hash": "d47fe6c4c4e8e4a08c61a6543bc9094f",
     "textRange": {
-      "startLine": 5769,
-      "endLine": 5769,
+      "startLine": 6152,
+      "endLine": 6152,
       "startOffset": 49,
       "endOffset": 55
     },
@@ -11841,11 +12337,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5779,
+    "line": 6162,
     "hash": "ce997e716efc619aa6a6c508a0d7fe08",
     "textRange": {
-      "startLine": 5779,
-      "endLine": 5779,
+      "startLine": 6162,
+      "endLine": 6162,
       "startOffset": 28,
       "endOffset": 34
     },
@@ -11882,11 +12378,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5787,
+    "line": 6170,
     "hash": "203ee9fe64a5157bc5360989667af994",
     "textRange": {
-      "startLine": 5787,
-      "endLine": 5787,
+      "startLine": 6170,
+      "endLine": 6170,
       "startOffset": 28,
       "endOffset": 34
     },
@@ -11923,11 +12419,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5802,
+    "line": 6185,
     "hash": "fb4fbc8a66861ee4d0b732be32018867",
     "textRange": {
-      "startLine": 5802,
-      "endLine": 5802,
+      "startLine": 6185,
+      "endLine": 6185,
       "startOffset": 62,
       "endOffset": 68
     },
@@ -11964,11 +12460,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5814,
+    "line": 6197,
     "hash": "45669e71819f0cf89bc26d5c4f9c761e",
     "textRange": {
-      "startLine": 5814,
-      "endLine": 5814,
+      "startLine": 6197,
+      "endLine": 6197,
       "startOffset": 37,
       "endOffset": 44
     },
@@ -12009,11 +12505,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5814,
+    "line": 6197,
     "hash": "45669e71819f0cf89bc26d5c4f9c761e",
     "textRange": {
-      "startLine": 5814,
-      "endLine": 5814,
+      "startLine": 6197,
+      "endLine": 6197,
       "startOffset": 56,
       "endOffset": 63
     },
@@ -12054,11 +12550,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5818,
+    "line": 6201,
     "hash": "39957a9a7f770a90e9b470c911052c62",
     "textRange": {
-      "startLine": 5818,
-      "endLine": 5818,
+      "startLine": 6201,
+      "endLine": 6201,
       "startOffset": 58,
       "endOffset": 68
     },
@@ -12100,11 +12596,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5838,
+    "line": 6221,
     "hash": "c652bcd938c6d62976e9afb191c61774",
     "textRange": {
-      "startLine": 5838,
-      "endLine": 5838,
+      "startLine": 6221,
+      "endLine": 6221,
       "startOffset": 34,
       "endOffset": 38
     },
@@ -12143,11 +12639,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5850,
+    "line": 6233,
     "hash": "ce2a62dd9c371060b4460df05f9aafbc",
     "textRange": {
-      "startLine": 5850,
-      "endLine": 5850,
+      "startLine": 6233,
+      "endLine": 6233,
       "startOffset": 2,
       "endOffset": 8
     },
@@ -12184,11 +12680,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5856,
+    "line": 6239,
     "hash": "5ebcb579f12ee4159724e554daaaf7bc",
     "textRange": {
-      "startLine": 5856,
-      "endLine": 5856,
+      "startLine": 6239,
+      "endLine": 6239,
       "startOffset": 2,
       "endOffset": 8
     },
@@ -12225,11 +12721,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5859,
+    "line": 6242,
     "hash": "e8a37224266293ae1283fd4a264e95a8",
     "textRange": {
-      "startLine": 5859,
-      "endLine": 5859,
+      "startLine": 6242,
+      "endLine": 6242,
       "startOffset": 2,
       "endOffset": 8
     },
@@ -12266,11 +12762,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 5893,
+    "line": 6276,
     "hash": "68d516758c29d38cc2ee8c6538533b47",
     "textRange": {
-      "startLine": 5893,
-      "endLine": 5893,
+      "startLine": 6276,
+      "endLine": 6276,
       "startOffset": 2,
       "endOffset": 17
     },
@@ -12309,11 +12805,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6179,
+    "line": 6677,
     "hash": "6d7d321ac274a9bcae5ab10d7ea7d83d",
     "textRange": {
-      "startLine": 6179,
-      "endLine": 6179,
+      "startLine": 6677,
+      "endLine": 6677,
       "startOffset": 11,
       "endOffset": 26
     },
@@ -12323,8 +12819,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6180,
-              "endLine": 6180,
+              "startLine": 6678,
+              "endLine": 6678,
               "startOffset": 4,
               "endOffset": 6
             },
@@ -12337,8 +12833,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6192,
-              "endLine": 6192,
+              "startLine": 6690,
+              "endLine": 6690,
               "startOffset": 6,
               "endOffset": 10
             },
@@ -12351,8 +12847,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6181,
-              "endLine": 6181,
+              "startLine": 6679,
+              "endLine": 6679,
               "startOffset": 45,
               "endOffset": 46
             },
@@ -12365,8 +12861,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6182,
-              "endLine": 6182,
+              "startLine": 6680,
+              "endLine": 6680,
               "startOffset": 47,
               "endOffset": 48
             },
@@ -12379,8 +12875,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6183,
-              "endLine": 6183,
+              "startLine": 6681,
+              "endLine": 6681,
               "startOffset": 45,
               "endOffset": 46
             },
@@ -12393,8 +12889,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6195,
-              "endLine": 6195,
+              "startLine": 6693,
+              "endLine": 6693,
               "startOffset": 27,
               "endOffset": 28
             },
@@ -12407,8 +12903,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6196,
-              "endLine": 6196,
+              "startLine": 6694,
+              "endLine": 6694,
               "startOffset": 78,
               "endOffset": 79
             },
@@ -12421,8 +12917,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6200,
-              "endLine": 6200,
+              "startLine": 6698,
+              "endLine": 6698,
               "startOffset": 17,
               "endOffset": 18
             },
@@ -12435,8 +12931,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6202,
-              "endLine": 6202,
+              "startLine": 6700,
+              "endLine": 6700,
               "startOffset": 18,
               "endOffset": 19
             },
@@ -12476,11 +12972,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6228,
+    "line": 6726,
     "hash": "d754adbe103d6f495e1444bb4977cba9",
     "textRange": {
-      "startLine": 6228,
-      "endLine": 6228,
+      "startLine": 6726,
+      "endLine": 6726,
       "startOffset": 55,
       "endOffset": 63
     },
@@ -12521,11 +13017,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6244,
+    "line": 6742,
     "hash": "3cf174ad09c230d86c7185e7629c0cc7",
     "textRange": {
-      "startLine": 6244,
-      "endLine": 6244,
+      "startLine": 6742,
+      "endLine": 6742,
       "startOffset": 10,
       "endOffset": 16
     },
@@ -12561,11 +13057,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6244,
+    "line": 6742,
     "hash": "3cf174ad09c230d86c7185e7629c0cc7",
     "textRange": {
-      "startLine": 6244,
-      "endLine": 6244,
+      "startLine": 6742,
+      "endLine": 6742,
       "startOffset": 10,
       "endOffset": 16
     },
@@ -12602,11 +13098,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6298,
+    "line": 6796,
     "hash": "5e6e620496e187fb453a7cb544dffd82",
     "textRange": {
-      "startLine": 6298,
-      "endLine": 6298,
+      "startLine": 6796,
+      "endLine": 6796,
       "startOffset": 10,
       "endOffset": 18
     },
@@ -12642,11 +13138,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6298,
+    "line": 6796,
     "hash": "5e6e620496e187fb453a7cb544dffd82",
     "textRange": {
-      "startLine": 6298,
-      "endLine": 6298,
+      "startLine": 6796,
+      "endLine": 6796,
       "startOffset": 10,
       "endOffset": 18
     },
@@ -12683,11 +13179,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6299,
+    "line": 6797,
     "hash": "f1e1441ec5f58614742021280d1e2372",
     "textRange": {
-      "startLine": 6299,
-      "endLine": 6299,
+      "startLine": 6797,
+      "endLine": 6797,
       "startOffset": 10,
       "endOffset": 17
     },
@@ -12723,11 +13219,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6299,
+    "line": 6797,
     "hash": "f1e1441ec5f58614742021280d1e2372",
     "textRange": {
-      "startLine": 6299,
-      "endLine": 6299,
+      "startLine": 6797,
+      "endLine": 6797,
       "startOffset": 10,
       "endOffset": 17
     },
@@ -12764,11 +13260,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6300,
+    "line": 6798,
     "hash": "d089c4729e6e660cf071ee9a06683fea",
     "textRange": {
-      "startLine": 6300,
-      "endLine": 6300,
+      "startLine": 6798,
+      "endLine": 6798,
       "startOffset": 10,
       "endOffset": 20
     },
@@ -12804,11 +13300,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6300,
+    "line": 6798,
     "hash": "d089c4729e6e660cf071ee9a06683fea",
     "textRange": {
-      "startLine": 6300,
-      "endLine": 6300,
+      "startLine": 6798,
+      "endLine": 6798,
       "startOffset": 10,
       "endOffset": 20
     },
@@ -12845,11 +13341,11 @@
     "severity": "CRITICAL",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6535,
+    "line": 7033,
     "hash": "f1071a67b5dda8db13c635be7ba409e0",
     "textRange": {
-      "startLine": 6535,
-      "endLine": 6535,
+      "startLine": 7033,
+      "endLine": 7033,
       "startOffset": 25,
       "endOffset": 27
     },
@@ -12859,8 +13355,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6536,
-              "endLine": 6536,
+              "startLine": 7034,
+              "endLine": 7034,
               "startOffset": 10,
               "endOffset": 12
             },
@@ -12873,8 +13369,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6548,
-              "endLine": 6548,
+              "startLine": 7046,
+              "endLine": 7046,
               "startOffset": 12,
               "endOffset": 16
             },
@@ -12887,8 +13383,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6537,
-              "endLine": 6537,
+              "startLine": 7035,
+              "endLine": 7035,
               "startOffset": 49,
               "endOffset": 50
             },
@@ -12901,8 +13397,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6538,
-              "endLine": 6538,
+              "startLine": 7036,
+              "endLine": 7036,
               "startOffset": 53,
               "endOffset": 54
             },
@@ -12915,8 +13411,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6539,
-              "endLine": 6539,
+              "startLine": 7037,
+              "endLine": 7037,
               "startOffset": 51,
               "endOffset": 52
             },
@@ -12929,8 +13425,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6551,
-              "endLine": 6551,
+              "startLine": 7049,
+              "endLine": 7049,
               "startOffset": 33,
               "endOffset": 34
             },
@@ -12943,8 +13439,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6552,
-              "endLine": 6552,
+              "startLine": 7050,
+              "endLine": 7050,
               "startOffset": 90,
               "endOffset": 91
             },
@@ -12957,8 +13453,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6556,
-              "endLine": 6556,
+              "startLine": 7054,
+              "endLine": 7054,
               "startOffset": 23,
               "endOffset": 24
             },
@@ -12971,8 +13467,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 6558,
-              "endLine": 6558,
+              "startLine": 7056,
+              "endLine": 7056,
               "startOffset": 24,
               "endOffset": 25
             },
@@ -13012,11 +13508,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6565,
+    "line": 7063,
     "hash": "d754adbe103d6f495e1444bb4977cba9",
     "textRange": {
-      "startLine": 6565,
-      "endLine": 6565,
+      "startLine": 7063,
+      "endLine": 7063,
       "startOffset": 55,
       "endOffset": 63
     },
@@ -13057,11 +13553,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6740,
+    "line": 7238,
     "hash": "6c8c8165370ecedf3d43e06445fc8df2",
     "textRange": {
-      "startLine": 6740,
-      "endLine": 6740,
+      "startLine": 7238,
+      "endLine": 7238,
       "startOffset": 10,
       "endOffset": 25
     },
@@ -13097,11 +13593,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6786,
+    "line": 7284,
     "hash": "eb6f873d67da4e44dac41a38a6d68441",
     "textRange": {
-      "startLine": 6786,
-      "endLine": 6786,
+      "startLine": 7284,
+      "endLine": 7284,
       "startOffset": 58,
       "endOffset": 66
     },
@@ -13142,11 +13638,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 6956,
+    "line": 7454,
     "hash": "b149fdf6d8e9f7820c0b1414ca519d4e",
     "textRange": {
-      "startLine": 6956,
-      "endLine": 6956,
+      "startLine": 7454,
+      "endLine": 7454,
       "startOffset": 21,
       "endOffset": 29
     },
@@ -13187,11 +13683,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7040,
+    "line": 7538,
     "hash": "817a1202b01c93477abdc2667b374b94",
     "textRange": {
-      "startLine": 7040,
-      "endLine": 7040,
+      "startLine": 7538,
+      "endLine": 7538,
       "startOffset": 25,
       "endOffset": 47
     },
@@ -13227,11 +13723,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7040,
+    "line": 7538,
     "hash": "817a1202b01c93477abdc2667b374b94",
     "textRange": {
-      "startLine": 7040,
-      "endLine": 7040,
+      "startLine": 7538,
+      "endLine": 7538,
       "startOffset": 25,
       "endOffset": 47
     },
@@ -13268,11 +13764,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7041,
+    "line": 7539,
     "hash": "55483608a93b1839ef7205ee70217a16",
     "textRange": {
-      "startLine": 7041,
-      "endLine": 7041,
+      "startLine": 7539,
+      "endLine": 7539,
       "startOffset": 12,
       "endOffset": 29
     },
@@ -13308,11 +13804,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7041,
+    "line": 7539,
     "hash": "55483608a93b1839ef7205ee70217a16",
     "textRange": {
-      "startLine": 7041,
-      "endLine": 7041,
+      "startLine": 7539,
+      "endLine": 7539,
       "startOffset": 12,
       "endOffset": 29
     },
@@ -13349,11 +13845,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7048,
+    "line": 7546,
     "hash": "0b6c031061f86db22bb271462222c384",
     "textRange": {
-      "startLine": 7048,
-      "endLine": 7048,
+      "startLine": 7546,
+      "endLine": 7546,
       "startOffset": 87,
       "endOffset": 95
     },
@@ -13394,11 +13890,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7105,
+    "line": 7603,
     "hash": "a11b9e4bd8fe2a2a5adeaad2771e61e1",
     "textRange": {
-      "startLine": 7105,
-      "endLine": 7105,
+      "startLine": 7603,
+      "endLine": 7603,
       "startOffset": 136,
       "endOffset": 156
     },
@@ -13434,11 +13930,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7149,
+    "line": 7647,
     "hash": "a9a61c181c9b9bce78eb6112e5d9746b",
     "textRange": {
-      "startLine": 7149,
-      "endLine": 7149,
+      "startLine": 7647,
+      "endLine": 7647,
       "startOffset": 65,
       "endOffset": 74
     },
@@ -13474,11 +13970,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7213,
+    "line": 7711,
     "hash": "9fd1ecc4d8a899bb9f35e0246f4110c8",
     "textRange": {
-      "startLine": 7213,
-      "endLine": 7213,
+      "startLine": 7711,
+      "endLine": 7711,
       "startOffset": 90,
       "endOffset": 98
     },
@@ -13519,11 +14015,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7254,
+    "line": 7752,
     "hash": "23ef69dd61cbfa1b7e0815fa413808c2",
     "textRange": {
-      "startLine": 7254,
-      "endLine": 7254,
+      "startLine": 7752,
+      "endLine": 7752,
       "startOffset": 93,
       "endOffset": 112
     },
@@ -13559,11 +14055,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7264,
+    "line": 7762,
     "hash": "30ba32598b9aacb3c96d7287d72693e3",
     "textRange": {
-      "startLine": 7264,
-      "endLine": 7264,
+      "startLine": 7762,
+      "endLine": 7762,
       "startOffset": 12,
       "endOffset": 22
     },
@@ -13600,11 +14096,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7292,
+    "line": 7790,
     "hash": "689955dbf3588ef22a223e42c0c33c96",
     "textRange": {
-      "startLine": 7292,
-      "endLine": 7292,
+      "startLine": 7790,
+      "endLine": 7790,
       "startOffset": 65,
       "endOffset": 78
     },
@@ -13640,11 +14136,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7305,
+    "line": 7803,
     "hash": "5dd98824aa559a909e648fe8d8b4e8be",
     "textRange": {
-      "startLine": 7305,
-      "endLine": 7305,
+      "startLine": 7803,
+      "endLine": 7803,
       "startOffset": 45,
       "endOffset": 52
     },
@@ -13685,11 +14181,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7305,
+    "line": 7803,
     "hash": "5dd98824aa559a909e648fe8d8b4e8be",
     "textRange": {
-      "startLine": 7305,
-      "endLine": 7305,
+      "startLine": 7803,
+      "endLine": 7803,
       "startOffset": 68,
       "endOffset": 75
     },
@@ -13730,11 +14226,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7305,
+    "line": 7803,
     "hash": "5dd98824aa559a909e648fe8d8b4e8be",
     "textRange": {
-      "startLine": 7305,
-      "endLine": 7305,
+      "startLine": 7803,
+      "endLine": 7803,
       "startOffset": 90,
       "endOffset": 97
     },
@@ -13775,11 +14271,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7305,
+    "line": 7803,
     "hash": "5dd98824aa559a909e648fe8d8b4e8be",
     "textRange": {
-      "startLine": 7305,
-      "endLine": 7305,
+      "startLine": 7803,
+      "endLine": 7803,
       "startOffset": 4,
       "endOffset": 16
     },
@@ -13817,11 +14313,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7377,
+    "line": 7875,
     "hash": "fd0f24ce1365b60ecfb983362e7c1469",
     "textRange": {
-      "startLine": 7377,
-      "endLine": 7377,
+      "startLine": 7875,
+      "endLine": 7875,
       "startOffset": 60,
       "endOffset": 61
     },
@@ -13855,11 +14351,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7525,
+    "line": 8023,
     "hash": "17b2ff78d75173be627886d9f4704ca6",
     "textRange": {
-      "startLine": 7525,
-      "endLine": 7525,
+      "startLine": 8023,
+      "endLine": 8023,
       "startOffset": 10,
       "endOffset": 34
     },
@@ -13895,11 +14391,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7525,
+    "line": 8023,
     "hash": "17b2ff78d75173be627886d9f4704ca6",
     "textRange": {
-      "startLine": 7525,
-      "endLine": 7525,
+      "startLine": 8023,
+      "endLine": 8023,
       "startOffset": 10,
       "endOffset": 34
     },
@@ -13936,11 +14432,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7533,
+    "line": 8031,
     "hash": "719d222e0335e3b1c72e11a4cb1ea4b4",
     "textRange": {
-      "startLine": 7533,
-      "endLine": 7533,
+      "startLine": 8031,
+      "endLine": 8031,
       "startOffset": 25,
       "endOffset": 27
     },
@@ -13950,8 +14446,8 @@
           {
             "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
             "textRange": {
-              "startLine": 7045,
-              "endLine": 7045,
+              "startLine": 7543,
+              "endLine": 7543,
               "startOffset": 25,
               "endOffset": 27
             },
@@ -13961,7 +14457,7 @@
       }
     ],
     "status": "OPEN",
-    "message": "Update this function so that its implementation is not identical to the one on line 7045.",
+    "message": "Update this function so that its implementation is not identical to the one on line 7543.",
     "effort": "15min",
     "debt": "15min",
     "assignee": "Becker-leopoldo-yhzBW@github",
@@ -13972,7 +14468,7 @@
       "suspicious"
     ],
     "creationDate": "2026-04-12T21:43:45+0000",
-    "updateDate": "2026-04-13T15:01:05+0000",
+    "updateDate": "2026-04-13T18:25:37+0000",
     "type": "CODE_SMELL",
     "organization": "becker-leopoldo",
     "cleanCodeAttribute": "DISTINCT",
@@ -13993,11 +14489,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7536,
+    "line": 8034,
     "hash": "0b6c031061f86db22bb271462222c384",
     "textRange": {
-      "startLine": 7536,
-      "endLine": 7536,
+      "startLine": 8034,
+      "endLine": 8034,
       "startOffset": 87,
       "endOffset": 95
     },
@@ -14038,11 +14534,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7588,
+    "line": 8086,
     "hash": "b8c6b1e45f6a8aa015e40838b9f194e5",
     "textRange": {
-      "startLine": 7588,
-      "endLine": 7588,
+      "startLine": 8086,
+      "endLine": 8086,
       "startOffset": 30,
       "endOffset": 48
     },
@@ -14078,11 +14574,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7588,
+    "line": 8086,
     "hash": "b8c6b1e45f6a8aa015e40838b9f194e5",
     "textRange": {
-      "startLine": 7588,
-      "endLine": 7588,
+      "startLine": 8086,
+      "endLine": 8086,
       "startOffset": 73,
       "endOffset": 91
     },
@@ -14118,11 +14614,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7602,
+    "line": 8100,
     "hash": "6495a869f3845750e2cbfa54d4a86119",
     "textRange": {
-      "startLine": 7602,
-      "endLine": 7602,
+      "startLine": 8100,
+      "endLine": 8100,
       "startOffset": 50,
       "endOffset": 62
     },
@@ -14158,11 +14654,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7630,
+    "line": 8128,
     "hash": "89cb589c95b7a646829b328a0c3b9660",
     "textRange": {
-      "startLine": 7630,
-      "endLine": 7630,
+      "startLine": 8128,
+      "endLine": 8128,
       "startOffset": 14,
       "endOffset": 34
     },
@@ -14198,11 +14694,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7714,
+    "line": 8212,
     "hash": "25ed9563fb38f16049818965c65e2383",
     "textRange": {
-      "startLine": 7714,
-      "endLine": 7714,
+      "startLine": 8212,
+      "endLine": 8212,
       "startOffset": 38,
       "endOffset": 47
     },
@@ -14238,11 +14734,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7724,
+    "line": 8222,
     "hash": "f204785ce0530f6f4ebf975e1db207a0",
     "textRange": {
-      "startLine": 7724,
-      "endLine": 7724,
+      "startLine": 8222,
+      "endLine": 8222,
       "startOffset": 8,
       "endOffset": 16
     },
@@ -14283,11 +14779,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7727,
+    "line": 8225,
     "hash": "cb131e4c07a850fb78a2a493da131393",
     "textRange": {
-      "startLine": 7727,
-      "endLine": 7727,
+      "startLine": 8225,
+      "endLine": 8225,
       "startOffset": 8,
       "endOffset": 16
     },
@@ -14328,11 +14824,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7752,
+    "line": 8250,
     "hash": "ead004afe0600983e46a0f447a2fe7aa",
     "textRange": {
-      "startLine": 7752,
-      "endLine": 7752,
+      "startLine": 8250,
+      "endLine": 8250,
       "startOffset": 10,
       "endOffset": 25
     },
@@ -14368,11 +14864,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7757,
+    "line": 8255,
     "hash": "048d8d6a137d9528f3ba518686f4ba6b",
     "textRange": {
-      "startLine": 7757,
-      "endLine": 7757,
+      "startLine": 8255,
+      "endLine": 8255,
       "startOffset": 39,
       "endOffset": 47
     },
@@ -14413,11 +14909,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7774,
+    "line": 8272,
     "hash": "9396f1e5314575130c4f713e397a41ce",
     "textRange": {
-      "startLine": 7774,
-      "endLine": 7774,
+      "startLine": 8272,
+      "endLine": 8272,
       "startOffset": 45,
       "endOffset": 53
     },
@@ -14458,11 +14954,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7775,
+    "line": 8273,
     "hash": "bb8b66f56459acf49c0a75881bdb46db",
     "textRange": {
-      "startLine": 7775,
-      "endLine": 7775,
+      "startLine": 8273,
+      "endLine": 8273,
       "startOffset": 45,
       "endOffset": 53
     },
@@ -14503,11 +14999,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7821,
+    "line": 8319,
     "hash": "ab76498087ba302abdd13af09da1f6a9",
     "textRange": {
-      "startLine": 7821,
-      "endLine": 7821,
+      "startLine": 8319,
+      "endLine": 8319,
       "startOffset": 21,
       "endOffset": 29
     },
@@ -14548,11 +15044,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7848,
+    "line": 8346,
     "hash": "d5adc2a0048e4c75569449f6bb0dd358",
     "textRange": {
-      "startLine": 7848,
-      "endLine": 7848,
+      "startLine": 8346,
+      "endLine": 8346,
       "startOffset": 12,
       "endOffset": 31
     },
@@ -14588,11 +15084,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7848,
+    "line": 8346,
     "hash": "d5adc2a0048e4c75569449f6bb0dd358",
     "textRange": {
-      "startLine": 7848,
-      "endLine": 7848,
+      "startLine": 8346,
+      "endLine": 8346,
       "startOffset": 12,
       "endOffset": 31
     },
@@ -14629,11 +15125,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7848,
+    "line": 8346,
     "hash": "d5adc2a0048e4c75569449f6bb0dd358",
     "textRange": {
-      "startLine": 7848,
-      "endLine": 7848,
+      "startLine": 8346,
+      "endLine": 8346,
       "startOffset": 33,
       "endOffset": 58
     },
@@ -14669,11 +15165,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7848,
+    "line": 8346,
     "hash": "d5adc2a0048e4c75569449f6bb0dd358",
     "textRange": {
-      "startLine": 7848,
-      "endLine": 7848,
+      "startLine": 8346,
+      "endLine": 8346,
       "startOffset": 33,
       "endOffset": 58
     },
@@ -14710,11 +15206,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7851,
+    "line": 8349,
     "hash": "9d3ba5492a65907251e8b999be0436f5",
     "textRange": {
-      "startLine": 7851,
-      "endLine": 7851,
+      "startLine": 8349,
+      "endLine": 8349,
       "startOffset": 17,
       "endOffset": 19
     },
@@ -14751,11 +15247,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7933,
+    "line": 8431,
     "hash": "f7d4e6002a9329faab9451c5a7210bc3",
     "textRange": {
-      "startLine": 7933,
-      "endLine": 7933,
+      "startLine": 8431,
+      "endLine": 8431,
       "startOffset": 10,
       "endOffset": 21
     },
@@ -14791,11 +15287,11 @@
     "severity": "MAJOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 7933,
+    "line": 8431,
     "hash": "f7d4e6002a9329faab9451c5a7210bc3",
     "textRange": {
-      "startLine": 7933,
-      "endLine": 7933,
+      "startLine": 8431,
+      "endLine": 8431,
       "startOffset": 10,
       "endOffset": 21
     },
@@ -14832,11 +15328,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 8244,
+    "line": 8742,
     "hash": "f6c084b0e0afb241865330638323f566",
     "textRange": {
-      "startLine": 8244,
-      "endLine": 8244,
+      "startLine": 8742,
+      "endLine": 8742,
       "startOffset": 19,
       "endOffset": 21
     },
@@ -14873,11 +15369,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 8249,
+    "line": 8747,
     "hash": "3895522e8b7d7c97cb71650fcaed9198",
     "textRange": {
-      "startLine": 8249,
-      "endLine": 8249,
+      "startLine": 8747,
+      "endLine": 8747,
       "startOffset": 17,
       "endOffset": 19
     },
@@ -14914,11 +15410,11 @@
     "severity": "MINOR",
     "component": "Becker-leopoldo_Physio-Notes:frontend/index.html",
     "project": "Becker-leopoldo_Physio-Notes",
-    "line": 8320,
+    "line": 8818,
     "hash": "02b9c05d693c8a5eae85299a995a73e2",
     "textRange": {
-      "startLine": 8320,
-      "endLine": 8320,
+      "startLine": 8818,
+      "endLine": 8818,
       "startOffset": 4,
       "endOffset": 10
     },
