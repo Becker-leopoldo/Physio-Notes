@@ -629,7 +629,7 @@
         <div class="cal-card" style="padding:var(--space-6);">
 
           <div class="form-group">
-            <label class="form-label">Paciente</label>
+            <label class="form-label" for="btn-escolher-pac">Paciente</label>
             <button class="btn btn-secondary btn-full" id="btn-escolher-pac" style="justify-content:space-between;text-align:left;">
               <span id="pac-escolhido-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -683,7 +683,7 @@
       </div>
       <div class="content-inner">
         <div class="cal-card" style="padding:var(--space-4);margin-bottom:var(--space-4);">
-          <label class="form-label" style="margin-bottom:var(--space-2);display:block;">Paciente</label>
+          <label class="form-label" for="btn-pac-pacotes" style="margin-bottom:var(--space-2);display:block;">Paciente</label>
           <button class="btn btn-secondary btn-full" id="btn-pac-pacotes" style="justify-content:space-between;text-align:left;">
             <span id="pac-pacotes-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -725,6 +725,7 @@
         </div>
         <div id="ag-rec-feedback"></div>
         <div class="divider">ou escreva</div>
+        <div id="ag-data-hint" style="display:none;background:var(--color-info-bg);color:var(--color-info);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);margin-bottom:var(--space-3);"></div>
         <textarea id="ag-texto" class="form-textarea" rows="2"
           placeholder="Ex: Ana Silva amanhã das 14h às 15h" style="font-size:16px;margin-bottom:var(--space-4);"></textarea>
         <div style="display:flex;flex-direction:column;gap:var(--space-2);">
@@ -766,21 +767,21 @@
     <div class="sheet-body">
       <h2 class="sheet-title">Novo paciente</h2>
       <div class="form-group">
-        <label class="form-label">Nome completo <span style="color:var(--color-danger);">*</span></label>
+        <label class="form-label" for="novo-pac-nome">Nome completo <span style="color:var(--color-danger);">*</span></label>
         <input class="form-input" type="text" id="novo-pac-nome" placeholder="Ex: Maria Oliveira" autocomplete="off">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
         <div class="form-group" style="margin:0;">
-          <label class="form-label">CPF</label>
+          <label class="form-label" for="novo-pac-cpf">CPF</label>
           <input class="form-input" type="text" id="novo-pac-cpf" placeholder="000.000.000-00" maxlength="14">
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label">Nascimento</label>
+          <label class="form-label" for="novo-pac-nasc">Nascimento</label>
           <input class="form-input" type="date" id="novo-pac-nasc">
         </div>
       </div>
       <div class="form-group" style="margin-top:var(--space-4);">
-        <label class="form-label">Observações</label>
+        <label class="form-label" for="novo-pac-obs">Observações</label>
         <textarea class="form-textarea" rows="2" id="novo-pac-obs" placeholder="Informações relevantes..."></textarea>
       </div>
       <div id="novo-pac-erro" style="display:none;font-size:var(--text-sm);color:var(--color-danger);margin-bottom:var(--space-3);"></div>
@@ -799,25 +800,25 @@
       <h2 class="sheet-title">Editar paciente</h2>
       <input type="hidden" id="edit-pac-id">
       <div class="form-group">
-        <label class="form-label">Nome completo <span style="color:var(--color-danger);">*</span></label>
+        <label class="form-label" for="edit-pac-nome">Nome completo <span style="color:var(--color-danger);">*</span></label>
         <input class="form-input" type="text" id="edit-pac-nome" autocomplete="off">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
         <div class="form-group" style="margin:0;">
-          <label class="form-label">CPF</label>
+          <label class="form-label" for="edit-pac-cpf">CPF</label>
           <input class="form-input" type="text" id="edit-pac-cpf" placeholder="000.000.000-00" maxlength="14">
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label">Nascimento</label>
+          <label class="form-label" for="edit-pac-nasc">Nascimento</label>
           <input class="form-input" type="date" id="edit-pac-nasc">
         </div>
       </div>
       <div class="form-group" style="margin-top:var(--space-4);">
-        <label class="form-label">Endereço</label>
+        <label class="form-label" for="edit-pac-endereco">Endereço</label>
         <input class="form-input" type="text" id="edit-pac-endereco" placeholder="Rua, número, bairro...">
       </div>
       <div class="form-group" style="margin-top:var(--space-4);">
-        <label class="form-label">Observações</label>
+        <label class="form-label" for="edit-pac-obs">Observações</label>
         <textarea class="form-textarea" rows="2" id="edit-pac-obs" placeholder="Informações relevantes..."></textarea>
       </div>
       <div id="edit-pac-erro" style="display:none;font-size:var(--text-sm);color:var(--color-danger);margin-bottom:var(--space-3);"></div>
@@ -841,21 +842,21 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
         <div class="form-group" style="margin:0;">
-          <label class="form-label">Nº de sessões <span style="color:var(--color-danger);">*</span></label>
+          <label class="form-label" for="novo-pacote-sessoes">Nº de sessões <span style="color:var(--color-danger);">*</span></label>
           <input class="form-input" type="number" id="novo-pacote-sessoes" min="1" placeholder="Ex: 10">
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label">Valor pago (R$)</label>
+          <label class="form-label" for="novo-pacote-valor">Valor pago (R$)</label>
           <input class="form-input" type="number" id="novo-pacote-valor" min="0" step="0.01" placeholder="Ex: 800.00">
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-4);">
         <div class="form-group" style="margin:0;">
-          <label class="form-label">Data do pagamento</label>
+          <label class="form-label" for="novo-pacote-data">Data do pagamento</label>
           <input class="form-input" type="date" id="novo-pacote-data">
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label">Descrição</label>
+          <label class="form-label" for="novo-pacote-desc">Descrição</label>
           <input class="form-input" type="text" id="novo-pacote-desc" placeholder="Ex: Lombalgia">
         </div>
       </div>
@@ -896,29 +897,29 @@
     <div class="sheet-body">
       <h2 class="sheet-title">Revisar atestado</h2>
       <div class="form-group">
-        <label class="form-label">Data do atendimento</label>
+        <label class="form-label" for="rev-data">Data do atendimento</label>
         <input class="form-input" type="date" id="rev-data">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
         <div class="form-group">
-          <label class="form-label">Início</label>
+          <label class="form-label" for="rev-hora-ini">Início</label>
           <input class="form-input" type="time" id="rev-hora-ini">
         </div>
         <div class="form-group">
-          <label class="form-label">Fim</label>
+          <label class="form-label" for="rev-hora-fim">Fim</label>
           <input class="form-input" type="time" id="rev-hora-fim">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Motivo</label>
+        <label class="form-label" for="rev-motivo">Motivo</label>
         <input class="form-input" type="text" id="rev-motivo" placeholder="Ex: lombalgia crônica">
       </div>
       <div class="form-group">
-        <label class="form-label">Conduta realizada</label>
+        <label class="form-label" for="rev-conduta">Conduta realizada</label>
         <textarea class="form-textarea" rows="3" id="rev-conduta" placeholder="Ex: TENS e mobilização articular..." style="resize:none;"></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">CREFITO do fisioterapeuta (opcional)</label>
+        <label class="form-label" for="rev-crefito">CREFITO do fisioterapeuta (opcional)</label>
         <input class="form-input" type="text" id="rev-crefito" placeholder="Ex: 3-123456-F">
       </div>
       <div style="display:flex;flex-direction:column;gap:var(--space-2);">
@@ -1235,7 +1236,8 @@ document.getElementById('cancel-confirm-btn').addEventListener('click', async ()
 });
 
 /* ── Novo agendamento ── */
-let _agPendente = null;
+let _agPendente   = null;
+let _agDisponivel = true;   // estado atual do slot (atualizado em renderAgResult)
 let _agRec = null, _agRecording = false;
 let _agRecTimer = null;
 
@@ -1251,6 +1253,13 @@ function agSheetOpen() {
   document.getElementById('ag-rec-feedback').innerHTML = '';
   document.getElementById('ag-verificar-btn').disabled = false;
   document.getElementById('ag-verificar-btn').textContent = 'Verificar disponibilidade';
+  const hint = document.getElementById('ag-data-hint');
+  if (_diaSel) {
+    hint.textContent = `Agendando para: ${fmtData(_diaSel)}`;
+    hint.style.display = '';
+  } else {
+    hint.style.display = 'none';
+  }
   document.getElementById('ag-overlay').style.display = 'block';
   document.getElementById('ag-sheet').style.display   = 'block';
 }
@@ -1272,7 +1281,7 @@ document.getElementById('ag-result-voltar').addEventListener('click', () => {
 
 function agStopRec() {
   if (_agRecTimer) { clearInterval(_agRecTimer); _agRecTimer = null; }
-  if (_agRec && _agRecording) { try { _agRec.stop(); } catch {} }
+  if (_agRec && _agRecording) { try { _agRec.stop(); } catch(e) { console.error('agStopRec', e); } }
   _agRecording = false;
   const btn = document.getElementById('ag-mic-btn');
   if (btn) {
@@ -1335,7 +1344,7 @@ document.getElementById('ag-verificar-btn').addEventListener('click', async () =
     const data = await apiFetch('/sec/agendamento/interpretar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texto }),
+      body: JSON.stringify({ texto, data_ref: _diaSel || null }),
     });
     _agPendente = data.parsed;
     renderAgResult(data);
@@ -1357,67 +1366,152 @@ function fmtData(s) {
 function renderAgResult(data) {
   const p = data.parsed || {};
   const disponivel = data.disponivel !== false;
+  _agDisponivel = disponivel;
   const match = data.paciente_match;
-  const sugestoes = data.sugestoes || [];
+  const sugestoesTempo = data.sugestoes || [];
+  const pacSugestoes  = data.paciente_sugestoes || [];
 
   let html = '';
 
-  // Paciente match
+  // ── 1. PACIENTE: match exato ───────────────────────────────────────────
   if (match) {
     html += `<div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="var(--color-success)" stroke-width="1.4"/><path d="M4.5 7l2 2L9.5 5" stroke="var(--color-success)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-success);">Paciente identificado</span>
       <span style="font-size:var(--text-sm);font-weight:600;">${escHtml(match.nome)}</span>
     </div>`;
     _agPendente.nome = match.nome;
     _agPendente.paciente_id = match.id;
+
+  // ── 2. PACIENTE: nome similar — pede confirmação ───────────────────────
+  } else if (pacSugestoes.length > 0) {
+    html += `<div style="background:var(--color-warning-bg);border:1px solid #f0d070;border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-4);">
+      <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-warning);margin-bottom:var(--space-3);">
+        Nome semelhante ao de um paciente cadastrado. Escolha o correto:
+      </div>
+      ${pacSugestoes.map(s => `
+        <button class="pac-sug-item" data-pac-id="${s.id}" data-pac-nome="${escHtml(s.nome)}" style="
+          display:flex;align-items:center;gap:var(--space-3);width:100%;
+          padding:var(--space-2) var(--space-3);border:var(--border);border-radius:var(--radius-sm);
+          background:var(--color-surface);cursor:pointer;margin-bottom:var(--space-2);
+          font-size:var(--text-sm);font-family:var(--font-body);text-align:left;transition:background .1s;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 12c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          ${escHtml(s.nome)}
+        </button>`).join('')}
+      <button class="pac-sug-item pac-sug-novo" data-pac-id="" data-pac-nome="${escHtml(p.nome||'')}" style="
+        display:flex;align-items:center;gap:var(--space-3);width:100%;
+        padding:var(--space-2) var(--space-3);border:var(--border);border-radius:var(--radius-sm);
+        background:transparent;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-body);
+        text-align:left;color:var(--color-text-muted);transition:background .1s;">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Não — agendar como "${escHtml(p.nome||'')}" (sem vincular)
+      </button>
+    </div>`;
+
+  // ── 3. PACIENTE: não encontrado ───────────────────────────────────────
+  } else {
+    html += `<div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="var(--color-text-muted)" stroke-width="1.4"/><path d="M7 4v3M7 9.5v.5" stroke="var(--color-text-muted)" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);">Paciente não cadastrado</span>
+      <span style="font-size:var(--text-sm);color:var(--color-text-secondary);">${escHtml(p.nome||'')}</span>
+    </div>`;
   }
 
+  // ── 4. HORÁRIO ─────────────────────────────────────────────────────────
+  html += `<div class="ai-bubble" style="margin-bottom:var(--space-3);">
+    <p><strong>${escHtml(p.nome || '—')}</strong><br>
+    ${escHtml(fmtData(p.data))} · ${escHtml(p.hora_inicio||'')} – ${escHtml(p.hora_fim||'')}</p>
+  </div>`;
+
   if (disponivel) {
-    html += `<div class="ai-bubble" style="margin-bottom:var(--space-4);">
-      <p><strong>${escHtml(p.nome || '—')}</strong><br>
-      ${escHtml(fmtData(p.data))} · ${escHtml(p.hora_inicio||'')} – ${escHtml(p.hora_fim||'')}</p>
-    </div>
-    <div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-success);font-size:var(--text-sm);font-weight:500;margin-bottom:var(--space-2);">
+    html += `<div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-success);font-size:var(--text-sm);font-weight:500;margin-bottom:var(--space-2);">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 7l2 2L9.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Horário disponível
     </div>`;
   } else {
-    html += `<div class="ai-bubble" style="margin-bottom:var(--space-4);">
-      <p><strong>${escHtml(p.nome || '—')}</strong><br>
-      ${escHtml(fmtData(p.data))} · ${escHtml(p.hora_inicio||'')} – ${escHtml(p.hora_fim||'')}</p>
-    </div>
-    <div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-warning);font-size:var(--text-sm);font-weight:500;margin-bottom:var(--space-3);">
+    html += `<div style="display:flex;align-items:center;gap:var(--space-2);color:var(--color-warning);font-size:var(--text-sm);font-weight:500;margin-bottom:var(--space-3);">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v3M7 9.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Horário ocupado — sugestões:
     </div>`;
-    sugestoes.forEach(s => {
-      html += `<div class="sug-item" data-nome="${escHtml(p.nome||'')}" data-data="${escHtml(s.data)}" data-ini="${escHtml(s.hora_inicio)}" data-fim="${escHtml(s.hora_fim)}">
+    sugestoesTempo.forEach(s => {
+      html += `<div class="sug-item" data-data="${escHtml(s.data)}" data-ini="${escHtml(s.hora_inicio)}" data-fim="${escHtml(s.hora_fim)}">
         <span class="sug-hora">${escHtml(s.hora_inicio)} – ${escHtml(s.hora_fim)}</span>
         <span class="sug-label">${escHtml(fmtData(s.data))}</span>
       </div>`;
     });
+    // Permite confirmar mesmo assim (duplo-booking consciente)
+    html += `<div style="margin-top:var(--space-3);">
+      <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--text-sm);color:var(--color-text-secondary);">
+        <input type="checkbox" id="ag-confirmar-mesmo-assim" style="width:14px;height:14px;cursor:pointer;accent-color:#1A1A1A;">
+        Confirmar mesmo assim (horário sobreposto)
+      </label>
+    </div>`;
   }
 
   document.getElementById('ag-result-content').innerHTML = html;
 
-  // Click sugestões
+  // Click: sugestão de horário
   document.querySelectorAll('.sug-item').forEach(el => {
     el.addEventListener('click', () => {
       _agPendente = { ..._agPendente, data: el.dataset.data, hora_inicio: el.dataset.ini, hora_fim: el.dataset.fim };
+      _agDisponivel = true; // horário selecionado é um slot diferente — sem conflito
       document.querySelectorAll('.sug-item').forEach(s => s.style.background = '');
       el.style.background = 'var(--color-accent-light)';
+      // Remove o checkbox de sobreposição — não faz sentido ao escolher outro horário
+      const cbox = document.getElementById('ag-confirmar-mesmo-assim');
+      if (cbox) cbox.closest('div').remove();
       document.getElementById('ag-confirmar-btn').disabled = false;
     });
   });
 
+  // Click: sugestão de paciente
+  document.querySelectorAll('.pac-sug-item').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.pac-sug-item').forEach(b => {
+        b.style.background = b.classList.contains('pac-sug-novo') ? 'transparent' : 'var(--color-surface)';
+        b.style.borderColor = '';
+      });
+      el.style.background = 'var(--color-accent-light)';
+      el.style.borderColor = 'var(--color-accent)';
+      if (el.dataset.pacId) {
+        _agPendente.paciente_id = parseInt(el.dataset.pacId);
+        _agPendente.nome = el.dataset.pacNome;
+      } else {
+        _agPendente.paciente_id = null;
+        _agPendente.nome = el.dataset.pacNome;
+      }
+      document.getElementById('ag-confirmar-btn').disabled = !disponivel;
+    });
+  });
+
+  // Checkbox duplo-booking
+  const checkbox = document.getElementById('ag-confirmar-mesmo-assim');
+  if (checkbox) {
+    checkbox.addEventListener('change', () => {
+      document.getElementById('ag-confirmar-btn').disabled = !checkbox.checked;
+    });
+  }
+
   const confirmarBtn = document.getElementById('ag-confirmar-btn');
-  confirmarBtn.disabled = !disponivel && !sugestoes.length;
+  // Desabilitar se: horário ocupado sem sugestão aceita, OU nome similar sem paciente escolhido
+  const precisaEscolherPac = pacSugestoes.length > 0 && _agPendente.paciente_id === undefined;
+  confirmarBtn.disabled = (!disponivel && !sugestoesTempo.length) || precisaEscolherPac;
 }
 
 document.getElementById('ag-confirmar-btn').addEventListener('click', async () => {
   if (!_agPendente) return;
+
+  // Bloquear duplo-booking sem checkbox explícita (checagem local)
+  const checkbox = document.getElementById('ag-confirmar-mesmo-assim');
+  if (!_agDisponivel && checkbox && !checkbox.checked) {
+    showToast('Confirme a sobreposição de horário antes de prosseguir.', 'warning');
+    return;
+  }
+
   const btn = document.getElementById('ag-confirmar-btn');
   btn.disabled = true; btn.textContent = 'Agendando…';
+
+  const forcar = !_agDisponivel; // passa forcar=true quando horário estava ocupado
   try {
     await apiFetch('/sec/agendamento/confirmar', {
       method: 'POST',
@@ -1428,6 +1522,7 @@ document.getElementById('ag-confirmar-btn').addEventListener('click', async () =
         hora_inicio: _agPendente.hora_inicio,
         hora_fim:    _agPendente.hora_fim,
         paciente_id: _agPendente.paciente_id || null,
+        forcar,
       }),
     });
     agSheetClose();
@@ -1435,7 +1530,28 @@ document.getElementById('ag-confirmar-btn').addEventListener('click', async () =
     await carregarAgenda();
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Confirmar agendamento';
-    showToast('Erro: ' + e.message, 'error');
+    // 409 = horário ficou ocupado entre o interpretar e o confirmar
+    if (e.message && e.message.includes('409')) {
+      showToast('Horário ficou ocupado. Marque "confirmar mesmo assim" para sobrepor.', 'warning');
+      // Força exibição do checkbox se não estava visível
+      const content = document.getElementById('ag-result-content');
+      if (content && !document.getElementById('ag-confirmar-mesmo-assim')) {
+        content.insertAdjacentHTML('beforeend', `
+          <div style="margin-top:var(--space-3);">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--text-sm);color:var(--color-text-secondary);">
+              <input type="checkbox" id="ag-confirmar-mesmo-assim" style="width:14px;height:14px;cursor:pointer;accent-color:#1A1A1A;">
+              Confirmar mesmo assim (horário sobreposto)
+            </label>
+          </div>`);
+        document.getElementById('ag-confirmar-mesmo-assim').addEventListener('change', function() {
+          document.getElementById('ag-confirmar-btn').disabled = !this.checked;
+        });
+        btn.disabled = true; // aguarda o checkbox
+        _agDisponivel = false;
+      }
+    } else {
+      showToast('Erro: ' + e.message, 'error');
+    }
   }
 });
 
@@ -1500,7 +1616,7 @@ function renderPacLista(q) {
 document.getElementById('at-mic-btn').addEventListener('click', async () => {
   if (_atRecording) {
     if (_atRecTimer) { clearInterval(_atRecTimer); _atRecTimer = null; }
-    if (_atRec) { try { _atRec.stop(); } catch {} }
+    if (_atRec) { try { _atRec.stop(); } catch(e) { console.error('atStopRec', e); } }
     _atRecording = false;
     return;
   }
@@ -2014,7 +2130,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.297';
+const APP_VERSION = 'Beta-0.303';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

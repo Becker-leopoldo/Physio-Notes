@@ -630,7 +630,8 @@
       let subHtml = '';
       if (link) {
         const isInconsistente = inconsistentes.some(l => l.secretaria_email === link.secretaria_email);
-        const badgeClass = isInconsistente ? 'alerta' : (link.status === 'ativa' ? 'ativa' : 'pendente');
+        const statusClass = link.status === 'ativa' ? 'ativa' : 'pendente';
+        const badgeClass = isInconsistente ? 'alerta' : statusClass;
         const badgeLabel = isInconsistente ? 'Fisio revogado' : link.status;
         const iconClass  = isInconsistente ? 'warning' : '';
         subHtml = `

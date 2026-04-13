@@ -31,7 +31,14 @@ logger = logging.getLogger("physio_notes")
 AUTH_BEARER_PREFIX = "Bearer "
 ERR_NOT_AUTHENTICATED = "Não autenticado"
 ERR_PACIENTE_NOT_FOUND = "Paciente não encontrado"
+ERR_SESSAO_NOT_FOUND = "Sessão não encontrada"
 ERR_ACCESS_DENIED_SEC = "Acesso restrito à secretaria"
+ERR_AUDIO_VAZIO = "Arquivo de áudio vazio"
+ERR_TRANSCRICAO_VAZIA = "Transcrição vazia"
+AUDIO_DEFAULT_FILENAME = "audio.webm"
+GCAL_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+SEM_TITULO = "(sem título)"
+TZ_SAO_PAULO = "America/Sao_Paulo"
 
 # ---------- WebAuthn session store (in-memory) ----------
 _challenges: dict[str, bytes] = {}   # username -> challenge bytes
@@ -276,7 +283,7 @@ def _verificar_dono_documento(doc: dict, owner: str | None):
 
 # ---------- Pacientes ----------
 
-@app.post("/pacientes", status_code=201)
+@app.post("/pacientes", status_code=201, responses={409: {"description": "Conflict"}})
 def criar_paciente(body: PacienteCreate, request: Request):
     owner = _owner_email(request)
     try:
@@ -293,7 +300,7 @@ def listar_pacientes(request: Request):
     return db.listar_pacientes(_owner_email(request))
 
 
-@app.get("/pacientes/{paciente_id}")
+@app.get("/pacientes/{paciente_id}", responses={404: {"description": "Not Found"}})
 def buscar_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -312,7 +319,7 @@ class PacienteUpdate(BaseModel):
     conduta_tratamento: str | None = None
 
 
-@app.delete("/pacientes/{paciente_id}", status_code=204)
+@app.delete("/pacientes/{paciente_id}", status_code=204, responses={404: {"description": "Not Found"}})
 def deletar_paciente(paciente_id: int, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
@@ -323,7 +330,7 @@ def deletar_paciente(paciente_id: int, request: Request):
     db.registrar_audit(owner, "paciente_deletar", f"id={paciente_id} nome={paciente['nome']}", _client_ip(request))
 
 
-@app.put("/pacientes/{paciente_id}")
+@app.put("/pacientes/{paciente_id}", responses={404: {"description": "Not Found"}, 409: {"description": "Conflict"}})
 def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
@@ -353,7 +360,7 @@ async def _disparar_ia_pos_anamnese(paciente_id: int, anamnese: str, conduta_atu
         logger.warning("_disparar_ia_pos_anamnese: paciente_id=%s: %s", paciente_id, exc)
 
 
-@app.post("/pacientes/{paciente_id}/complementar-anamnese")
+@app.post("/pacientes/{paciente_id}/complementar-anamnese", responses={404: {"description": "Not Found"}})
 @limiter.limit("20/minute")
 async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, background_tasks: BackgroundTasks, request: Request):
     paciente = db.get_paciente(paciente_id)
@@ -387,7 +394,7 @@ class ComplementarCondutaBody(BaseModel):
     transcricao: str
 
 
-@app.post("/pacientes/{paciente_id}/complementar-conduta")
+@app.post("/pacientes/{paciente_id}/complementar-conduta", responses={404: {"description": "Not Found"}})
 @limiter.limit("20/minute")
 async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
     paciente = db.get_paciente(paciente_id)
@@ -403,7 +410,7 @@ async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, 
     return {"conduta_tratamento": paciente_atualizado["conduta_tratamento"]}
 
 
-@app.post("/pacientes/{paciente_id}/sugerir-conduta")
+@app.post("/pacientes/{paciente_id}/sugerir-conduta", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
 async def sugerir_conduta(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -415,7 +422,7 @@ async def sugerir_conduta(paciente_id: int, request: Request):
     return {"sugestao": sugestao}
 
 
-@app.post("/pacientes/{paciente_id}/gerar-sugestao")
+@app.post("/pacientes/{paciente_id}/gerar-sugestao", responses={404: {"description": "Not Found"}})
 async def gerar_sugestao(paciente_id: int, request: Request):
     """Atualiza a sugestão da IA para o paciente (botão 'Atualizar' no card)."""
     import json as _json
@@ -434,7 +441,7 @@ async def gerar_sugestao(paciente_id: int, request: Request):
 class SalvarAnamneseManualBody(BaseModel):
     texto: str
 
-@app.post("/pacientes/{paciente_id}/salvar-anamnese-manual")
+@app.post("/pacientes/{paciente_id}/salvar-anamnese-manual", responses={404: {"description": "Not Found"}})
 async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBody, background_tasks: BackgroundTasks, request: Request):
     """
     Formata anamnese com IA, salva.
@@ -472,7 +479,7 @@ async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBod
     return {"anamnese": anamnese_formatada, "conduta_tratamento": conduta_final, "conduta_gerada": conduta_gerada is not None}
 
 
-@app.post("/pacientes/{paciente_id}/formatar-conduta")
+@app.post("/pacientes/{paciente_id}/formatar-conduta", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
 async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
     """Formata texto livre de conduta com tópicos via IA, sem alterar conteúdo."""
     paciente = db.get_paciente(paciente_id)
@@ -485,7 +492,7 @@ async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, requ
     return {"conduta_formatada": formatado}
 
 
-@app.post("/pacientes/{paciente_id}/sugestao-dia")
+@app.post("/pacientes/{paciente_id}/sugestao-dia", responses={404: {"description": "Not Found"}})
 async def sugestao_do_dia(paciente_id: int, request: Request):
     """Gera sugestão prática do que fazer na sessão de hoje."""
     paciente = db.get_paciente(paciente_id)
@@ -503,7 +510,7 @@ async def sugestao_do_dia(paciente_id: int, request: Request):
     return {"sugestao": sugestao}
 
 
-@app.post("/pacientes/{paciente_id}/feedback-clinico")
+@app.post("/pacientes/{paciente_id}/feedback-clinico", responses={404: {"description": "Not Found"}})
 async def feedback_clinico(paciente_id: int, request: Request):
     """Gera feedback clínico sutil ao fisio sobre pendências e itens não abordados."""
     paciente = db.get_paciente(paciente_id)
@@ -521,24 +528,24 @@ async def feedback_clinico(paciente_id: int, request: Request):
     return {"feedback": feedback}
 
 
-@app.post("/transcrever")
+@app.post("/transcrever", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def transcrever_audio_avulso(request: Request, audio: Annotated[UploadFile, File()]):
     audio_bytes = await audio.read()
     if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+        raise HTTPException(status_code=400, detail=ERR_AUDIO_VAZIO)
     try:
-        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
+        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or AUDIO_DEFAULT_FILENAME)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
     return {"transcricao": transcricao}
 
 
-@app.post("/extrair-paciente")
+@app.post("/extrair-paciente", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def extrair_dados_paciente(body: ExtrairPacienteBody, request: Request):
     if not body.transcricao.strip():
-        raise HTTPException(status_code=400, detail="Transcrição vazia")
+        raise HTTPException(status_code=400, detail=ERR_TRANSCRICAO_VAZIA)
     try:
         dados = await ai.extrair_dados_paciente(body.transcricao, _owner_email(request))
     except Exception as e:
@@ -546,11 +553,11 @@ async def extrair_dados_paciente(body: ExtrairPacienteBody, request: Request):
     return dados
 
 
-@app.post("/extrair-procedimento")
+@app.post("/extrair-procedimento", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def extrair_procedimento(body: ExtrairProcedimentoBody, request: Request):
     if not body.transcricao.strip():
-        raise HTTPException(status_code=400, detail="Transcrição vazia")
+        raise HTTPException(status_code=400, detail=ERR_TRANSCRICAO_VAZIA)
     try:
         dados = await ai.extrair_procedimento(body.transcricao, _owner_email(request))
     except Exception as e:
@@ -558,7 +565,7 @@ async def extrair_procedimento(body: ExtrairProcedimentoBody, request: Request):
     return dados
 
 
-@app.post("/sessoes/{sessao_id}/detectar-procedimentos")
+@app.post("/sessoes/{sessao_id}/detectar-procedimentos", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def detectar_procedimentos(sessao_id: int, request: Request):
     """
     Analisa transcrição + nota da sessão com IA e retorna sugestões de
@@ -567,7 +574,7 @@ async def detectar_procedimentos(sessao_id: int, request: Request):
     """
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
 
     chunks = db.get_chunks_sessao(sessao_id)
@@ -591,20 +598,20 @@ async def detectar_procedimentos(sessao_id: int, request: Request):
     return {"sugestoes": sugestoes}
 
 
-@app.get("/sessoes/{sessao_id}/procedimentos")
+@app.get("/sessoes/{sessao_id}/procedimentos", responses={404: {"description": "Not Found"}})
 def listar_procedimentos(sessao_id: int, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
     return db.get_procedimentos_sessao(sessao_id)
 
 
-@app.post("/sessoes/{sessao_id}/procedimentos")
+@app.post("/sessoes/{sessao_id}/procedimentos", responses={404: {"description": "Not Found"}})
 def criar_procedimento(sessao_id: int, body: ProcedimentoCreate, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
     return db.adicionar_procedimento(sessao_id, sessao["paciente_id"], body.descricao, body.valor, body.data)
 
@@ -621,11 +628,11 @@ def deletar_procedimento(proc_id: int):
     return {"ok": True}
 
 
-@app.post("/extrair-pacote")
+@app.post("/extrair-pacote", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
     if not body.transcricao.strip():
-        raise HTTPException(status_code=400, detail="Transcrição vazia")
+        raise HTTPException(status_code=400, detail=ERR_TRANSCRICAO_VAZIA)
     try:
         dados = await ai.extrair_dados_pacote(body.transcricao, _owner_email(request))
     except Exception as e:
@@ -636,7 +643,7 @@ async def extrair_dados_pacote(body: ExtrairPacoteBody, request: Request):
 
 # ---------- Sessoes ----------
 
-@app.post("/sessoes", status_code=201)
+@app.post("/sessoes", status_code=201, responses={404: {"description": "Not Found"}, 409: {"description": "Conflict"}})
 def criar_sessao(body: SessaoCreate, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(body.paciente_id)
@@ -655,11 +662,11 @@ def criar_sessao(body: SessaoCreate, request: Request):
     return sessao
 
 
-@app.get("/sessoes/{sessao_id}")
+@app.get("/sessoes/{sessao_id}", responses={404: {"description": "Not Found"}})
 def buscar_sessao(sessao_id: int, request: Request):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
 
     chunks = db.get_chunks_sessao(sessao_id)
@@ -668,22 +675,22 @@ def buscar_sessao(sessao_id: int, request: Request):
     return {**sessao, "chunks": chunks, "consolidado": consolidado}
 
 
-@app.post("/sessoes/{sessao_id}/audio")
+@app.post("/sessoes/{sessao_id}/audio", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def upload_audio(sessao_id: int, audio: Annotated[UploadFile, File()], request: Request = None):
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão já encerrada")
 
     audio_bytes = await audio.read()
     if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+        raise HTTPException(status_code=400, detail=ERR_AUDIO_VAZIO)
 
     try:
-        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
+        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or AUDIO_DEFAULT_FILENAME)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
 
@@ -697,12 +704,12 @@ class CancelamentoBody(BaseModel):
     complemento: str | None = None
 
 
-@app.post("/sessoes/{sessao_id}/cancelar-com-cobranca")
+@app.post("/sessoes/{sessao_id}/cancelar-com-cobranca", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
 def cancelar_com_cobranca(sessao_id: int, body: CancelamentoBody, request: Request):
     owner = _owner_email(request)
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, owner)
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão não está aberta")
@@ -711,12 +718,12 @@ def cancelar_com_cobranca(sessao_id: int, body: CancelamentoBody, request: Reque
     return {"status": "cancelada", "sessao_id": sessao_id}
 
 
-@app.delete("/sessoes/{sessao_id}")
+@app.delete("/sessoes/{sessao_id}", responses={404: {"description": "Not Found"}})
 def cancelar_sessao(sessao_id: int, request: Request):
     owner = _owner_email(request)
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, owner)
     chunks = db.get_chunks_sessao(sessao_id)
     # Sessão aberta sem áudio → cancela (hard delete)
@@ -730,13 +737,13 @@ def cancelar_sessao(sessao_id: int, request: Request):
     return {"status": "deletada", "sessao_id": sessao_id}
 
 
-@app.post("/sessoes/{sessao_id}/adicionar-audio")
+@app.post("/sessoes/{sessao_id}/adicionar-audio", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: Annotated[UploadFile, File()], request: Request = None):
     """Adiciona áudio a uma sessão encerrada do mesmo dia, sem abater do pacote."""
     from datetime import date
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
     if sessao["status"] == "aberta":
         raise HTTPException(status_code=400, detail="Use o endpoint /audio para sessões abertas")
@@ -745,10 +752,10 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: Annotated[Uplo
 
     audio_bytes = await audio.read()
     if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+        raise HTTPException(status_code=400, detail=ERR_AUDIO_VAZIO)
 
     try:
-        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or "audio.webm")
+        transcricao = await transcribe.transcrever_audio(audio_bytes, audio.filename or AUDIO_DEFAULT_FILENAME)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
 
@@ -770,14 +777,14 @@ class EncerrarBody(BaseModel):
     valor: float | None = None
 
 
-@app.post("/sessoes/{sessao_id}/encerrar")
+@app.post("/sessoes/{sessao_id}/encerrar", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}, 409: {"description": "Conflict"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("10/minute")
 async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Request = None, background_tasks: BackgroundTasks = None):
     if body is None:
         body = EncerrarBody()
     sessao = db.get_sessao(sessao_id)
     if not sessao:
-        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
     if sessao["status"] != "aberta":
         raise HTTPException(status_code=400, detail="Sessão já está encerrada")
@@ -863,7 +870,7 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
     }
 
 
-@app.get("/pacientes/{paciente_id}/sessoes")
+@app.get("/pacientes/{paciente_id}/sessoes", responses={404: {"description": "Not Found"}})
 def listar_sessoes_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -883,7 +890,7 @@ class RecargaBody(BaseModel):
     valor_brl: float
     descricao: str | None = None
 
-@app.post("/creditos/recarregar", status_code=201)
+@app.post("/creditos/recarregar", status_code=201, responses={400: {"description": "Bad Request"}, 401: {"description": "Unauthorized"}})
 @limiter.limit("10/minute")
 def creditos_recarregar(body: RecargaBody, request: Request):
     """Registra uma recarga de créditos para o fisio logado."""
@@ -898,7 +905,7 @@ def creditos_recarregar(body: RecargaBody, request: Request):
     db.registrar_audit(owner, "credito_recarga", f"valor_brl={body.valor_brl}", _client_ip(request))
     return recarga
 
-@app.get("/creditos/saldo")
+@app.get("/creditos/saldo", responses={400: {"description": "Bad Request"}, 401: {"description": "Unauthorized"}})
 def creditos_saldo(cotacao: float = 5.80, request: Request = None):
     """Retorna saldo de créditos do fisio (total carregado - gasto em BRL)."""
     owner = _owner_email(request)
@@ -909,7 +916,7 @@ def creditos_saldo(cotacao: float = 5.80, request: Request = None):
     return db.get_creditos(owner, cotacao)
 
 
-@app.get("/billing")
+@app.get("/billing", responses={401: {"description": "Unauthorized"}})
 def billing(mes: str | None = None, request: Request = None):
     from datetime import date
     owner = _owner_email(request)
@@ -962,7 +969,7 @@ async def get_agenda_google(mes: str | None = None, request: Request = None):
     try:
         async with __import__("httpx").AsyncClient() as client:
             resp = await client.get(
-                "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                GCAL_EVENTS_URL,
                 params={
                     "timeMin": time_min,
                     "timeMax": time_max,
@@ -988,7 +995,7 @@ async def get_agenda_google(mes: str | None = None, request: Request = None):
             hora_fim_fmt    = hora_fim[11:16]    if len(hora_fim) > 10    else ""
             eventos.append({
                 "id":          ev.get("id"),
-                "titulo":      ev.get("summary") or "(sem título)",
+                "titulo":      ev.get("summary") or SEM_TITULO,
                 "data":        data_str,
                 "hora_inicio": hora_inicio_fmt,
                 "hora_fim":    hora_fim_fmt,
@@ -1013,22 +1020,25 @@ def _normalizar_nome(s: str) -> str:
 
 def _buscar_paciente_por_nome(nome_evento: str, pacientes: list) -> dict:
     """
-    Associa nome_evento a pacientes cadastrados com critério rigoroso.
+    Associa nome_evento a pacientes cadastrados com critério rigoroso + fuzzy.
 
     Critérios de pontuação:
       10 — nome exato (normalizado)
        8 — nome do evento contido no nome do paciente ou vice-versa
+       7 — primeiro nome similar (≥0.80) E pelo menos 1 outra palavra em comum → sugestão alta
        6 — primeiro nome igual E pelo menos 1 outra palavra em comum
        5 — primeiro nome igual (sozinho)
+       4 — primeiro nome similar (≥0.75) sem outras palavras em comum → sugestão média
        3 — 2+ palavras em comum (exceto stopwords), mas primeiro nome diferente
-       0 — apenas 1 palavra em comum que não é o primeiro nome → IGNORADO
+       0 — caso contrário → IGNORADO
 
     Resultado:
-      exato    → 1 candidato no topo
-      sugestoes → 2+ candidatos empatados no topo
+      exato    → 1 candidato com score ≥ 8 (match direto, sem pergunta)
+      sugestoes → candidatos com score 4–7 (pede confirmação ao usuário)
       nenhum   → sem candidatos com pontuação suficiente
     """
-    stopwords = {'de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o', 'e'}
+    from difflib import SequenceMatcher
+    stopwords = {'de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o'}
     nome_n = _normalizar_nome(nome_evento)
     partes_ev = [w for w in nome_n.split() if w not in stopwords and len(w) > 1]
     if not partes_ev:
@@ -1050,16 +1060,21 @@ def _buscar_paciente_por_nome(nome_evento: str, pacientes: list) -> dict:
         else:
             comuns = set(partes_ev) & set(partes_pac)
             primeiro_pac = partes_pac[0]
-            first_match = (primeiro_ev == primeiro_pac)
+            first_exact = (primeiro_ev == primeiro_pac)
+            first_ratio = SequenceMatcher(None, primeiro_ev, primeiro_pac).ratio() if not first_exact else 1.0
 
-            if first_match and len(comuns) >= 2:
+            if first_exact and len(comuns) >= 2:
                 score = 6
-            elif first_match:
+            elif first_exact:
                 score = 5
+            elif first_ratio >= 0.80 and len(comuns) >= 1:
+                score = 7  # fuzzy nome + sobrenome em comum → sugestão alta
+            elif first_ratio >= 0.75:
+                score = 4  # fuzzy nome apenas → sugestão média
             elif len(comuns) >= 2:
                 score = 3
             else:
-                score = 0  # 1 palavra em comum (sobrenome isolado) → ignora
+                score = 0
 
         if score > 0:
             scored.append((score, {"id": p["id"], "nome": p["nome"]}))
@@ -1071,8 +1086,13 @@ def _buscar_paciente_por_nome(nome_evento: str, pacientes: list) -> dict:
     best = scored[0][0]
     top = [s[1] for s in scored if s[0] == best]
 
-    if len(top) == 1:
+    # Score 8+ com candidato único → exato (confirma direto)
+    if best >= 8 and len(top) == 1:
         return {"tipo": "exato", "paciente": top[0]}
+    # Score 6 com candidato único → exato também (primeiro nome idêntico + sobrenome)
+    if best >= 5 and len(top) == 1:
+        return {"tipo": "exato", "paciente": top[0]}
+    # Score 4-7 ou múltiplos empatados → pede confirmação
     return {"tipo": "sugestoes", "sugestoes": top[:4]}
 
 
@@ -1138,7 +1158,7 @@ async def _gerar_sugestoes_gcal(access_token: str, data: str, hora_ini: str, hor
 _SAFE_EVENT_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]{1,1024}$")
 
 
-@app.delete("/agenda/google/{event_id}")
+@app.delete("/agenda/google/{event_id}", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 async def agenda_cancelar_evento(event_id: str, request: Request = None):
     """Cancela (deleta) um evento do Google Calendar primário do fisio."""
     import httpx
@@ -1196,7 +1216,7 @@ async def agenda_buscar(q: str = "", request: Request = None):
             async with httpx.AsyncClient() as c:
                 for q_term in queries:
                     resp = await c.get(
-                        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                        GCAL_EVENTS_URL,
                         params={
                             "q": q_term,
                             "singleEvents": "true",
@@ -1227,7 +1247,7 @@ async def agenda_buscar(q: str = "", request: Request = None):
                 hora_fim     = (end.get("dateTime") or "")[11:16]
                 gcal.append({
                     "id":          ev.get("id"),
-                    "titulo":      titulo or "(sem título)",
+                    "titulo":      titulo or SEM_TITULO,
                     "data":        data_str,
                     "hora_inicio": hora_inicio,
                     "hora_fim":    hora_fim,
@@ -1243,7 +1263,7 @@ async def agenda_buscar(q: str = "", request: Request = None):
 class AgendaInterpretarBody(BaseModel):
     texto: str
 
-@app.post("/agenda/interpretar")
+@app.post("/agenda/interpretar", responses={422: {"description": "Unprocessable Entity"}})
 async def agenda_interpretar(body: AgendaInterpretarBody, request: Request = None):
     """Interpreta pedido de agendamento e verifica disponibilidade no Google Calendar."""
     from datetime import date
@@ -1295,7 +1315,7 @@ class AgendaConfirmarBody(BaseModel):
     hora_fim: str
     paciente_id: int | None = None
 
-@app.post("/agenda/confirmar")
+@app.post("/agenda/confirmar", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
     """Cria evento no Google Calendar do fisio."""
     import httpx
@@ -1311,13 +1331,13 @@ async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
 
     event_body = {
         "summary": body.nome,
-        "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": "America/Sao_Paulo"},
-        "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": "America/Sao_Paulo"},
+        "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": TZ_SAO_PAULO},
+        "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": TZ_SAO_PAULO},
         "colorId": "2",
     }
     async with httpx.AsyncClient() as c:
         resp = await c.post(
-            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+            GCAL_EVENTS_URL,
             json=event_body,
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=10.0,
@@ -1329,7 +1349,7 @@ async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
     return {"ok": True, "event_id": ev.get("id")}
 
 
-@app.get("/pacientes/{paciente_id}/resumo")
+@app.get("/pacientes/{paciente_id}/resumo", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -1346,7 +1366,7 @@ async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Req
     return {"paciente": paciente, "resumo": resumo}
 
 
-@app.post("/pacientes/{paciente_id}/perguntar")
+@app.post("/pacientes/{paciente_id}/perguntar", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody, request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -1367,7 +1387,7 @@ async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody, request: 
 
 # ---------- Documentos ----------
 
-@app.post("/pacientes/{paciente_id}/documentos", status_code=201)
+@app.post("/pacientes/{paciente_id}/documentos", status_code=201, responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
 async def upload_documento(paciente_id: int, arquivo: Annotated[UploadFile, File()], request: Request = None):
     import io, uuid
     from pypdf import PdfReader
@@ -1407,7 +1427,7 @@ async def upload_documento(paciente_id: int, arquivo: Annotated[UploadFile, File
     return doc
 
 
-@app.get("/pacientes/{paciente_id}/documentos")
+@app.get("/pacientes/{paciente_id}/documentos", responses={404: {"description": "Not Found"}})
 def listar_documentos(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -1416,7 +1436,7 @@ def listar_documentos(paciente_id: int, request: Request):
     return db.get_documentos_paciente(paciente_id)
 
 
-@app.get("/documentos/{doc_id}/arquivo")
+@app.get("/documentos/{doc_id}/arquivo", responses={404: {"description": "Not Found"}})
 def servir_documento(doc_id: int, request: Request):
     doc = db.get_documento(doc_id)
     if not doc or doc.get("deletado_em"):
@@ -1428,7 +1448,7 @@ def servir_documento(doc_id: int, request: Request):
     return FileResponse(caminho, media_type="application/pdf", filename=doc["nome_original"])
 
 
-@app.delete("/documentos/{doc_id}", status_code=204)
+@app.delete("/documentos/{doc_id}", status_code=204, responses={404: {"description": "Not Found"}})
 def deletar_documento(doc_id: int, request: Request):
     owner = _owner_email(request)
     doc = db.get_documento(doc_id)
@@ -1448,7 +1468,7 @@ def deletar_documento(doc_id: int, request: Request):
 
 # ---------- Pacotes ----------
 
-@app.post("/pacientes/{paciente_id}/pacotes", status_code=201)
+@app.post("/pacientes/{paciente_id}/pacotes", status_code=201, responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
 def criar_pacote(paciente_id: int, body: PacoteCreate, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
@@ -1463,7 +1483,7 @@ def criar_pacote(paciente_id: int, body: PacoteCreate, request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/pacientes/{paciente_id}/pacotes")
+@app.get("/pacientes/{paciente_id}/pacotes", responses={404: {"description": "Not Found"}})
 def listar_pacotes(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -1569,7 +1589,7 @@ def listar_notas_fiscais(
     }
 
 
-@app.get("/notas-fiscais/{nf_id}")
+@app.get("/notas-fiscais/{nf_id}", responses={404: {"description": "Not Found"}})
 def buscar_nota_fiscal(nf_id: int):
     import json as _json
     nf = db.get_nota_fiscal(nf_id)
@@ -1582,7 +1602,7 @@ def buscar_nota_fiscal(nf_id: int):
     return {**nf, "dados": dados}
 
 
-@app.delete("/notas-fiscais/{nf_id}", status_code=204)
+@app.delete("/notas-fiscais/{nf_id}", status_code=204, responses={404: {"description": "Not Found"}})
 def cancelar_nota_fiscal(nf_id: int, request: Request):
     nf = db.get_nota_fiscal(nf_id)
     if not nf:
@@ -1596,13 +1616,13 @@ def cancelar_nota_fiscal(nf_id: int, request: Request):
 class PushSubscribeBody(BaseModel):
     subscription: dict
 
-@app.get("/push/vapid-public-key")
+@app.get("/push/vapid-public-key", responses={501: {"description": "Not Implemented"}})
 async def push_vapid_key():
     if not notifications.VAPID_PUBLIC_KEY:
         raise HTTPException(status_code=501, detail="Push não configurado no servidor.")
     return {"vapid_public_key": notifications.VAPID_PUBLIC_KEY}
 
-@app.post("/push/subscribe")
+@app.post("/push/subscribe", responses={401: {"description": "Unauthorized"}})
 async def push_subscribe(body: PushSubscribeBody, request: Request):
     owner = _owner_email(request)
     if not owner:
@@ -1611,7 +1631,7 @@ async def push_subscribe(body: PushSubscribeBody, request: Request):
     db.salvar_subscription(owner, json.dumps(body.subscription))
     return {"ok": True}
 
-@app.delete("/push/unsubscribe")
+@app.delete("/push/unsubscribe", responses={401: {"description": "Unauthorized"}})
 async def push_unsubscribe(request: Request):
     owner = _owner_email(request)
     if not owner:
@@ -1630,14 +1650,14 @@ class ConfigBody(BaseModel):
     valor_sessao_avulsa: float | None = None
     cobrar_avulsa: bool = True
 
-@app.get("/configuracoes")
+@app.get("/configuracoes", responses={401: {"description": "Unauthorized"}})
 async def get_configuracoes(request: Request):
     owner = _owner_email(request)
     if not owner:
         raise HTTPException(status_code=401, detail="Não autenticado")
     return db.get_config_usuario(owner)
 
-@app.put("/configuracoes")
+@app.put("/configuracoes", responses={401: {"description": "Unauthorized"}})
 async def put_configuracoes(body: ConfigBody, request: Request):
     owner = _owner_email(request)
     if not owner:
@@ -1659,7 +1679,7 @@ async def auth_config():
         "admin_email": os.environ.get("ADMIN_EMAIL", ""),
     }
 
-@app.post("/auth/google-login")
+@app.post("/auth/google-login", responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 501: {"description": "Not Implemented"}})
 @limiter.limit("20/minute")
 async def auth_google_login(request: Request, body: GoogleLoginBody):
     """
@@ -1946,7 +1966,7 @@ class AtestadoInterpretarBody(BaseModel):
     texto: str
     paciente_id: int
 
-@app.post("/atestado/interpretar")
+@app.post("/atestado/interpretar", responses={404: {"description": "Not Found"}, 422: {"description": "Unprocessable Entity"}})
 async def atestado_interpretar(body: AtestadoInterpretarBody, request: Request = None):
     """Interpreta pedido de atestado em linguagem natural e retorna campos preenchidos pela IA."""
     from datetime import date
@@ -1973,7 +1993,7 @@ async def atestado_interpretar(body: AtestadoInterpretarBody, request: Request =
 class SecretariaVincularBody(BaseModel):
     secretaria_email: str
 
-@app.post("/admin/secretaria/vincular", status_code=200)
+@app.post("/admin/secretaria/vincular", status_code=200, responses={401: {"description": "Unauthorized"}, 409: {"description": "Conflict"}})
 def admin_vincular_secretaria(body: SecretariaVincularBody, request: Request = None):
     """Fisio convida secretaria — cria vínculo com status=pendente (aguarda aprovação do admin)."""
     fisio_email = _owner_email(request)
@@ -2064,7 +2084,7 @@ async def sec_agenda(ano: int, mes: int, request: Request = None):
             ultimo = f"{ano}-{str(mes).zfill(2)}-{ultimo_dia}T23:59:59-03:00"
             async with httpx.AsyncClient() as c:
                 resp = await c.get(
-                    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                    GCAL_EVENTS_URL,
                     params={"singleEvents": "true", "orderBy": "startTime",
                             "timeMin": primeiro, "timeMax": ultimo, "maxResults": 100},
                     headers={"Authorization": f"Bearer {access_token}"},
@@ -2075,7 +2095,7 @@ async def sec_agenda(ano: int, mes: int, request: Request = None):
                     start = ev.get("start", {})
                     end   = ev.get("end", {})
                     gcal_eventos.append({
-                        "id": ev.get("id"), "titulo": ev.get("summary") or "(sem título)",
+                        "id": ev.get("id"), "titulo": ev.get("summary") or SEM_TITULO,
                         "data": start.get("date") or (start.get("dateTime") or "")[:10],
                         "hora_inicio": (start.get("dateTime") or "")[11:16],
                         "hora_fim":    (end.get("dateTime") or "")[11:16],
@@ -2089,8 +2109,9 @@ async def sec_agenda(ano: int, mes: int, request: Request = None):
 
 class SecAgendamentoInterpretarBody(BaseModel):
     texto: str
+    data_ref: str | None = None  # data selecionada no calendário da secretaria (YYYY-MM-DD)
 
-@app.post("/sec/agendamento/interpretar")
+@app.post("/sec/agendamento/interpretar", responses={422: {"description": "Unprocessable Entity"}})
 async def sec_agendamento_interpretar(body: SecAgendamentoInterpretarBody, request: Request = None):
     """IA interpreta pedido de agendamento da secretaria."""
     from datetime import date
@@ -2099,7 +2120,8 @@ async def sec_agendamento_interpretar(body: SecAgendamentoInterpretarBody, reque
     
     try:
         # Usar fisio_email para que o billing seja atribuído ao fisio; sec_email registra quem chamou
-        parsed = await ai.interpretar_agendamento(body.texto, date.today().isoformat(), fisio_email, sec_email=sec_email)
+        data_base = body.data_ref or date.today().isoformat()
+        parsed = await ai.interpretar_agendamento(body.texto, data_base, fisio_email, sec_email=sec_email)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Não consegui interpretar: {e}")
 
@@ -2114,11 +2136,11 @@ async def sec_agendamento_interpretar(body: SecAgendamentoInterpretarBody, reque
             "gcal_conectado": False, 
             "sugestoes": [],
             "paciente_match": match_result.get("paciente") if match_result.get("tipo") == "exato" else None,
-            "paciente_sugestoes": match_result.get("candidatos") if match_result.get("tipo") == "sugestoes" else []
+            "paciente_sugestoes": match_result.get("sugestoes", []) if match_result.get("tipo") == "sugestoes" else []
         }
     try:
         access_token = await calendar_service._obter_access_token(refresh_token)
-        disponivel = await _verificar_disponibilidade_gcal(access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"])
+        disponivel, _ = await _verificar_disponibilidade_gcal(access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"])
         sugestoes  = [] if disponivel else await _gerar_sugestoes_gcal(access_token, parsed["data"], parsed["hora_inicio"], parsed["hora_fim"])
     except Exception as exc:
         # Se falhar o Google (ex: token expirado no console), não trava a interpretação
@@ -2143,17 +2165,18 @@ class SecAgendamentoConfirmarBody(BaseModel):
     hora_inicio: str
     hora_fim: str
     paciente_id: int | None = None
+    forcar: bool = False  # True = confirmar mesmo com horário ocupado
 
 class SecPacotePagamentoBody(BaseModel):
     pago: bool
 
-@app.post("/sec/agendamento/confirmar")
+@app.post("/sec/agendamento/confirmar", responses={400: {"description": "Bad Request"}, 409: {"description": "Conflict"}, 502: {"description": "Bad Gateway"}})
 async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: Request = None):
     """Cria evento no Google Calendar do fisio (ou local se não conectado)."""
     import httpx
     _, fisio_email = _sec_context(request)
     refresh_token = db.get_google_refresh_token(fisio_email)
-    
+
     if not refresh_token:
         # Fallback: Agendamento local se não houver Google Calendar
         if body.paciente_id:
@@ -2165,12 +2188,28 @@ async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: 
     try:
         access_token = await calendar_service._obter_access_token(refresh_token)
     except Exception:
-        # Se falhar a renovação do token, tratamos como se não estivesse conectado para permitir fallback local
         if body.paciente_id:
             db.criar_sessao(body.paciente_id, body.data)
             db.registrar_audit(fisio_email, "agendamento_local_sec_fallback", f"paciente_id={body.paciente_id} data={body.data}", _client_ip(request))
             return {"ok": True, "gcal": False, "local": True, "info": "Google desconectado, salvo localmente."}
         raise HTTPException(status_code=400, detail="A conexão com o Google da fisioterapeuta expirou. Ela precisa reconectar.")
+
+    # Verificação de conflito no momento da confirmação (não só no interpretar)
+    if not body.forcar:
+        try:
+            slot_livre, _ = await _verificar_disponibilidade_gcal(
+                access_token, body.data, body.hora_inicio, body.hora_fim
+            )
+            if not slot_livre:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Horário já está ocupado na agenda. Envie forcar=true para confirmar mesmo assim."
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.warning(f"Falha ao verificar freebusy no confirmar: {exc}")
+            # Se não conseguir checar, deixa prosseguir
 
     nome_evento = body.nome
     if body.paciente_id:
@@ -2180,12 +2219,12 @@ async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: 
             nome_evento = pac["nome"]
     event = {
         "summary": f"Physio — {nome_evento}",
-        "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": "America/Sao_Paulo"},
-        "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": "America/Sao_Paulo"},
+        "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": TZ_SAO_PAULO},
+        "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": TZ_SAO_PAULO},
     }
     async with httpx.AsyncClient() as c:
         resp = await c.post(
-            "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+            GCAL_EVENTS_URL,
             json=event, headers={"Authorization": f"Bearer {access_token}"}, timeout=10.0,
         )
     if resp.status_code not in (200, 201):
@@ -2193,7 +2232,7 @@ async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: 
     return {"ok": True, "event_id": resp.json().get("id")}
 
 
-@app.delete("/sec/agendamento/{event_id}")
+@app.delete("/sec/agendamento/{event_id}", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 async def sec_agendamento_cancelar(event_id: str, request: Request = None):
     """Cancela evento do Google Calendar do fisio."""
     import httpx
@@ -2223,7 +2262,7 @@ class SecAtestadoInterpretarBody(BaseModel):
     texto: str
     paciente_id: int | None = None
 
-@app.post("/sec/atestado/interpretar")
+@app.post("/sec/atestado/interpretar", responses={422: {"description": "Unprocessable Entity"}})
 async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Request = None):
     """IA interpreta pedido de atestado feito pela secretaria."""
     from datetime import date
@@ -2250,7 +2289,7 @@ def sec_listar_pacientes(request: Request = None):
     return db.listar_pacientes(fisio_email)
 
 
-@app.post("/sec/pacientes", status_code=201)
+@app.post("/sec/pacientes", status_code=201, responses={409: {"description": "Conflict"}})
 def sec_criar_paciente(body: PacienteCreate, request: Request = None):
     """Secretaria cadastra novo paciente no nome do fisio vinculado."""
     _, fisio_email = _sec_context(request)
@@ -2265,7 +2304,7 @@ def sec_criar_paciente(body: PacienteCreate, request: Request = None):
     return paciente
 
 
-@app.put("/sec/pacientes/{paciente_id}")
+@app.put("/sec/pacientes/{paciente_id}", responses={404: {"description": "Not Found"}, 409: {"description": "Conflict"}})
 def sec_atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request = None):
     """Secretaria atualiza dados cadastrais de um paciente do fisio vinculado."""
     sec_email, fisio_email = _sec_context(request)
@@ -2304,7 +2343,7 @@ def sec_atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Requ
 
 # ---------- Secretaria — Pacotes ----------
 
-@app.get("/sec/pacientes/{paciente_id}/pacotes")
+@app.get("/sec/pacientes/{paciente_id}/pacotes", responses={404: {"description": "Not Found"}})
 def sec_listar_pacotes(paciente_id: int, request: Request = None):
     """Secretaria lista os pacotes de um paciente do fisio vinculado."""
     _, fisio_email = _sec_context(request)
@@ -2315,7 +2354,7 @@ def sec_listar_pacotes(paciente_id: int, request: Request = None):
     return db.get_pacotes_paciente(paciente_id)
 
 
-@app.post("/sec/pacientes/{paciente_id}/pacotes", status_code=201)
+@app.post("/sec/pacientes/{paciente_id}/pacotes", status_code=201, responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
 def sec_criar_pacote(paciente_id: int, body: PacoteCreate, request: Request = None):
     """Secretaria cria pacote de sessões para um paciente do fisio vinculado."""
     _, fisio_email = _sec_context(request)
@@ -2338,7 +2377,7 @@ def sec_listar_pacotes_ativos(request: Request = None):
     return db.listar_todos_pacotes_ativos(fisio_email)
 
 
-@app.patch("/sec/pacotes/{pacote_id}/pagamento")
+@app.patch("/sec/pacotes/{pacote_id}/pagamento", responses={404: {"description": "Not Found"}})
 def sec_atualizar_pagamento_pacote(pacote_id: int, body: SecPacotePagamentoBody, request: Request = None):
     """Secretaria atualiza o status de pagamento de um pacote."""
     sec_email, fisio_email = _sec_context(request)

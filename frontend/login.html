@@ -177,7 +177,7 @@
           document.getElementById('google-btn-wrap').appendChild(btn);
         };
         document.head.appendChild(script);
-      } catch (_) {}
+      } catch (e) { console.error('loadGoogleBtn', e); }
     }
 
     async function handleGoogleCode(response) {

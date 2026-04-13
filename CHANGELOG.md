@@ -4,6 +4,66 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.303 — 2026-04-13
+
+### Funcionalidades
+- **Contexto de data na agenda:** ao abrir o modal "Agendar" com uma data selecionada no calendário, o formulário exibe um aviso azul "Agendando para: [data por extenso]", deixando claro para qual dia está sendo agendado
+- **"Nesta data" usa a data selecionada:** o campo `data_ref` (data do calendário) é enviado ao backend e repassado à IA — ao dizer "nesta data", "nesse dia" etc., a IA usa a data selecionada em vez de hoje
+
+### Técnico
+- `SecAgendamentoInterpretarBody`: novo campo `data_ref: str | None = None`
+- `sec_agendamento_interpretar`: usa `body.data_ref or date.today().isoformat()` como base de data para a IA
+- `ai.interpretar_agendamento`: prompt atualizado com regra explícita sobre expressões que indicam a data já está definida
+- Frontend: `agSheetOpen()` exibe `#ag-data-hint` quando `_diaSel` está preenchida; `ag-verificar-btn` passa `data_ref: _diaSel || null` no body
+
+---
+
+## Beta-0.302 — 2026-04-13
+
+### Correção UX
+- **Checkbox "confirmar mesmo assim" removido ao selecionar sugestão:** ao clicar em um horário alternativo das sugestões, o checkbox de sobreposição é removido automaticamente e `_agDisponivel` é marcado como `true` — o botão Confirmar fica habilitado diretamente, sem exigir nenhuma confirmação extra
+
+---
+
+## Beta-0.301 — 2026-04-13
+
+### Correção crítica
+- **Freebusy nunca funcionava:** `_verificar_disponibilidade_gcal` retorna tupla `(bool, list)`, mas a rota da secretaria `/interpretar` atribuía o resultado inteiro a `disponivel` — uma tupla é sempre truthy, logo o slot era sempre considerado livre independentemente do que o Google Calendar retornava. Corrigido com desestruturação `disponivel, _ = await ...` em todos os callers da secretaria. Isso explica por que duplos agendamentos eram criados sem nenhum aviso ao usuário.
+
+---
+
+## Beta-0.300 — 2026-04-13
+
+### Correções
+- **Duplo-booking (backend):** endpoint `/sec/agendamento/confirmar` agora faz freebusy check no momento da confirmação, não só na interpretação — retorna HTTP 409 se o horário ficou ocupado entre o interpretar e o confirmar
+- **`forcar=true`:** campo adicionado ao body de confirmação; só é aceito quando o usuário marcou explicitamente a sobreposição. Impede criação acidental de eventos duplicados no Google Calendar
+- **409 dinâmico (frontend):** se o backend retornar 409, o frontend exibe o checkbox "confirmar mesmo assim" mesmo que não fosse esperado (ex: slot ocupado por outra confirmação simultânea)
+- **`_agDisponivel`:** estado do slot armazenado em variável de módulo — elimina a detecção frágil via `querySelector('[style*=...]')`
+
+---
+
+## Beta-0.299 — 2026-04-13
+
+### Correções
+- **Similaridade de nomes no agendamento:** `_buscar_paciente_por_nome` agora usa `difflib.SequenceMatcher` para detectar nomes com pequenas diferenças ortográficas (ex: "Erika" ↔ "Erica", "Erik" ↔ "Eric"). Score 7 para first_ratio ≥ 0.80 + sobrenome em comum, score 4 para first_ratio ≥ 0.75 isolado
+- **Bug key mismatch:** `paciente_sugestoes` retornava sempre vazio porque o caller buscava `"candidatos"` mas a função retornava `"sugestoes"` — corrigido em ambas as rotas (`/interpretar`)
+- **UI de desambiguação de paciente:** quando o sistema detecta nome similar (mas não exato), exibe painel amarelo pedindo ao usuário que confirme qual paciente é o correto, ou marque como "sem vínculo"
+- **Duplo-booking consciente:** quando o horário está ocupado, o botão "Confirmar" fica bloqueado até que o usuário marque explicitamente "Confirmar mesmo assim (horário sobreposto)" — evita marcações acidentais no mesmo horário
+
+---
+
+## Beta-0.298 — 2026-04-13
+
+### Correções
+- **main.py constantes:** corrigidas auto-referências geradas na sessão anterior (`ERR_SESSAO_NOT_FOUND = ERR_SESSAO_NOT_FOUND` etc.) — restaurados valores string corretos
+
+### Qualidade (Sonar)
+- **S2486 (JS):** 8 blocos `catch {}` vazios substituídos por `console.error(...)` — `index.html`, `secretaria/index.html`, `login.html`
+- **S3358 (JS):** ~40 ternários aninhados extraídos para variáveis independentes — `index.html`, `admin.html`; adicionados helpers `_getAudioMimeType()`, `_horaDisplay()`, `_blobExt()` para eliminar repetição
+- **S8415 (Python):** 60 decoradores de rota FastAPI em `main.py` receberam parâmetro `responses=` documentando os HTTPExceptions que cada rota pode lançar
+
+---
+
 ## Beta-0.297 — 2026-04-13
 
 ### Melhorias

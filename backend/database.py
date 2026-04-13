@@ -13,6 +13,14 @@ logger = logging.getLogger("physio_notes")
 STATUS_ABERTA = "aberta"
 STATUS_ENCERRADA = "encerrada"
 STATUS_CANCELADA = "cancelada"
+_SQL_PRAGMA_PACIENTE = "PRAGMA table_info(paciente)"
+_SQL_GET_PACIENTE_BY_ID = "SELECT * FROM paciente WHERE id = ?"
+_SQL_OWNER_EMAIL_FILTER = "p.owner_email = ?"
+_SQL_INSERT_PROCEDIMENTO_EXTRA = (
+    "INSERT INTO procedimento_extra "
+    "(sessao_id, paciente_id, descricao, valor, data, criado_em) "
+    "VALUES (?, ?, ?, ?, ?, ?)"
+)
 
 # ---------- Criptografia de campos PII (CPF, endereço) ----------
 # Estratégia: Blind Index
@@ -154,7 +162,7 @@ def init_db():
 def _migrate():
     """Adiciona colunas novas sem quebrar bancos existentes."""
     with get_conn() as conn:
-        cols = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
+        cols = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
         if "anamnese" not in cols:
             conn.execute("ALTER TABLE paciente ADD COLUMN anamnese TEXT")
         if "cpf" not in cols:
@@ -162,7 +170,7 @@ def _migrate():
         if "endereco" not in cols:
             conn.execute("ALTER TABLE paciente ADD COLUMN endereco TEXT")
         # Multi-tenant: dono de cada paciente
-        cols_pac = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
+        cols_pac = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
         if "owner_email" not in cols_pac:
             conn.execute("ALTER TABLE paciente ADD COLUMN owner_email TEXT")
         if "conduta_tratamento" not in cols_pac:
@@ -173,7 +181,7 @@ def _migrate():
             conn.execute("ALTER TABLE paciente ADD COLUMN cpf_hash TEXT")
 
         # Sugestão da IA (always overwrite, never accumulate)
-        cols_pac2 = [r[1] for r in conn.execute("PRAGMA table_info(paciente)").fetchall()]
+        cols_pac2 = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
         if "sugestao_ia" not in cols_pac2:
             conn.execute("ALTER TABLE paciente ADD COLUMN sugestao_ia TEXT")
         if "sugestao_ia_em" not in cols_pac2:
@@ -377,7 +385,7 @@ def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | No
             (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco), owner_email, conduta_tratamento, _now()),
         )
         conn.commit()
-        return _decrypt_paciente(_row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (cur.lastrowid,)).fetchone()))
+        return _decrypt_paciente(_row_to_dict(conn.execute(_SQL_GET_PACIENTE_BY_ID, (cur.lastrowid,)).fetchone()))
 
 
 def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None) -> dict:
@@ -387,7 +395,7 @@ def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None,
             (nome, data_nascimento, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco), conduta_tratamento, paciente_id),
         )
         conn.commit()
-        return _decrypt_paciente(_row_to_dict(conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone()))
+        return _decrypt_paciente(_row_to_dict(conn.execute(_SQL_GET_PACIENTE_BY_ID, (paciente_id,)).fetchone()))
 
 
 def listar_pacientes(owner_email: str | None = None) -> list[dict]:
@@ -423,7 +431,7 @@ def deletar_paciente(paciente_id: int):
 
 def get_paciente(paciente_id: int) -> dict | None:
     with get_conn() as conn:
-        row = conn.execute("SELECT * FROM paciente WHERE id = ?", (paciente_id,)).fetchone()
+        row = conn.execute(_SQL_GET_PACIENTE_BY_ID, (paciente_id,)).fetchone()
         return _decrypt_paciente(_row_to_dict(row))
 
 
@@ -471,7 +479,7 @@ def get_agenda_owner(owner_email: str | None, ano_mes: str | None = None) -> lis
         where = ["s.deletado_em IS NULL"]
         params: list = []
         if owner_email:
-            where.append("p.owner_email = ?")
+            where.append(_SQL_OWNER_EMAIL_FILTER)
             params.append(owner_email)
         if ano_mes:
             where.append("strftime('%Y-%m', s.data) = ?")
@@ -571,7 +579,7 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None, cobrar: bool
                 if valor and valor > 0:
                     data_sessao = sessao["data"] or date.today().isoformat()
                     conn.execute(
-                        "INSERT INTO procedimento_extra (sessao_id, paciente_id, descricao, valor, data, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+                        _SQL_INSERT_PROCEDIMENTO_EXTRA,
                         (sessao_id, sessao["paciente_id"], "Sessão avulsa", valor, data_sessao, _now()),
                     )
                     sessao_avulsa_valor = valor
@@ -625,7 +633,7 @@ def registrar_cancelamento(
         if cobrar and valor and valor > 0:
             data_sessao = sessao["data"] or _date.today().isoformat()
             conn.execute(
-                "INSERT INTO procedimento_extra (sessao_id, paciente_id, descricao, valor, data, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+                _SQL_INSERT_PROCEDIMENTO_EXTRA,
                 (sessao_id, sessao["paciente_id"], "Taxa de cancelamento", valor, data_sessao, _now()),
             )
         conn.commit()
@@ -968,7 +976,7 @@ def deletar_pacote(pacote_id: int):
 def adicionar_procedimento(sessao_id: int, paciente_id: int, descricao: str, valor: float | None, data: str | None) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO procedimento_extra (sessao_id, paciente_id, descricao, valor, data, criado_em) VALUES (?, ?, ?, ?, ?, ?)",
+            _SQL_INSERT_PROCEDIMENTO_EXTRA,
             (sessao_id, paciente_id, descricao, valor, data, _now()),
         )
         conn.commit()
@@ -1017,7 +1025,7 @@ def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | Non
             pk_where.append("pk.paciente_id = ?")
             pk_params.append(paciente_id)
         if owner_email:
-            pk_where.append("p.owner_email = ?")
+            pk_where.append(_SQL_OWNER_EMAIL_FILTER)
             pk_params.append(owner_email)
 
         pacotes = [_row_to_dict(r) for r in conn.execute(f"""
@@ -1042,7 +1050,7 @@ def get_faturamento_pacientes(ano_mes: str | None = None, paciente_id: int | Non
             pe_where.append("pe.paciente_id = ?")
             pe_params.append(paciente_id)
         if owner_email:
-            pe_where.append("p.owner_email = ?")
+            pe_where.append(_SQL_OWNER_EMAIL_FILTER)
             pe_params.append(owner_email)
 
         procedimentos = [_row_to_dict(r) for r in conn.execute(f"""

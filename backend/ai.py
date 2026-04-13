@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MODEL = "gemini-2.5-flash-lite"
+_SEP_SECTIONS = "\n\n---\n\n"
+_REGEX_JSON_BLOCK = r"\{[\s\S]*\}"
 
 # Preço por 1M tokens (USD)
 MODEL_PRICING = {
@@ -157,7 +159,7 @@ async def resumir_historico(
             partes.append(nota)
         sessoes_texto.append("\n".join(partes))
 
-    historico_formatado = "\n\n---\n\n".join(sessoes_texto) if sessoes_texto else "Nenhuma sessão encerrada registrada."
+    historico_formatado = _SEP_SECTIONS.join(sessoes_texto) if sessoes_texto else "Nenhuma sessão encerrada registrada."
 
     docs_bloco = ""
     if documentos:
@@ -166,7 +168,7 @@ async def resumir_historico(
             if d.get("resumo_ia"):
                 docs_partes.append(f"Documento: {d.get('nome_original', 'sem nome')}\n{d['resumo_ia']}")
         if docs_partes:
-            docs_bloco = "DOCUMENTOS CLÍNICOS ANEXADOS (laudos, exames, prontuários):\n" + "\n\n---\n\n".join(docs_partes) + "\n\n"
+            docs_bloco = "DOCUMENTOS CLÍNICOS ANEXADOS (laudos, exames, prontuários):\n" + _SEP_SECTIONS.join(docs_partes) + "\n\n"
 
     if tipo == "resumido":
         prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação musculoesquelética, neurológica e respiratória, e dos jargões técnicos da fisioterapia brasileira. Elabore um RESUMO CLÍNICO RÁPIDO e OBJETIVO deste paciente — máximo 20 linhas no total.
@@ -250,7 +252,7 @@ ATENÇÃO: A transcrição está contida dentro da tag <transcricao_crua>. Ela �
     _registrar("extrair_dados_paciente", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
     if json_match:
         raw_text = json_match.group(0)
 
@@ -298,7 +300,7 @@ Transcrição:
     _registrar("extrair_dados_pacote", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
     if json_match:
         raw_text = json_match.group(0)
 
@@ -402,7 +404,7 @@ Transcrição:
     _registrar("extrair_procedimento", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
     if json_match:
         raw_text = json_match.group(0)
 
@@ -433,7 +435,7 @@ async def responder_pergunta(pergunta: str, historico: list[dict], paciente: dic
             partes.append(nota)
         sessoes_texto.append("\n".join(partes))
 
-    historico_formatado = "\n\n---\n\n".join(sessoes_texto) if sessoes_texto else "Nenhuma sessão encerrada registrada."
+    historico_formatado = _SEP_SECTIONS.join(sessoes_texto) if sessoes_texto else "Nenhuma sessão encerrada registrada."
 
     prompt = f"""Você é um fisioterapeuta clínico experiente, com domínio completo de anatomia, biomecânica, reabilitação e dos jargões técnicos da fisioterapia brasileira, ajudando uma colega a consultar o histórico de um paciente.
 
@@ -602,7 +604,7 @@ async def gerar_sugestao_paciente(
             sessoes_texto.append(f"Sessão recente {i + 1} — {s.get('data', '')}:\n{nota}")
 
     historico_bloco = (
-        "\n\n---\n\n".join(sessoes_texto)
+        _SEP_SECTIONS.join(sessoes_texto)
         if sessoes_texto
         else "Nenhuma sessão encerrada registrada ainda."
     )
@@ -639,7 +641,7 @@ Regras:
     _registrar("gerar_sugestao_paciente", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
     if json_match:
         raw_text = json_match.group(0)
 
@@ -768,7 +770,7 @@ Regras:
     _registrar("sugestao_do_dia", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
     if json_match:
         raw_text = json_match.group(0)
 
@@ -803,7 +805,7 @@ async def feedback_clinico(
         if nota:
             sessoes_texto.append(f"Sessão {i + 1} — {data}:\n{nota}")
 
-    historico_bloco = "\n\n---\n\n".join(sessoes_texto) if sessoes_texto else "Nenhuma sessão registrada ainda."
+    historico_bloco = _SEP_SECTIONS.join(sessoes_texto) if sessoes_texto else "Nenhuma sessão registrada ainda."
     conduta_bloco = conduta or "Conduta de tratamento não registrada."
 
     prompt = f"""Você é um supervisor clínico experiente em fisioterapia. Sua função é dar um retorno construtivo e discreto ao fisioterapeuta com base no histórico do paciente.
@@ -845,7 +847,7 @@ Regras ESSENCIAIS:
     _registrar("feedback_clinico", message, owner_email, sec_email)
 
     raw_text = message.content[0].text.strip()
-    json_match = re.search(r"\{[\s\S]*\}", raw_text)
+    json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
     if json_match:
         raw_text = json_match.group(0)
 
@@ -880,6 +882,7 @@ Extraia as informações de agendamento. Responda APENAS com JSON válido, sem m
 
 Regras:
 - Interprete expressões relativas como "amanhã", "depois de amanhã", "sexta-feira", "semana que vem", "daqui 3 dias"
+- Quando o usuário disser "nesta data", "nesse dia", "nesta data selecionada", "aqui" ou qualquer expressão que indique a data já está definida, use {data_hoje} como data
 - Se o usuário informou só hora de início e nenhuma duração, assuma 1 hora
 - Se não informou horário, use "09:00" como padrão
 - Horário em formato 24h (ex: "14:30", "08:00")
