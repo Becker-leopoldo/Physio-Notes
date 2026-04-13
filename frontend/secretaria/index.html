@@ -241,6 +241,10 @@
       grid-template-columns: 55fr 45fr;
       gap: var(--space-5);
       align-items: start;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: var(--space-6) var(--space-8);
+      width: 100%;
     }
     .agenda-col-eventos {
       display: flex;
@@ -611,7 +615,7 @@
   <div class="content">
 
     <!-- ABA: AGENDA -->
-    <div id="tab-agenda"><div class="content-inner">
+    <div id="tab-agenda">
       <div class="agenda-grid">
 
         <!-- Coluna esquerda: calendário -->
@@ -638,22 +642,19 @@
           <div class="dia-painel" id="dia-painel">
             <div class="dia-header">
               <span class="dia-titulo" id="dia-titulo"></span>
-              <span class="dia-count" id="dia-count"></span>
+              <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <span class="dia-count" id="dia-count"></span>
+                <button class="btn btn-primary btn-sm" id="btn-novo-ag" aria-label="Novo agendamento">+ Novo</button>
+              </div>
             </div>
             <div id="dia-itens">
               <div class="dia-painel-vazio">Selecione um dia para ver os eventos</div>
             </div>
           </div>
-          <div style="display:flex;justify-content:flex-end;">
-            <button class="fab-novo" id="btn-novo-ag">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              Novo agendamento
-            </button>
-          </div>
         </div>
 
       </div>
-    </div></div><!-- /content-inner /tab-agenda -->
+    </div><!-- /tab-agenda -->
 
     <!-- ABA: ATESTADO -->
     <div id="tab-atestado" style="display:none;">
@@ -2309,7 +2310,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.321';
+const APP_VERSION = 'Beta-0.322';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

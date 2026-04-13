@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.322 — 2026-04-13
+
+### Secretaria — Agenda: centralização e botão "Novo" no header
+- **Grid centralizado:** `.agenda-grid` com `max-width: 960px; margin: 0 auto` — removido o wrapper `content-inner` da aba agenda que estava limitando e desalinhando
+- **Botão "+ Novo" reposicionado:** movido para dentro do `dia-header` (canto superior direito do painel de eventos) como `btn-sm` — substituído o pill solto abaixo do painel
+
+---
+
 ## Beta-0.321 — 2026-04-13
 
 ### Secretaria — Agenda em 2 colunas (calendário + eventos)
