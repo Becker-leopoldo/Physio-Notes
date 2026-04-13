@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.336 — 2026-04-13
+
+### Correção — Layout mobile: conteúdo não encaixando (parte 2)
+- **`width:100%; align-self:center`** em todos os `section-body` com `max-width + margin:0 auto` (billing, créditos, faturamento, agenda, notas): em flex column, `margin: auto` cancela o stretch — sem `width:100%` explícito, os bodies ficavam com largura do conteúdo, não do container
+- **Cards PIX (R$50/R$100/R$150):** botões com `display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%` — corrige altura desigual dos cards no Safari onde `<button>` não estica automaticamente em CSS Grid
+
+---
+
 ## Beta-0.335 — 2026-04-13
 
 ### Correção — Layout mobile: conteúdo cortado / não centralizado
