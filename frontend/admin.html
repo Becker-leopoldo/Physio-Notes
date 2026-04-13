@@ -435,7 +435,7 @@
 
   <script>
     const token = localStorage.getItem('physio_token');
-    if (!token) { window.location.href = '/login.html'; }
+    if (!token) { globalThis.location.href = '/login.html'; }
 
     /* ─── Utilitários ─── */
     function initials(str) {
@@ -448,7 +448,7 @@
     }
 
     function escHtml(s) {
-      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return String(s ?? '').replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;').replaceAll(/"/g,'&quot;');
     }
 
     /* ─── Estado global ─── */
@@ -591,7 +591,7 @@
 
     /* ─── Templates ─── */
     function renderPendenteFisio(u) {
-      const id = btoa(u.email).replace(/[^a-zA-Z0-9]/g, '');
+      const id = btoa(u.email).replaceAll(/[^a-zA-Z0-9]/g, '');
       return `
         <div class="user-card" id="card-${id}" data-email="${escHtml(u.email)}" data-nome="${escHtml(u.nome)}">
           <div class="user-card-main">
@@ -609,7 +609,7 @@
     }
 
     function renderPendenteSecretaria(l) {
-      const id = btoa(l.secretaria_email).replace(/[^a-zA-Z0-9]/g, '');
+      const id = btoa(l.secretaria_email).replaceAll(/[^a-zA-Z0-9]/g, '');
       return `
         <div class="user-card" id="sec-pend-${id}" data-email="${escHtml(l.secretaria_email)}">
           <div class="user-card-main">
@@ -627,7 +627,7 @@
     }
 
     function renderFisioAtivo(u, link, inconsistentes) {
-      const id = btoa(u.email).replace(/[^a-zA-Z0-9]/g, '');
+      const id = btoa(u.email).replaceAll(/[^a-zA-Z0-9]/g, '');
       let subHtml = '';
       if (link) {
         const isInconsistente = inconsistentes.some(l => l.secretaria_email === link.secretaria_email);
@@ -662,7 +662,7 @@
     }
 
     function renderFisioInativo(u) {
-      const id = btoa(u.email).replace(/[^a-zA-Z0-9]/g, '');
+      const id = btoa(u.email).replaceAll(/[^a-zA-Z0-9]/g, '');
       return `
         <div class="user-card" id="card-${id}" data-email="${escHtml(u.email)}" data-nome="${escHtml(u.nome)}">
           <div class="user-card-main">

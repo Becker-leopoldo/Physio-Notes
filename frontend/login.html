@@ -367,9 +367,9 @@
 
     // Redireciona se já está logado
     if (localStorage.getItem('physio_token')) {
-      window.location.replace('/');
+      globalThis.location.replace('/');
     } else if (localStorage.getItem('sec_token')) {
-      window.location.replace('/secretaria/');
+      globalThis.location.replace('/secretaria/');
     } else {
       iniciarGoogleSSO();
     }
@@ -446,12 +446,12 @@
           localStorage.setItem('sec_token', data.token);
           localStorage.setItem('sec_user', JSON.stringify({ nome: data.nome, email: data.email, foto: data.foto }));
           setStatus('Olá, ' + nome + '! Redirecionando...', 'success');
-          setTimeout(() => { window.location.replace('/secretaria/'); }, 900);
+          setTimeout(() => { globalThis.location.replace('/secretaria/'); }, 900);
         } else {
           localStorage.setItem('physio_token', data.token);
           localStorage.setItem('physio_user', JSON.stringify({ nome: data.nome, email: data.email, foto: data.foto }));
           setStatus('Olá, ' + nome + '! Redirecionando...', 'success');
-          setTimeout(() => { window.location.replace('/'); }, 900);
+          setTimeout(() => { globalThis.location.replace('/'); }, 900);
         }
       } catch (e) {
         setStatus(e.message, 'error');

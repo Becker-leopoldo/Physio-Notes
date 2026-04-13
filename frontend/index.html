@@ -5,7 +5,7 @@
   <script>
     // Auth gate — redireciona para login se não autenticado
     if (!localStorage.getItem('physio_token')) {
-      window.location.replace('/login.html');
+      globalThis.location.replace('/login.html');
     }
     // Verificação de recursos necessários — exibe tela de atualização se ausentes
     (function() {
@@ -1062,7 +1062,7 @@
 <!-- ======================== UPDATE BANNER ======================== -->
 <div id="update-banner" style="display:none;position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);z-index:9998;background:var(--color-text);color:#fff;font-family:var(--font-body);font-size:var(--text-sm);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);box-shadow:var(--shadow-lg);align-items:center;gap:var(--space-4);white-space:nowrap;">
   <span>✓ Nova versão instalada — atualizando em <strong id="update-countdown">5</strong>s</span>
-  <button onclick="window.location.reload()" style="background:#fff;color:var(--color-text);border:none;border-radius:var(--radius-full);padding:var(--space-1) var(--space-4);font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;cursor:pointer;">Agora</button>
+  <button onclick="globalThis.location.reload()" style="background:#fff;color:var(--color-text);border:none;border-radius:var(--radius-full);padding:var(--space-1) var(--space-4);font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;cursor:pointer;">Agora</button>
 </div>
 
 <!-- ======================== OFFLINE BANNER ======================== -->
@@ -1726,12 +1726,12 @@
   /* ============================================================
      CONFIG
   ============================================================ */
-  const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.326'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const API_BASE = globalThis.location.origin;
+  const APP_VERSION = 'Beta-0.327'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return String(s).replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;').replaceAll(/"/g,'&quot;').replaceAll(/'/g,'&#39;');
   }
 
   function _getAudioMimeType() {
@@ -1911,8 +1911,8 @@
     // Detecta se há padrão de tópico: linha começando com **Algo:**
     if (!/^\*\*[^*\n]+\*\*:/m.test(text)) return anamneseToHtml(text);
 
-    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const esc = s => s.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;');
+    const bold = s => s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
     // Divide em seções pelo padrão **Tópico:**
     const sectionRe = /^(\*\*[^*\n]+\*\*:?)(.*)/;
@@ -1925,7 +1925,7 @@
       if (m) {
         if (current) sections.push(current);
         // Header: texto entre ** até **:
-        const headerRaw = m[1].replace(/\*\*/g, '').replace(/:$/, '');
+        const headerRaw = m[1].replaceAll(/\*\*/g, '').replace(/:$/, '');
         const rest = m[2].trim();
         current = { header: headerRaw, lines: rest ? [rest] : [] };
       } else {
@@ -1967,8 +1967,8 @@
 
   function anamneseToHtml(text) {
     if (!text) return '';
-    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    const esc = s => s.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;');
+    const bold = s => s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     const lines = esc(text).split('\n');
     const out = [];
     let inList = false;
@@ -2007,37 +2007,37 @@
 
   function anamnesePreviewText(text) {
     if (!text) return 'Nenhuma anamnese registrada.';
-    const stripped = text.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
+    const stripped = text.replaceAll(/^#+\s*/gm, '').replaceAll(/\*\*/g, '').replaceAll(/\n/g, ' ').trim();
     return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
   }
 
   function condutaPreviewText(text) {
     if (!text) return 'Nenhuma conduta registrada.';
-    const stripped = text.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
+    const stripped = text.replaceAll(/^#+\s*/gm, '').replaceAll(/\*\*/g, '').replaceAll(/\n/g, ' ').trim();
     return stripped.substring(0, 80) + (stripped.length > 80 ? '…' : '');
   }
 
   // CPF: máscara e validação pelo algoritmo oficial
   function cpfMascara(v) {
-    return v.replace(/\D/g, '').slice(0, 11)
+    return v.replaceAll(/\D/g, '').slice(0, 11)
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
   }
 
   function cpfValido(cpf) {
-    const n = cpf.replace(/\D/g, '');
+    const n = cpf.replaceAll(/\D/g, '');
     if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
     let soma = 0;
-    for (let i = 0; i < 9; i++) soma += parseInt(n[i]) * (10 - i);
+    for (let i = 0; i < 9; i++) soma += Number.parseInt(n[i]) * (10 - i);
     let r = (soma * 10) % 11;
     if (r === 10 || r === 11) r = 0;
-    if (r !== parseInt(n[9])) return false;
+    if (r !== Number.parseInt(n[9])) return false;
     soma = 0;
-    for (let i = 0; i < 10; i++) soma += parseInt(n[i]) * (11 - i);
+    for (let i = 0; i < 10; i++) soma += Number.parseInt(n[i]) * (11 - i);
     r = (soma * 10) % 11;
     if (r === 10 || r === 11) r = 0;
-    return r === parseInt(n[10]);
+    return r === Number.parseInt(n[10]);
   }
 
   function bindCpfInput(inputId, hintId) {
@@ -2048,7 +2048,7 @@
       el.value = cpfMascara(el.value);
     });
     el.addEventListener('blur', () => {
-      const v = el.value.replace(/\D/g, '');
+      const v = el.value.replaceAll(/\D/g, '');
       if (v.length === 0) { hint.style.display = 'none'; return; }
       if (!cpfValido(el.value)) {
         hint.textContent = 'CPF inválido';
@@ -2095,7 +2095,7 @@
     if (res.status === 401) {
       localStorage.removeItem('physio_token');
       localStorage.removeItem('physio_user');
-      window.location.replace('/login.html');
+      globalThis.location.replace('/login.html');
       return;
     }
     const data = await res.json().catch(() => ({}));
@@ -2125,9 +2125,9 @@
   function _renderPacientesFiltrado(pacientes, q) {
     const container = document.getElementById('pacientes-list');
     const filtrados = q ? pacientes.filter(p => {
-      const qNum = q.replace(/\D/g, '');
+      const qNum = q.replaceAll(/\D/g, '');
       if (p.nome.toLowerCase().includes(q)) return true;
-      if (p.cpf && qNum && p.cpf.replace(/\D/g, '').includes(qNum)) return true;
+      if (p.cpf && qNum && p.cpf.replaceAll(/\D/g, '').includes(qNum)) return true;
       if (p.data_nascimento && p.data_nascimento.includes(q)) return true;
       if (p.data_nascimento) {
         // Aceita formatos dd/mm/aaaa, dd/mm ou mm/aaaa digitados
@@ -2361,7 +2361,7 @@
           });
           if (extRes.nome) capturedData.nome = extRes.nome;
           if (extRes.data_nascimento) capturedData.data_nascimento = extRes.data_nascimento;
-          if (extRes.cpf) capturedData.cpf = extRes.cpf.replace(/\D/g, '');
+          if (extRes.cpf) capturedData.cpf = extRes.cpf.replaceAll(/\D/g, '');
           if (extRes.endereco) capturedData.endereco = extRes.endereco;
           fb.innerHTML = '';
           atualizarConversaVoz();
@@ -2426,7 +2426,7 @@
   document.getElementById('btn-salvar-paciente').addEventListener('click', async function() {
     const btn = this;
     const nome = document.getElementById('input-nome').value.trim();
-    const cpfRaw = document.getElementById('input-cpf').value.replace(/\D/g, '');
+    const cpfRaw = document.getElementById('input-cpf').value.replaceAll(/\D/g, '');
     const endereco = document.getElementById('input-endereco').value.trim();
     if (!nome) {
       showError('modal-paciente-error', 'O nome do paciente é obrigatório.');
@@ -3214,7 +3214,7 @@
 
     const valorFmt = valorSugerido > 0 ? valorSugerido.toFixed(2) : '0.00';
     const valorHint = valorSugerido > 0
-      ? `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Sugestão: 50% da sessão avulsa — R$ ${valorFmt.replace('.', ',')}</span>`
+      ? `<span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);display:block;">Sugestão: 50% da sessão avulsa — R$ ${valorFmt.replaceAll('.', ',')}</span>`
       : '';
 
     modal.innerHTML = `
@@ -3300,7 +3300,7 @@
 
     modal.querySelector('#canc-confirmar').addEventListener('click', async () => {
       const cobrar = cobrarChk.checked;
-      const valor  = cobrar ? (parseFloat(valorInp.value) || 0) : 0;
+      const valor  = cobrar ? (Number.parseFloat(valorInp.value) || 0) : 0;
       const btn    = modal.querySelector('#canc-confirmar');
       btn.disabled = true; btn.textContent = 'Processando...';
       feedback.textContent = '';
@@ -3325,7 +3325,7 @@
         modal.remove();
         _temPacoteAtivo = false;
         await openPaciente(currentPacienteId);
-        _showSnack('Sessão cancelada' + (cobrar && valor > 0 ? ` — cobrança de R$ ${valor.toFixed(2).replace('.', ',')} registrada` : ''));
+        _showSnack('Sessão cancelada' + (cobrar && valor > 0 ? ` — cobrança de R$ ${valor.toFixed(2).replaceAll('.', ',')} registrada` : ''));
       } catch (e) {
         feedback.textContent = friendlyError(e);
         btn.disabled = false; btn.textContent = 'Confirmar';
@@ -3392,7 +3392,7 @@
       inp.focus();
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') overlay.querySelector('#_valor-modal-ok').click(); });
       overlay.querySelector('#_valor-modal-ok').addEventListener('click', () => {
-        const v = parseFloat(inp.value);
+        const v = Number.parseFloat(inp.value);
         overlay.remove();
         resolve(v > 0 ? v : null);
       });
@@ -3444,7 +3444,7 @@
         await openPaciente(currentPacienteId);
         if (avulsaValor) {
           const fb = document.getElementById('banner-feedback');
-          if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replace('.', ',')}</div>`;
+          if (fb) fb.innerHTML = `<div style="margin-top:var(--space-3);padding:var(--space-3) var(--space-4);background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--color-success);">Sessão avulsa registrada no faturamento — R$ ${avulsaValor.toFixed(2).replaceAll('.', ',')}</div>`;
         }
         // Detectar e salvar procedimentos extras automaticamente
         try {
@@ -3900,7 +3900,6 @@
   }
 
   function abrirModalRevisaoProcs(sessaoId, sugestoes, onSave) {
-    const fmtR = v => v != null ? (v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sem valor';
     const modal = el('div', { style: 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;' });
 
     const itens = sugestoes.map((s, i) => `
@@ -3934,7 +3933,7 @@
         const chk = modal.querySelector(`#proc-chk-${i}`);
         if (!chk.checked) return;
         const desc = modal.querySelector(`.proc-desc-input[data-idx="${i}"]`).value.trim();
-        const val  = parseFloat(modal.querySelector(`.proc-val-input[data-idx="${i}"]`).value) || null;
+        const val  = Number.parseFloat(modal.querySelector(`.proc-val-input[data-idx="${i}"]`).value) || null;
         if (desc) selecionados.push({ descricao: desc, valor: val });
       });
 
@@ -3989,7 +3988,7 @@
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     overlay.querySelector('#_ep_salvar').addEventListener('click', async () => {
       const desc = overlay.querySelector('#_ep_desc').value.trim();
-      const valor = parseFloat(overlay.querySelector('#_ep_valor').value) || null;
+      const valor = Number.parseFloat(overlay.querySelector('#_ep_valor').value) || null;
       if (!desc) {
         const err = overlay.querySelector('#_ep_error');
         err.textContent = 'Informe a descrição.'; err.style.display = '';
@@ -4108,7 +4107,7 @@
         err.style.display = '';
         return;
       }
-      const valor = parseFloat(modal.querySelector('#proc-valor').value) || null;
+      const valor = Number.parseFloat(modal.querySelector('#proc-valor').value) || null;
       try {
         await apiFetch(`/sessoes/${sessaoId}/procedimentos`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -4395,7 +4394,7 @@
       const titulo = `Relatório Clínico — ${paciente.nome}`;
       const htmlStr = _gerarHtmlPdf(_relatorioData);
       const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
-      const file = new File([blob], `relatorio-${paciente.nome.toLowerCase().replace(/\s+/g, '-')}.html`, { type: 'text/html' });
+      const file = new File([blob], `relatorio-${paciente.nome.toLowerCase().replaceAll(/\s+/g, '-')}.html`, { type: 'text/html' });
       if (navigator.share) {
         try {
           if (navigator.canShare?.({ files: [file] })) {
@@ -4420,18 +4419,18 @@
   function _abrirJanelaRelatorio(htmlStr) {
     const blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    globalThis.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 120000);
   }
 
   function _gerarHtmlPdf(data) {
     const { tipo, paciente, idadeStr, hoje, sessoes, procedimentosPorSessao, sintese, fmtR, nomeFisio } = data;
 
-    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function esc(s) { return String(s || '').replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;'); }
     function mdHtml(text) {
       if (!text) return '';
-      const escT = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      const escT = s => s.replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;');
+      const bold = s => s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       const lines = escT(text).split('\n');
       const out = []; let inList = false;
       for (const raw of lines) {
@@ -4551,8 +4550,8 @@
   </style>
 </head><body>
   <div class="actions-bar">
-    <button class="btn-p" onclick="window.print()">Imprimir / Salvar PDF</button>
-    <button class="btn-s" onclick="window.close()">Fechar</button>
+    <button class="btn-p" onclick="globalThis.print()">Imprimir / Salvar PDF</button>
+    <button class="btn-s" onclick="globalThis.close()">Fechar</button>
   </div>
   <div class="page">
     <div class="doc-header">
@@ -4770,7 +4769,7 @@
     try {
       const fd = new FormData();
       fd.append('arquivo', file);
-      const doc = await apiFetch(`/pacientes/${currentPacienteId}/documentos`, { method: 'POST', body: fd });
+      await apiFetch(`/pacientes/${currentPacienteId}/documentos`, { method: 'POST', body: fd });
       const docs = await apiFetch(`/pacientes/${currentPacienteId}/documentos`);
       renderDocumentos(docs);
     } catch (err) {
@@ -4826,7 +4825,7 @@
           <div class="pacote-progress-fill ${fillClass}" style="width:${pct}%"></div>
         </div>
         <div style="font-size:var(--text-xs);color:var(--color-text-muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
-          <span>${ativo.sessoes_usadas} sess${ativo.sessoes_usadas === 1 ? 'ão' : 'ões'} utilizada${ativo.sessoes_usadas === 1 ? '' : 's'} ${ativo.valor_pago ? '· R$ ' + ativo.valor_pago.toFixed(2).replace('.', ',') : ''}</span>
+          <span>${ativo.sessoes_usadas} sess${ativo.sessoes_usadas === 1 ? 'ão' : 'ões'} utilizada${ativo.sessoes_usadas === 1 ? '' : 's'} ${ativo.valor_pago ? '· R$ ' + ativo.valor_pago.toFixed(2).replaceAll('.', ',') : ''}</span>
           ${!ativo.pago ? '<span style="background:var(--color-warning-bg);color:var(--color-warning);padding:2px 8px;border-radius:999px;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;border:1px solid #f6d186;">⚠️ Pendente de pagamento</span>' : ''}
         </div>
         ${alertaHtml}`;
@@ -4976,14 +4975,14 @@
     // --- Salvar ---
     modal.querySelector('#mp-cancelar').addEventListener('click', () => modal.remove());
     modal.querySelector('#mp-salvar').addEventListener('click', async () => {
-      const total = parseInt(modal.querySelector('#mp-total').value);
+      const total = Number.parseInt(modal.querySelector('#mp-total').value);
       if (!total || total < 1) {
         const err = modal.querySelector('#mp-error');
         err.textContent = 'Informe a quantidade de sessões.';
         err.style.display = '';
         return;
       }
-      const valor = parseFloat(modal.querySelector('#mp-valor').value) || null;
+      const valor = Number.parseFloat(modal.querySelector('#mp-valor').value) || null;
       const data = modal.querySelector('#mp-data').value || null;
       const desc = modal.querySelector('#mp-desc').value.trim() || null;
       const chkP  = modal.querySelector('#mp-pago').checked;
@@ -5012,7 +5011,7 @@
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:var(--border);">
         <div>
           <div style="font-size:var(--text-sm);font-weight:500;">${p.total_sessoes} sessões ${p.descricao ? '· ' + p.descricao : ''}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${p.sessoes_usadas} utilizadas ${p.valor_pago ? '· R$ ' + p.valor_pago.toFixed(2).replace('.', ',') : ''} ${p.data_pagamento ? '· ' + formatDate(p.data_pagamento) : ''}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);">${p.sessoes_usadas} utilizadas ${p.valor_pago ? '· R$ ' + p.valor_pago.toFixed(2).replaceAll('.', ',') : ''} ${p.data_pagamento ? '· ' + formatDate(p.data_pagamento) : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:var(--space-2);">${status}
           ${restantes > 0 ? `<button class="btn btn-ghost btn-sm btn-delete-pacote" data-id="${p.id}" style="color:var(--color-danger);">Remover</button>` : ''}
@@ -5210,7 +5209,7 @@
       try {
         const token = localStorage.getItem('physio_token') || '';
         const b64 = token.split('.')[1] || '';
-        const payload = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
+        const payload = JSON.parse(atob(b64.replaceAll(/-/g, '+').replaceAll(/_/g, '/')));
         if (payload.sub) {
           u = { nome: payload.nome || '', email: payload.sub, foto: payload.foto || null };
           localStorage.setItem('physio_user', JSON.stringify(u)); // mantém em sincronia
@@ -5232,9 +5231,9 @@
       fetch('/auth/config').then(r => r.json()).then(cfg => {
         if (cfg.admin_email && u.email === cfg.admin_email) {
           document.getElementById('drawer-admin-link').style.display = '';
-          window._isAdmin = true;
+          globalThis._isAdmin = true;
         }
-        window._adminEmail = cfg.admin_email || '';
+        globalThis._adminEmail = cfg.admin_email || '';
       }).catch((e) => { console.error('admin cfg', e); });
     } catch (e) { console.error('init cfg', e); }
   })();
@@ -5387,7 +5386,7 @@
     const input = document.getElementById('config-valor-avulsa');
     const cobrarChk = document.getElementById('config-cobrar-avulsa');
     const fb = document.getElementById('config-feedback');
-    const valor = input.value !== '' ? parseFloat(input.value) : null;
+    const valor = input.value !== '' ? Number.parseFloat(input.value) : null;
     try {
       await apiFetch('/configuracoes', {
         method: 'PUT',
@@ -5513,9 +5512,9 @@
   <tbody>${tabelaRows||`<tr><td colspan="${isAdmin ? 8 : 6}" style="text-align:center;padding:20px;color:#A09D97;">Nenhum registro neste período.</td></tr>`}</tbody>
 </table>
 <div class="footer"><span>powered by <strong>up it</strong></span><span>${labelMesRel} · ${items.length} operações · ${totalTokens.toLocaleString('pt-BR')} tokens</span></div>
-<script>window.onload=()=>window.print();<\/script>
+<script>globalThis.onload=()=>globalThis.print();<\/script>
 </body></html>`;
-    const win = window.open('', '_blank');
+    const win = globalThis.open('', '_blank');
     if (!win) { alert('Permita pop-ups para gerar o PDF.'); return; }
     win.document.write(html);
     win.document.close();
@@ -5574,7 +5573,7 @@
         <tbody>${rows}</tbody></table></div>`;
       if (offset === 0) { container.innerHTML = tableHtml; } else { container.querySelector('tbody').insertAdjacentHTML('beforeend', rows); }
       const cur = offset + items.length;
-      const btnId = `adm-mais-${ownerEmail.replace(/\W/g,'_')}`;
+      const btnId = `adm-mais-${ownerEmail.replaceAll(/\W/g,'_')}`;
       const ex = document.getElementById(btnId); if (ex) ex.remove();
       if (cur < total) {
         const d = document.createElement('div');
@@ -5619,7 +5618,7 @@
     try {
       const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
       const j = await r.json();
-      const v = parseFloat(j?.USDBRL?.bid);
+      const v = Number.parseFloat(j?.USDBRL?.bid);
       if (isFinite(v) && v >= 1.0 && v <= 20.0) {
         _usdBrl = v;
         _usdBrlTs = agora;
@@ -5654,7 +5653,7 @@
         apiFetch(`/precificacao/publico?cotacao=${cotacao}`).catch(() => null),
         apiFetch(`/creditos/saldo?cotacao=${cotacao}`).catch(() => null),
       ];
-      if (window._isAdmin) requests.push(apiFetch(`/admin/billing${mes ? '?mes='+mes : ''}`).catch(() => null));
+      if (globalThis._isAdmin) requests.push(apiFetch(`/admin/billing${mes ? '?mes='+mes : ''}`).catch(() => null));
       const [data, precPublico, saldo, adminData] = await Promise.all(requests);
       renderBilling(data, cotacao, adminData || null, precPublico?.preco_mensal_brl ?? null, saldo);
     } catch (e) {
@@ -5716,7 +5715,6 @@
 
     const [anoAtual, mesAtual] = mes_atual.mes.split('-').map(Number);
     const mesesPT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const labelMes = `${mesesPT[mesAtual-1]} ${anoAtual}`;
 
     body.innerHTML = `
       ${adminData ? `
@@ -6052,8 +6050,8 @@
 
         // atualiza preço e fórmula em tempo real ao digitar
         const calcPreco = () => {
-          const mPct = parseFloat(document.getElementById('prec-margem')?.value ?? p.margem_pct);
-          const iPct = parseFloat(document.getElementById('prec-imposto')?.value ?? p.imposto_pct);
+          const mPct = Number.parseFloat(document.getElementById('prec-margem')?.value ?? p.margem_pct);
+          const iPct = Number.parseFloat(document.getElementById('prec-imposto')?.value ?? p.imposto_pct);
           if (isNaN(mPct) || isNaN(iPct)) return;
           const m = mPct / 100;
           const i = iPct / 100;
@@ -6065,8 +6063,8 @@
         document.getElementById('prec-imposto')?.addEventListener('input', calcPreco);
 
         document.getElementById('prec-salvar-btn')?.addEventListener('click', async () => {
-          const margem  = parseFloat(document.getElementById('prec-margem').value);
-          const imposto = parseFloat(document.getElementById('prec-imposto').value);
+          const margem  = Number.parseFloat(document.getElementById('prec-margem').value);
+          const imposto = Number.parseFloat(document.getElementById('prec-imposto').value);
           if (isNaN(margem) || isNaN(imposto)) return;
           try {
             const novo = await apiFetch('/admin/precificacao', {
@@ -6236,7 +6234,7 @@
         body: JSON.stringify({
           nome,
           data_nascimento: document.getElementById('edit-dob').value || null,
-          cpf: document.getElementById('edit-cpf').value.replace(/\D/g, '') || null,
+          cpf: document.getElementById('edit-cpf').value.replaceAll(/\D/g, '') || null,
           endereco: document.getElementById('edit-endereco').value.trim() || null,
         }),
       });
@@ -6264,7 +6262,7 @@
         const timer = setInterval(() => {
           secs--;
           if (countEl) countEl.textContent = secs;
-          if (secs <= 0) { clearInterval(timer); window.location.reload(); }
+          if (secs <= 0) { clearInterval(timer); globalThis.location.reload(); }
         }, 1000);
       }
     });
@@ -6274,7 +6272,7 @@
      NOTIFICAÇÕES (permissão + lembrete diário)
   ============================================================ */
   async function solicitarPermissaoNotificacao() {
-    if (!('Notification' in window)) return false;
+    if (!('Notification' in globalThis)) return false;
     if (Notification.permission === 'default') {
       await Notification.requestPermission();
     }
@@ -6282,7 +6280,7 @@
   }
 
   function mostrarLembreteDiario() {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!('Notification' in globalThis) || Notification.permission !== 'granted') return;
     const hoje = new Date().toISOString().slice(0, 10);
     const chave = `lembrete_notas_${hoje}`;
     if (localStorage.getItem(chave)) return;
@@ -6297,7 +6295,7 @@
   }
 
   async function registrarPushSubscription() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in globalThis)) return;
     try {
       // Busca VAPID public key
       const resp = await fetch('/push/vapid-public-key');
@@ -6309,7 +6307,7 @@
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
         // Converte VAPID public key de base64url para Uint8Array
-        const raw = vapid_public_key.replace(/-/g, '+').replace(/_/g, '/');
+        const raw = vapid_public_key.replaceAll(/-/g, '+').replaceAll(/_/g, '/');
         const pad = raw.padEnd(raw.length + (4 - raw.length % 4) % 4, '=');
         const bin = atob(pad);
         const key = new Uint8Array(bin.length);
@@ -6345,16 +6343,16 @@
   function updateOnlineStatus() {
     offlineOverlay.style.display = navigator.onLine ? 'none' : 'flex';
   }
-  window.addEventListener('online', () => {
+  globalThis.addEventListener('online', () => {
     updateOnlineStatus();
     // Aguarda 2s para a rede estabilizar (comum em troca WiFi→4G)
     // antes de reenviar áudios pendentes
     setTimeout(retrySendPendingAudio, 2000);
   });
-  window.addEventListener('offline', updateOnlineStatus);
+  globalThis.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
-  window.retrySendPendingAudio = function(btnEl) {
+  globalThis.retrySendPendingAudio = function(btnEl) {
     if (!pendingRetries.length) return;
 
     // Anima o botão girando independente do estado
@@ -6473,9 +6471,9 @@
 
     const _fmtDataRecarga = iso => {
       if (!iso) return '—';
-      const d = new Date(iso.replace(' ', 'T'));
+      const d = new Date(iso.replaceAll(' ', 'T'));
       if (isNaN(d)) return iso.slice(0,10);
-      return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }).replace('.','');
+      return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }).replaceAll('.','');
     };
     const _badgeRecarga = descricao => {
       if (!descricao) return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-full);background:var(--color-accent-light);color:var(--color-text-secondary);font-size:var(--text-xs);font-weight:500;">Admin</span>`;
@@ -6606,10 +6604,10 @@
     // ── Seleção de pacote ──────────────────────────────────────────────
     body.querySelectorAll('.pix-opcao').forEach(btn => {
       btn.addEventListener('click', () => {
-        _pixSelecionado = parseInt(btn.dataset.creditos);
+        _pixSelecionado = Number.parseInt(btn.dataset.creditos);
         body.querySelectorAll('.pix-opcao').forEach(b => {
-          const isMe  = parseInt(b.dataset.creditos) === _pixSelecionado;
-          const isPop = parseInt(b.dataset.creditos) === 100;
+          const isMe  = Number.parseInt(b.dataset.creditos) === _pixSelecionado;
+          const isPop = Number.parseInt(b.dataset.creditos) === 100;
           b.style.borderColor = isMe ? 'var(--color-accent)' : 'var(--color-border)';
           b.style.transform   = isMe ? 'scale(1.03)' : 'scale(1)';
           if (!isPop) {
@@ -6789,7 +6787,6 @@
       body.innerHTML = `<div class="alert alert-error">Erro ao carregar agenda: ${e.message}</div>`;
       return;
     }
-    let _agendaListaExpandida = false;
     _agendaRenderizar();
   }
 
@@ -6853,7 +6850,7 @@
         : `<div style="padding:10px 16px 14px;font-size:var(--text-sm);color:var(--color-text-muted);border-top:var(--border);">Nenhum evento neste dia.</div>`}
     `;
     painel.querySelectorAll('.ag-item-physio[data-paciente-id]').forEach(el => {
-      el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
+      el.addEventListener('click', () => { const pid = Number.parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
     });
     painel.querySelectorAll('.ag-item-gcal[data-gcal-id]').forEach(el => {
       el.addEventListener('click', () => {
@@ -6869,7 +6866,6 @@
 
   function _agendaRenderizar() {
     const body = document.getElementById('agenda-body');
-    const mesStr = `${_agendaAno}-${String(_agendaMes + 1).padStart(2, '0')}`;
     const nomeMes = new Date(_agendaAno, _agendaMes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
     // Normaliza sessões Physio como itens de calendário
@@ -6923,9 +6919,6 @@
 
     const totalPhysio = _agendaSessoes.length;
     const totalGcal   = _agendaGoogle.length;
-    const totalMes    = totalPhysio + totalGcal;
-    const abertas     = _agendaSessoes.filter(s => s.status === 'aberta').length;
-    const encerradas  = _agendaSessoes.filter(s => s.status === 'encerrada').length;
 
     // CSS (injetado uma vez)
     if (!document.getElementById('cal-style')) {
@@ -7190,7 +7183,7 @@
     }).join('');
 
     lista.querySelectorAll('.ag-list-physio[data-paciente-id]').forEach(el => {
-      el.addEventListener('click', () => { const pid = parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
+      el.addEventListener('click', () => { const pid = Number.parseInt(el.dataset.pacienteId); if (pid) openPaciente(pid); });
     });
     lista.querySelectorAll('.ag-list-gcal[data-gcal-id]').forEach(el => {
       el.addEventListener('click', () => {
@@ -7411,7 +7404,7 @@
       el.addEventListener('click', () => {
         resultArea.querySelectorAll('.ag-pac-item').forEach(e => e.classList.remove('ag-sug-sel'));
         el.classList.add('ag-sug-sel');
-        _agSheetPendente.paciente_id = el.dataset.pacId ? parseInt(el.dataset.pacId) : null;
+        _agSheetPendente.paciente_id = el.dataset.pacId ? Number.parseInt(el.dataset.pacId) : null;
         _agSheetPendente.nome = el.dataset.pacNome;
       });
     });
@@ -7581,7 +7574,7 @@
     res.querySelectorAll('.ag-sr-physio[data-pid]').forEach(el => {
       el.addEventListener('click', () => {
         _agSearchClose();
-        openPaciente(parseInt(el.dataset.pid));
+        openPaciente(Number.parseInt(el.dataset.pid));
       });
     });
   }
@@ -7665,15 +7658,15 @@
     const body = document.getElementById('faturamento-body');
     const { pacotes, procedimentos = [], total_recebido,
             total_pacotes_valor, total_procedimentos_valor,
-            qtd_pacotes, total_sessoes_vendidas, qtd_procedimentos,
-            meses_disponiveis, pacientes_disponiveis } = data;
+            qtd_pacotes, qtd_procedimentos,
+            pacientes_disponiveis } = data;
 
     const fmtR = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const fmtData = (s) => s ? s.split('-').reverse().join('/') : null;
     const mesLabel = (m) => {
       if (!m) return '';
       const [y, mo] = m.split('-');
-      return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1] + '/' + y;
+      return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][Number.parseInt(mo)-1] + '/' + y;
     };
 
     // Extrai HH:MM de criado_em (formato ISO: "2026-04-02T14:30:00" ou "2026-04-02 14:30:00")
@@ -7838,7 +7831,7 @@
     }
 
     btnNfse.addEventListener('click', () => {
-      const checkedIdxs = [...body.querySelectorAll('.fat-grupo-check:checked')].map(c => parseInt(c.dataset.idx));
+      const checkedIdxs = [...body.querySelectorAll('.fat-grupo-check:checked')].map(c => Number.parseInt(c.dataset.idx));
       const selecionados = checkedIdxs.map(i => gruposOrdenados[i]);
       abrirNFSeMultiplos(selecionados, mesLabel, fmtR);
     });
@@ -7930,7 +7923,7 @@
   function _gerarHtmlExtrato(params) {
     const { todosItens, periodoLabel, pacienteLabel, hoje, fmtR, fmtData,
             total_pacotes_valor, total_procedimentos_valor, total_recebido, nomeFisio } = params;
-    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function esc(s) { return String(s || '').replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;'); }
 
     const linhas = todosItens.map((i, idx) => `
       <tr style="${idx % 2 === 1 ? 'background:#F9F8F6;' : ''}">
@@ -8002,7 +7995,7 @@
 </div>
 
 <div class="footer">powered by <strong>up it</strong> · Physio Notes</div>
-<script>window.addEventListener('load',()=>window.print());<\/script>
+<script>globalThis.addEventListener('load',()=>globalThis.print());<\/script>
 </body>
 </html>`;
   }
@@ -8150,7 +8143,6 @@
   function renderNotasFiscais(data, mesSel, pacienteSel, qAtual) {
     const body = document.getElementById('notas-body');
     const notas = data.notas || [];
-    const competencias_disponiveis = data.competencias_disponiveis || [];
     const pacientes_disponiveis = data.pacientes_disponiveis || [];
 
     const fmtR = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -8161,7 +8153,7 @@
     const mesLabel = (m) => {
       if (!m) return '';
       const [y, mo] = m.split('-');
-      return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo)-1] + '/' + y;
+      return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][Number.parseInt(mo)-1] + '/' + y;
     };
 
     const cards = notas.length === 0
@@ -8349,10 +8341,10 @@
     // valorInicial pode ser '' (todos) ou 'YYYY-MM'
     let competenciaSel = valorInicial || '';
     let anoAtivo = competenciaSel
-      ? parseInt(competenciaSel.split('-')[0])
+      ? Number.parseInt(competenciaSel.split('-')[0])
       : hoje.getFullYear();
     let mesAtivo = competenciaSel
-      ? parseInt(competenciaSel.split('-')[1]) - 1
+      ? Number.parseInt(competenciaSel.split('-')[1]) - 1
       : hoje.getMonth();
 
     const wrapper = document.createElement('div');
@@ -8382,7 +8374,7 @@
         labelEl.style.color = '#6B6860';
       } else {
         const [y, mo] = competenciaSel.split('-');
-        labelEl.textContent = `${MESES[parseInt(mo)-1]}/${y}`;
+        labelEl.textContent = `${MESES[Number.parseInt(mo)-1]}/${y}`;
         labelEl.style.color = '#1A1A1A';
       }
     }
@@ -8399,8 +8391,8 @@
     `;
 
     function renderPanel() {
-      const selAnoCurrent = competenciaSel ? parseInt(competenciaSel.split('-')[0]) : null;
-      const selMesCurrent = competenciaSel ? parseInt(competenciaSel.split('-')[1]) - 1 : null;
+      const selAnoCurrent = competenciaSel ? Number.parseInt(competenciaSel.split('-')[0]) : null;
+      const selMesCurrent = competenciaSel ? Number.parseInt(competenciaSel.split('-')[1]) - 1 : null;
 
       const allBg = !competenciaSel ? '#1A1A1A' : '#F9F8F6';
       const allColor = !competenciaSel ? '#fff' : '#6B6860';
@@ -8446,7 +8438,7 @@
       panel.querySelector('#picker-next').addEventListener('click', () => { anoAtivo++; renderPanel(); });
       panel.querySelectorAll('[data-m]').forEach(b => {
         b.addEventListener('click', () => {
-          mesAtivo = parseInt(b.dataset.m);
+          mesAtivo = Number.parseInt(b.dataset.m);
           competenciaSel = `${anoAtivo}-${String(mesAtivo + 1).padStart(2,'0')}`;
           atualizarLabel();
           panel.style.display = 'none';
@@ -8473,7 +8465,6 @@
   // ---------- Modal de emissão NFS-e (total do mês) ----------
   async function abrirModalEmitirNFSe(data, mesSel, mesLabel, fmtR) {
     const { pacotes, procedimentos = [], total_recebido,
-            total_pacotes_valor, total_procedimentos_valor,
             pacientes_disponiveis } = data;
 
     const iss = 2.0;
@@ -8558,7 +8549,6 @@
       `;
     }
 
-    const MESES_LABEL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
     function montarTela() {
       printView.innerHTML = `
@@ -8617,7 +8607,7 @@
     const printView = document.getElementById('print-view');
     printView.innerHTML = `
       <div class="print-actions no-print" style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+        <button class="btn btn-primary" onclick="globalThis.print()">Imprimir / Salvar PDF</button>
         ${nf.status === 'emitida' ? `<button class="btn btn-secondary" id="nfse-btn-cancelar">Cancelar nota</button>` : ''}
         <button class="btn btn-secondary" onclick="document.getElementById('print-view').style.display='none';openNotasFiscais();">Fechar</button>
       </div>
@@ -8797,7 +8787,7 @@
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">⬇ Imprimir / Salvar como PDF</button>
+  <button class="print-btn no-print" onclick="globalThis.print()">⬇ Imprimir / Salvar como PDF</button>
   <h1>Atestado de Fisioterapia</h1>
   <p>
     Atesto que o(a) paciente <strong>${escHtml(p.nome || '')}</strong>${cpfTxt}
@@ -8816,7 +8806,7 @@
 </body>
 </html>`;
 
-    const win = window.open('', '_blank');
+    const win = globalThis.open('', '_blank');
     if (!win) { alert('Permita pop-ups para gerar o PDF.'); return; }
     win.document.write(html);
     win.document.close();
@@ -8945,7 +8935,7 @@
     try { resetRecorder(); } catch {}
     localStorage.removeItem('physio_token');
     localStorage.removeItem('physio_user');
-    window.location.replace('/login.html');
+    globalThis.location.replace('/login.html');
   }
 
   // Auto-logout após 30 minutos de inatividade

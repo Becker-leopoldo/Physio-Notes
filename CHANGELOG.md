@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.327 — 2026-04-13
+
+### Qualidade — Sonar round 2: ~162 issues fechados (mecânicos)
+- **S7781 (58 issues):** `.replace(/regex/g,` → `.replaceAll(/regex/g,` em `index.html`, `admin.html`, `secretaria/index.html`
+- **S7773 (44 issues):** `parseFloat(` / `parseInt(` → `Number.parseFloat(` / `Number.parseInt(` em `index.html` e `secretaria/index.html`
+- **S7764 (33 issues):** `window.` → `globalThis.` e `in window` → `in globalThis` em todos os HTML (exceto `sw.js` que usa `self` corretamente)
+- **S1481/S1854 (27 issues):** variáveis mortas removidas de `index.html` — `fmtR`, `doc`, `labelMes`, `_agendaListaExpandida`, `mesStr`, `totalMes`, `abertas`, `encerradas`, `total_sessoes_vendidas`, `meses_disponiveis`, `competencias_disponiveis`, `total_pacotes_valor`, `total_procedimentos_valor`, `MESES_LABEL`
+
+---
+
 ## Beta-0.326 — 2026-04-13
 
 ### UX — Modal de confirmação para remoção de secretária (padrão "EU QUERO EXCLUIR")

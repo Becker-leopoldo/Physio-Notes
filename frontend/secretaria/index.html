@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <script>
     if (!localStorage.getItem('sec_token')) {
-      window.location.replace('/login.html');
+      globalThis.location.replace('/login.html');
     }
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1015,7 +1015,7 @@ const secToken = () => localStorage.getItem('sec_token');
 const secUser  = () => JSON.parse(localStorage.getItem('sec_user') || '{}');
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/>/g,'&gt;').replaceAll(/"/g,'&quot;');
 }
 function initials(name) {
   return (name || '').split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase() || '?';
@@ -1027,7 +1027,7 @@ async function apiFetch(path, opts = {}) {
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('sec_token');
     localStorage.removeItem('sec_user');
-    window.location.replace('/login.html');
+    globalThis.location.replace('/login.html');
     return;
   }
   const data = await res.json().catch(() => ({}));
@@ -1040,7 +1040,7 @@ let _currentUser = {};
 try {
   const token = localStorage.getItem('sec_token') || '';
   const b64 = token.split('.')[1] || '';
-  const payload = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
+  const payload = JSON.parse(atob(b64.replaceAll(/-/g, '+').replaceAll(/_/g, '/')));
   if (payload.sub) {
     _currentUser = { nome: payload.nome || '', email: payload.sub, foto: payload.foto || null,
                      fisioNome: payload.fisio_nome || '', fisioEmail: payload.fisio_email || '' };
@@ -1062,7 +1062,7 @@ if (_currentUser.foto) {
 document.getElementById('btn-logout').addEventListener('click', () => {
   localStorage.removeItem('sec_token');
   localStorage.removeItem('sec_user');
-  window.location.replace('/login.html');
+  globalThis.location.replace('/login.html');
 });
 
 /* ── Toast ── */
@@ -1611,7 +1611,7 @@ function renderAgResult(data) {
       el.style.background = 'var(--color-accent-light)';
       el.style.borderColor = 'var(--color-accent)';
       if (el.dataset.pacId) {
-        _agPendente.paciente_id = parseInt(el.dataset.pacId);
+        _agPendente.paciente_id = Number.parseInt(el.dataset.pacId);
         _agPendente.nome = el.dataset.pacNome;
       } else {
         _agPendente.paciente_id = null;
@@ -1739,7 +1739,7 @@ function renderPacLista(q) {
   ).join('');
   el.querySelectorAll('.pac-item').forEach(item => {
     item.addEventListener('click', () => {
-      _atPacienteId   = parseInt(item.dataset.id);
+      _atPacienteId   = Number.parseInt(item.dataset.id);
       _atPacienteNome = item.dataset.nome;
       document.getElementById('pac-escolhido-label').textContent = _atPacienteNome;
       document.getElementById('pac-escolhido-label').style.color = 'var(--color-text)';
@@ -1870,7 +1870,7 @@ document.getElementById('rev-gerar-btn').addEventListener('click', () => {
   .assinatura .linha { display:inline-block; width:280px; border-top:1px solid #111; padding-top:10px; }
   .print-btn { display:block; margin:0 auto 40px; padding:12px 40px; background:#1A1A1A; color:#fff; border:none; border-radius:8px; font-size:15px; font-family:sans-serif; cursor:pointer; }
 </style></head><body>
-<button class="print-btn no-print" onclick="window.print()">⬇ Imprimir / Salvar como PDF</button>
+<button class="print-btn no-print" onclick="globalThis.print()">⬇ Imprimir / Salvar como PDF</button>
 <h1>Atestado de Fisioterapia</h1>
 <p>Atesto que o(a) paciente <strong>${escHtml(pacNome)}</strong> esteve sob atendimento fisioterapêutico no dia <strong>${escHtml(dataFmt)}</strong>${escHtml(horario)}, em virtude de <strong>${escHtml(motivo)}</strong>.</p>
 <p>Durante o atendimento, foram realizados: <strong>${escHtml(conduta)}</strong>.</p>
@@ -1881,7 +1881,7 @@ document.getElementById('rev-gerar-btn').addEventListener('click', () => {
 </div>
 </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = globalThis.open('', '_blank');
   if (!win) { showToast('Permita pop-ups para gerar o PDF.', 'warning', 5000); return; }
   win.document.write(html);
   win.document.close();
@@ -2071,7 +2071,7 @@ function renderPacPacotesLista(q) {
   }).join('');
   el.querySelectorAll('.pac-item').forEach(item => {
     item.addEventListener('click', () => {
-      _pacotePacienteId   = parseInt(item.dataset.id);
+      _pacotePacienteId   = Number.parseInt(item.dataset.id);
       _pacotePacienteNome = item.dataset.nome;
       document.getElementById('pac-pacotes-label').textContent = _pacotePacienteNome;
       document.getElementById('pac-pacotes-label').style.color = 'var(--color-text)';
@@ -2218,7 +2218,7 @@ function renderPacoteCard(pk, isAtivo, mostrarNome) {
   const restantes = pk.total_sessoes - pk.sessoes_usadas;
   const pct = pk.total_sessoes > 0 ? Math.round((restantes / pk.total_sessoes) * 100) : 0;
   const fillClass = pct <= 20 ? 'danger' : pct <= 75 ? 'warning' : '';
-  const valorFmt = pk.valor_pago != null ? 'R$ ' + Number(pk.valor_pago).toFixed(2).replace('.', ',') : '';
+  const valorFmt = pk.valor_pago != null ? 'R$ ' + Number(pk.valor_pago).toFixed(2).replaceAll('.', ',') : '';
   const criadoEm = pk.criado_em ? new Date(pk.criado_em).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
 
   return `
@@ -2285,7 +2285,7 @@ document.getElementById('novo-pacote-overlay').addEventListener('click', novoPac
 document.getElementById('novo-pacote-cancelar').addEventListener('click', novoPacoteClose);
 
 document.getElementById('novo-pacote-salvar').addEventListener('click', async () => {
-  const sessoes = parseInt(document.getElementById('novo-pacote-sessoes').value);
+  const sessoes = Number.parseInt(document.getElementById('novo-pacote-sessoes').value);
   if (!sessoes || sessoes < 1) {
     document.getElementById('novo-pacote-erro').textContent = 'Informe o número de sessões.';
     document.getElementById('novo-pacote-erro').style.display = 'block';
@@ -2302,7 +2302,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
       body: JSON.stringify({
         total_sessoes:   sessoes,
         pago:            document.getElementById('novo-pacote-pago').checked,
-        valor_pago:      valor ? parseFloat(valor) : null,
+        valor_pago:      valor ? Number.parseFloat(valor) : null,
         data_pagamento:  document.getElementById('novo-pacote-data').value || null,
         descricao:       document.getElementById('novo-pacote-desc').value.trim() || null,
       }),
@@ -2318,9 +2318,9 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.326';
+const APP_VERSION = 'Beta-0.327';
 
-window.addEventListener('DOMContentLoaded', () => {
+globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;
   carregarAgenda();
   carregarPacientes();
