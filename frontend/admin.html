@@ -655,6 +655,7 @@
               <div class="user-meta">${escHtml(u.email)}${link ? '' : ' &nbsp;·&nbsp; sem secretária'}</div>
             </div>
             <div class="user-actions">
+              <button class="btn btn-secondary btn-sm" onclick="darCredito('${escHtml(u.email)}', '${escHtml(u.nome || u.email)}')">Dar crédito</button>
               <button class="btn btn-danger" onclick="revogar('${escHtml(u.email)}', this)">Revogar</button>
             </div>
           </div>
@@ -768,6 +769,70 @@
             method: 'DELETE', headers: { Authorization: 'Bearer ' + token }
           });
           await carregar();
+        }
+      });
+    }
+
+    function darCredito(email, nome) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px;';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:400px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
+          <h3 style="font-size:18px;font-weight:600;margin:0 0 4px;">Dar crédito</h3>
+          <p style="font-size:13px;color:#6B6860;margin:0 0 20px;">${escHtml(nome)} &nbsp;·&nbsp; <span style="font-family:monospace;font-size:12px;">${escHtml(email)}</span></p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Valor (R$)</label>
+              <input id="_dc-valor" type="number" min="0.01" max="50000" step="0.01" placeholder="Ex: 100.00"
+                style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #E8E6E1;border-radius:8px;font-size:14px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Descrição</label>
+              <input id="_dc-desc" type="text" maxlength="200" placeholder="Ex: Cortesia comercial"
+                style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #E8E6E1;border-radius:8px;font-size:14px;outline:none;">
+            </div>
+            <div id="_dc-erro" style="display:none;font-size:13px;color:#9B1C1C;background:#FEF2F2;border-radius:8px;padding:8px 12px;"></div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button id="_dc-ok" style="flex:1;padding:10px;background:#1A1A1A;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Confirmar</button>
+              <button id="_dc-cancel" style="flex:1;padding:10px;background:none;border:1px solid #E8E6E1;border-radius:8px;font-size:14px;cursor:pointer;color:#6B6860;">Cancelar</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const inputValor = overlay.querySelector('#_dc-valor');
+      const inputDesc  = overlay.querySelector('#_dc-desc');
+      const btnOk      = overlay.querySelector('#_dc-ok');
+      const erroEl     = overlay.querySelector('#_dc-erro');
+      overlay.querySelector('#_dc-cancel').addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      setTimeout(() => inputValor.focus(), 80);
+      btnOk.addEventListener('click', async () => {
+        erroEl.style.display = 'none';
+        const valor = Number.parseFloat(inputValor.value);
+        const desc  = inputDesc.value.trim();
+        if (!valor || valor <= 0) { erroEl.textContent = 'Informe um valor positivo.'; erroEl.style.display = 'block'; return; }
+        if (!desc) { erroEl.textContent = 'Descrição é obrigatória.'; erroEl.style.display = 'block'; return; }
+        btnOk.disabled = true; btnOk.textContent = '…';
+        try {
+          const res = await fetch('/admin/creditos/conceder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ owner_email: email, valor_brl: valor, descricao: desc })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Erro ${res.status}`);
+          }
+          overlay.remove();
+          const toast = document.createElement('div');
+          toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 2px 12px rgba(0,0,0,0.18);';
+          toast.textContent = `R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})} creditados para ${nome}`;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 3500);
+        } catch (e) {
+          erroEl.textContent = e.message;
+          erroEl.style.display = 'block';
+          btnOk.disabled = false; btnOk.textContent = 'Confirmar';
         }
       });
     }

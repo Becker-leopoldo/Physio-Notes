@@ -2062,6 +2062,36 @@ def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offs
     return data
 
 
+class AdminCreditoBody(BaseModel):
+    owner_email: str
+    valor_brl: float
+    descricao: str
+
+@app.post("/admin/creditos/conceder", status_code=201, responses={400: {"description": "Bad Request"}, 404: {"description": "Fisio não encontrado"}})
+@limiter.limit("20/minute")
+def admin_conceder_credito(body: AdminCreditoBody, request: Request):
+    """Admin concede créditos (BRL) manualmente a um fisio cadastrado."""
+    _verificar_admin(request)
+    if not body.owner_email or "@" not in body.owner_email:
+        raise HTTPException(status_code=400, detail="owner_email inválido.")
+    if body.valor_brl <= 0:
+        raise HTTPException(status_code=400, detail="Valor deve ser positivo.")
+    if body.valor_brl > 50_000:
+        raise HTTPException(status_code=400, detail="Valor máximo por concessão é R$ 50.000,00.")
+    if not body.descricao or not body.descricao.strip():
+        raise HTTPException(status_code=400, detail="Descrição é obrigatória.")
+    usuarios = db.listar_usuarios()
+    fisio = next((u for u in usuarios if u["email"] == body.owner_email and u.get("ativo")), None)
+    if not fisio:
+        raise HTTPException(status_code=404, detail="Fisio não encontrado ou inativo.")
+    recarga = db.registrar_recarga(body.owner_email, body.valor_brl, body.descricao.strip())
+    admin_email = _owner_email(request)
+    db.registrar_audit(admin_email, "admin_credito_concedido",
+                       f"target={body.owner_email} valor_brl={body.valor_brl} desc={body.descricao.strip()!r}",
+                       _client_ip(request))
+    return recarga
+
+
 @app.get("/admin/precificacao", responses={400: {"description": "Cotação fora do intervalo"}})
 def admin_precificacao(cotacao: float = 5.80, request: Request = None):
     """Retorna modelo de IA, cotação USD/BRL, custo médio/usuário/mês e preço sugerido."""

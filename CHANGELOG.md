@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.332 — 2026-04-13
+
+### Funcionalidade — Concessão manual de créditos pelo admin
+- **`POST /admin/creditos/conceder`**: novo endpoint FastAPI — admin concede créditos (BRL) a qualquer fisio ativo; valida valor (0,01–50.000), descrição obrigatória, fisio ativo; registra em `recarga` e gera entrada no `audit_log`
+- **admin.html**: botão "Dar crédito" adicionado a cada fisio na lista de ativos; abre modal com campo de valor e descrição; validação inline; toast de confirmação após sucesso; erros exibidos no próprio modal
+
+---
+
 ## Beta-0.331 — 2026-04-13
 
 ### UX — Redesign visual da tela de Faturamento
