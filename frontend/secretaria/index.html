@@ -154,6 +154,12 @@
 
     /* ── Content ── */
     .content { flex: 1; }
+    .content-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: var(--space-6) var(--space-8);
+      width: 100%;
+    }
 
     /* logout menu */
     .user-menu {
@@ -178,8 +184,9 @@
     /* ── Agenda ── */
     .mes-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: var(--space-4) var(--space-5);
+      padding: var(--space-4) var(--space-8);
       border-bottom: var(--border);
+      max-width: 860px; margin: 0 auto;
     }
     .mes-nome {
       font-family: var(--font-display); font-size: var(--text-lg); text-transform: capitalize;
@@ -194,8 +201,9 @@
 
     .cal-grid {
       display: grid; grid-template-columns: repeat(7, 1fr);
-      padding: var(--space-3) var(--space-4);
+      padding: var(--space-3) var(--space-8);
       gap: 2px;
+      max-width: 860px; margin: 0 auto;
     }
     .cal-dow {
       text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em;
@@ -218,7 +226,7 @@
     .cal-dot { width: 5px; height: 5px; border-radius: var(--radius-full); flex-shrink: 0; }
 
     .dia-painel {
-      margin: 0 var(--space-4) var(--space-4);
+      margin: 0 auto var(--space-4); max-width: 860px; padding: 0 var(--space-8);
       background: var(--color-surface); border: var(--border);
       border-radius: var(--radius-lg); overflow: hidden;
     }
@@ -542,7 +550,7 @@
   <div class="content">
 
     <!-- ABA: AGENDA -->
-    <div id="tab-agenda">
+    <div id="tab-agenda"><div class="content-inner">
 
       <!-- Nav mês -->
       <div class="mes-nav">
@@ -568,88 +576,79 @@
       </div>
 
       <!-- Botão novo agendamento -->
-      <div style="padding:var(--space-4) var(--space-4) 0;display:flex;justify-content:flex-end;">
+      <div style="max-width:860px;margin:0 auto;padding:var(--space-4) var(--space-8) 0;display:flex;justify-content:flex-end;">
         <button class="fab-novo" id="btn-novo-ag">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           Novo agendamento
         </button>
       </div>
-      <footer class="powered-bar">powered by <strong>up it</strong></footer>
-
-    </div>
+    </div></div><!-- /content-inner /tab-agenda -->
 
     <!-- ABA: ATESTADO -->
-    <div id="tab-atestado" style="display:none;" class="at-page">
-      <h2>Gerar Atestado</h2>
-      <p class="desc">Selecione o paciente e dite ou escreva o atestado.</p>
+    <div id="tab-atestado" style="display:none;">
+      <div class="content-inner">
+        <h2 style="font-family:var(--font-display);font-size:var(--text-2xl);margin-bottom:var(--space-2);">Gerar Atestado</h2>
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-6);">Selecione o paciente e dite ou escreva o atestado.</p>
 
-      <!-- Picker de paciente -->
-      <div class="form-group">
-        <label class="form-label">Paciente</label>
-        <button class="btn btn-secondary btn-full" id="btn-escolher-pac" style="justify-content:space-between;text-align:left;">
-          <span id="pac-escolhido-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+        <div class="form-group">
+          <label class="form-label">Paciente</label>
+          <button class="btn btn-secondary btn-full" id="btn-escolher-pac" style="justify-content:space-between;text-align:left;">
+            <span id="pac-escolhido-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div class="record-wrap">
+          <button class="record-btn" id="at-mic-btn">
+            <svg id="at-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg id="at-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
+          </button>
+          <span id="at-mic-label" class="record-label">Toque para gravar</span>
+        </div>
+
+        <div id="at-rec-feedback"></div>
+        <div class="divider">ou escreva</div>
+
+        <div class="form-group">
+          <textarea id="at-texto" class="form-textarea" rows="4"
+            placeholder="Ex: Atestado para hoje, das 9h às 10h, por lombalgia, realizei TENS e mobilização..."></textarea>
+        </div>
+
+        <button id="at-interpretar-btn" class="btn btn-primary btn-full btn-lg">Gerar atestado</button>
       </div>
-
-      <!-- Voz -->
-      <div class="record-wrap">
-        <button class="record-btn" id="at-mic-btn">
-          <svg id="at-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <svg id="at-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
-        </button>
-        <span id="at-mic-label" class="record-label">Toque para gravar</span>
-      </div>
-
-      <div id="at-rec-feedback"></div>
-
-      <div class="divider">ou escreva</div>
-
-      <div class="form-group">
-        <textarea id="at-texto" class="form-textarea" rows="3"
-          placeholder="Ex: Atestado para hoje, das 9h às 10h, por lombalgia, realizei TENS e mobilização..."
-          style="font-size:16px;"></textarea>
-      </div>
-
-      <button id="at-interpretar-btn" class="btn btn-primary btn-full btn-lg">
-        Gerar atestado
-      </button>
-      <footer class="powered-bar">powered by <strong>up it</strong></footer>
     </div>
 
     <!-- ABA: PACIENTES -->
     <div id="tab-pacientes" style="display:none;">
-
-      <div style="padding:var(--space-4) var(--space-4) 0;display:flex;gap:var(--space-3);align-items:center;">
-        <input id="pac-tab-busca" class="form-input" type="search" placeholder="Buscar paciente..." style="flex:1;">
-        <button class="fab-novo" id="btn-novo-pac" style="white-space:nowrap;">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Novo
-        </button>
+      <div class="content-inner">
+        <div style="display:flex;gap:var(--space-3);align-items:center;margin-bottom:var(--space-4);">
+          <input id="pac-tab-busca" class="form-input" type="search" placeholder="Buscar paciente..." style="flex:1;">
+          <button class="fab-novo" id="btn-novo-pac" style="white-space:nowrap;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Novo
+          </button>
+        </div>
+        <div id="pac-tab-lista"></div>
       </div>
-
-      <div id="pac-tab-lista" style="margin-top:var(--space-3); flex: 1;"></div>
-      <footer class="powered-bar">powered by <strong>up it</strong></footer>
     </div>
 
     <!-- ABA: PACOTES -->
     <div id="tab-pacotes" style="display:none;">
-
-      <div style="padding:var(--space-4) var(--space-4) 0;">
-        <label class="form-label">Paciente</label>
-        <button class="btn btn-secondary btn-full" id="btn-pac-pacotes" style="justify-content:space-between;text-align:left;margin-bottom:var(--space-4);">
-          <span id="pac-pacotes-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-
-      <div id="pacotes-lista-wrap" style="display:none; padding: 0 var(--space-4); flex: 1;">
-        <div style="padding:0 0 var(--space-3);display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:var(--text-sm);color:var(--color-text-secondary);font-weight:600;" id="pacotes-paciente-nome"></span>
+      <div class="content-inner">
+        <div class="form-group">
+          <label class="form-label">Paciente</label>
+          <button class="btn btn-secondary btn-full" id="btn-pac-pacotes" style="justify-content:space-between;text-align:left;">
+            <span id="pac-pacotes-label" style="color:var(--color-text-muted);">Selecionar paciente...</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
-        <div id="pacotes-lista"></div>
+        <div id="pacotes-lista-wrap" style="display:none;">
+          <div style="padding:var(--space-2) 0 var(--space-3);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:var(--text-sm);color:var(--color-text-secondary);font-weight:600;" id="pacotes-paciente-nome"></span>
+          </div>
+          <div id="pacotes-lista"></div>
+        </div>
       </div>
-      <footer class="powered-bar">powered by <strong>up it</strong></footer>
     </div>
 
   </div>
@@ -1897,7 +1896,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.292';
+const APP_VERSION = 'Beta-0.293';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

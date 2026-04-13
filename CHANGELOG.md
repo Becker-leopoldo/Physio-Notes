@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.293 — 2026-04-12
+
+### Correções
+- **Secretaria UX:** conteúdo principal limitado a `max-width: 860px` e centralizado — elimina esticamento em telas largas
+- Todas as abas (Agenda, Atestado, Pacientes, Pacotes) agora usam wrapper `.content-inner` com padding consistente
+- Calendário, `mes-nav` e painel do dia também limitados a 860px
+
+---
+
 ## Beta-0.292 — 2026-04-12
 
 ### Melhorias
