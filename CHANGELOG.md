@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.292 — 2026-04-12
+
+### Melhorias
+- **Secretaria:** layout migrado de mobile (bottom nav) para desktop com sidebar vertical recolhível — padrão visual idêntico ao app do fisioterapeuta
+- Agenda, Atestado, Pacientes e Pacotes agora na barra lateral esquerda
+- Menu de logout no clique do usuário na base da sidebar
+
+---
+
 ## Beta-0.291 — 2026-04-12
 
 ### Correções
