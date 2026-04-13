@@ -1074,7 +1074,7 @@ const _gcalCores = {
 
 let _ano = new Date().getFullYear();
 let _mes = new Date().getMonth();
-let _diaSel = null;
+let _diaSel = new Date().toISOString().slice(0, 10); // seleciona hoje por padrão
 let _sessoes = [];
 let _gcal    = [];
 let _porDia  = {};
@@ -1094,10 +1094,9 @@ document.getElementById('btn-mes-next').addEventListener('click', () => {
 });
 document.getElementById('btn-mes-hoje').addEventListener('click', () => {
   const now = new Date();
-  if (_ano === now.getFullYear() && _mes === now.getMonth()) return;
+  const hojeKey = now.toISOString().slice(0, 10);
   _ano = now.getFullYear(); _mes = now.getMonth();
-  _diaSel = null;
-  document.getElementById('dia-painel').style.display = 'none';
+  _diaSel = hojeKey;
   carregarAgenda();
 });
 
@@ -2273,7 +2272,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.319';
+const APP_VERSION = 'Beta-0.320';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

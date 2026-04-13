@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.320 — 2026-04-13
+
+### Secretaria — Calendário: seleção padrão e botão Hoje corrigidos
+- **Seleção inicial:** ao abrir o app, o dia de hoje já aparece selecionado e o painel lateral de eventos é exibido automaticamente
+- **Botão "Hoje":** agora funciona mesmo quando já está no mês atual — seleciona o dia de hoje e abre o painel (antes retornava sem fazer nada)
+
+---
+
 ## Beta-0.319 — 2026-04-13
 
 ### Secretaria — Rodapé da sidebar padronizado com o app fisio
