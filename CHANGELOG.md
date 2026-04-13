@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.324 — 2026-04-13
+
+### Admin — Revogar fisio abre porta para nova solicitação
+- **Revogar** agora faz hard delete do `usuario_google` em vez de `ativo=0`
+- Vínculos de secretaria do fisio revogado são encerrados automaticamente (`deletado_em`)
+- Audit log preserva nome + email antes da deleção (rastreabilidade eterna)
+- Próximo login do e-mail revogado entra como nova solicitação pendente (sem memória do histórico de acesso)
+
+---
+
 ## Beta-0.323 — 2026-04-13
 
 ### Qualidade — Sonar fixes (~32 issues fechados)
