@@ -4,6 +4,16 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.331 — 2026-04-13
+
+### UX — Redesign visual da tela de Faturamento
+- **Card KPI preto:** total recebido agora exibido em card `#1A1A1A` com fonte display grande (`--text-4xl`), consistente com outros elementos dark do app
+- **Sub-KPIs em grid:** Pacotes e Procedimentos reorganizados em 2 colunas com separador vertical translúcido e contagem de registros abaixo do valor
+- **Hierarquia de botões:** "Gerar extrato" promovido a `btn-primary` (preto); "Emitir NFS-e" mantido como `btn-secondary` — ação principal vs. ação contextual
+- **Cards de paciente:** padding aumentado para `--space-5` e valor do grupo ampliado para `--text-lg` com `font-variant-numeric:tabular-nums`
+
+---
+
 ## Beta-0.330 — 2026-04-13
 
 ### Qualidade — Sonar round 5: 10 MINOR fechados (javascript:S2486)
