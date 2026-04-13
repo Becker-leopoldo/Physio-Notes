@@ -2159,6 +2159,44 @@ async def sec_agendamento_interpretar(body: SecAgendamentoInterpretarBody, reque
             "paciente_sugestoes": paciente_sugestoes}
 
 
+class SecAgendamentoVerificarManualBody(BaseModel):
+    nome: str
+    data: str         # YYYY-MM-DD
+    hora_inicio: str  # HH:MM
+    hora_fim: str     # HH:MM
+
+@app.post("/sec/agendamento/verificar-manual", responses={422: {"description": "Unprocessable Entity"}})
+async def sec_agendamento_verificar_manual(body: SecAgendamentoVerificarManualBody, request: Request = None):
+    """Verifica disponibilidade sem IA: patient matching + freebusy. Mesmo shape de resposta que /interpretar."""
+    sec_email, fisio_email = _sec_context(request)
+    refresh_token = db.get_google_refresh_token(fisio_email)
+
+    parsed = {"nome": body.nome, "data": body.data, "hora_inicio": body.hora_inicio, "hora_fim": body.hora_fim}
+    pacientes = db.listar_pacientes(fisio_email)
+    match_result = _buscar_paciente_por_nome(body.nome, pacientes)
+    paciente_match     = match_result.get("paciente") if match_result.get("tipo") == "exato" else None
+    paciente_sugestoes = match_result.get("sugestoes", []) if match_result.get("tipo") == "sugestoes" else []
+
+    if not refresh_token:
+        return {"parsed": parsed, "disponivel": True, "gcal_conectado": False,
+                "sugestoes": [], "paciente_match": paciente_match, "paciente_sugestoes": paciente_sugestoes}
+
+    try:
+        access_token = await calendar_service._obter_access_token(refresh_token)
+        disponivel, _ = await _verificar_disponibilidade_gcal(
+            access_token, body.data, body.hora_inicio, body.hora_fim
+        )
+        sugestoes = [] if disponivel else await _gerar_sugestoes_gcal(
+            access_token, body.data, body.hora_inicio, body.hora_fim
+        )
+    except Exception as exc:
+        logger.warning(f"Falha ao acessar GCal no verificar-manual: {exc}")
+        disponivel = True; sugestoes = []; refresh_token = None
+
+    return {"parsed": parsed, "disponivel": disponivel, "gcal_conectado": refresh_token is not None,
+            "sugestoes": sugestoes, "paciente_match": paciente_match, "paciente_sugestoes": paciente_sugestoes}
+
+
 class SecAgendamentoConfirmarBody(BaseModel):
     nome: str
     data: str

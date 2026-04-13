@@ -63,26 +63,29 @@
     /* ── App layout ── */
     .app-layout { display: flex; width: 100%; min-height: 100dvh; }
 
-    /* ── Sidebar ── */
+    /* ── Sidebar (dark) ── */
     .sidebar {
       width: 220px; flex-shrink: 0;
-      background: var(--color-surface);
-      border-right: var(--border);
+      background: #1A1A1A;
+      border-right: none;
       display: flex; flex-direction: column;
       padding: var(--space-6) 0 0;
       transition: width 0.25s ease;
       overflow: hidden;
       position: sticky; top: 0; height: 100dvh;
+      /* textura sutil de pontinhos */
+      background-image: radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+      background-size: 24px 24px;
     }
     .sidebar-brand {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 var(--space-5) var(--space-6);
       position: relative;
     }
-    .brand-name { font-family: var(--font-display); font-size: var(--text-lg); }
+    .brand-name { font-family: var(--font-display); font-size: var(--text-lg); color: #fff; }
     .brand-badge {
       font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-      background: var(--color-accent-light); color: var(--color-text-secondary);
+      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.45);
       padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap;
     }
     .sidebar-toggle {
@@ -102,32 +105,32 @@
       padding: var(--space-3) var(--space-3);
       border-radius: var(--radius-md);
       font-size: var(--text-sm); font-weight: 500;
-      color: var(--color-text-secondary);
+      color: rgba(255,255,255,0.55);
       cursor: pointer; background: none; border: none;
       font-family: var(--font-body); text-align: left;
       transition: background 0.15s, color 0.15s;
       white-space: nowrap; width: 100%;
     }
-    .nav-item:hover { background: var(--color-accent-light); color: var(--color-text); }
-    .nav-item.active { background: var(--color-accent-light); color: var(--color-accent); font-weight: 600; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
     .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-    .sidebar-footer { padding: var(--space-5); border-top: var(--border); position: relative; margin-top: auto; }
+    .sidebar-footer { padding: var(--space-5); border-top: 1px solid rgba(255,255,255,0.08); position: relative; margin-top: auto; }
     .user-info {
       display: flex; align-items: center; gap: var(--space-3);
       cursor: pointer; border-radius: var(--radius-md);
       padding: var(--space-2); margin: calc(-1 * var(--space-2));
       transition: background 0.15s; width: calc(100% + var(--space-4));
     }
-    .user-info:hover { background: var(--color-accent-light); }
+    .user-info:hover { background: rgba(255,255,255,0.07); }
     .user-avatar {
       width: 32px; height: 32px; border-radius: var(--radius-full);
-      background: var(--color-accent); color: #fff;
+      background: rgba(255,255,255,0.15); color: #fff;
       display: flex; align-items: center; justify-content: center;
       font-size: 12px; font-weight: 600; flex-shrink: 0;
     }
-    .user-name { font-size: var(--text-sm); font-weight: 500; }
-    .user-role { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .user-name { font-size: var(--text-sm); font-weight: 500; color: #fff; }
+    .user-role { font-size: var(--text-xs); color: rgba(255,255,255,0.4); }
 
     /* Collapsed sidebar */
     .sidebar.collapsed { width: 56px; }
@@ -524,7 +527,7 @@
       <div>
         <div class="brand-name">Physio Notes</div>
         <div class="brand-badge">Secretaria</div>
-        <div id="sidebar-fisio-nome" class="sidebar-fisio-nome" style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;"></div>
+        <div id="sidebar-fisio-nome" class="sidebar-fisio-nome" style="font-size:var(--text-xs);color:rgba(255,255,255,0.35);margin-top:var(--space-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;"></div>
       </div>
       <button class="sidebar-toggle" id="sidebarToggle" title="Recolher menu">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -712,24 +715,55 @@
       <!-- Etapa 1: voz / texto -->
       <div id="ag-input-area">
         <h2 class="sheet-title">Novo agendamento</h2>
-        <div class="ai-bubble" style="margin-bottom:var(--space-5);">
-          <p>Diga o <strong>nome</strong>, a <strong>data</strong> e o <strong>horário</strong>.<br>
-          Ex: "Consulta para Ana amanhã às 9h por 1 hora"</p>
+
+        <!-- Modo IA -->
+        <div id="ag-ia-area">
+          <div class="ai-bubble" style="margin-bottom:var(--space-5);">
+            <p>Diga o <strong>nome</strong>, a <strong>data</strong> e o <strong>horário</strong>.<br>
+            Ex: "Consulta para Ana amanhã às 9h por 1 hora"</p>
+          </div>
+          <div class="record-wrap" style="padding:var(--space-2) 0;">
+            <button class="record-btn" id="ag-mic-btn">
+              <svg id="ag-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <svg id="ag-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
+            </button>
+            <span id="ag-mic-label" class="record-label">Toque para gravar</span>
+          </div>
+          <div id="ag-rec-feedback"></div>
+          <div class="divider">ou escreva</div>
+          <div id="ag-data-hint" style="display:none;background:var(--color-info-bg);color:var(--color-info);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);margin-bottom:var(--space-3);"></div>
+          <textarea id="ag-texto" class="form-textarea" rows="2"
+            placeholder="Ex: Ana Silva amanhã das 14h às 15h" style="font-size:16px;margin-bottom:var(--space-4);"></textarea>
         </div>
-        <div class="record-wrap" style="padding:var(--space-2) 0;">
-          <button class="record-btn" id="ag-mic-btn">
-            <svg id="ag-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 10a7 7 0 0014 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <svg id="ag-stop-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:none;"><rect x="5" y="5" width="14" height="14" rx="2" fill="white"/></svg>
-          </button>
-          <span id="ag-mic-label" class="record-label">Toque para gravar</span>
+
+        <!-- Modo manual (fallback quando IA estiver indisponível) -->
+        <div id="ag-manual-area" style="display:none;">
+          <div id="ag-manual-aviso" style="display:none;background:var(--color-warning-bg);color:var(--color-warning);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);margin-bottom:var(--space-4);">
+            IA temporariamente indisponível — preencha os campos manualmente.
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ag-manual-nome">Nome do paciente</label>
+            <input type="text" id="ag-manual-nome" class="form-input" placeholder="Ex: Ana Silva" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ag-manual-data">Data</label>
+            <input type="date" id="ag-manual-data" class="form-input">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4);">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" for="ag-manual-inicio">Hora início</label>
+              <input type="time" id="ag-manual-inicio" class="form-input">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" for="ag-manual-fim">Hora fim</label>
+              <input type="time" id="ag-manual-fim" class="form-input">
+            </div>
+          </div>
         </div>
-        <div id="ag-rec-feedback"></div>
-        <div class="divider">ou escreva</div>
-        <div id="ag-data-hint" style="display:none;background:var(--color-info-bg);color:var(--color-info);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-sm);margin-bottom:var(--space-3);"></div>
-        <textarea id="ag-texto" class="form-textarea" rows="2"
-          placeholder="Ex: Ana Silva amanhã das 14h às 15h" style="font-size:16px;margin-bottom:var(--space-4);"></textarea>
+
         <div style="display:flex;flex-direction:column;gap:var(--space-2);">
           <button id="ag-verificar-btn" class="btn btn-primary btn-full btn-lg">Verificar disponibilidade</button>
+          <button id="ag-modo-toggle" class="btn btn-ghost btn-full" style="font-size:var(--text-sm);color:var(--color-text-secondary);">Preencher manualmente</button>
           <button id="ag-input-cancel" class="btn btn-ghost btn-full">Cancelar</button>
         </div>
       </div>
@@ -971,7 +1005,7 @@ try {
   }
 } catch { _currentUser = secUser(); }
 
-document.getElementById('user-display-name').textContent = _currentUser.nome || _currentUser.email || 'Secretaria';
+document.getElementById('user-display-name').textContent = _currentUser.nome || 'Secretária';
 if (_currentUser.foto) {
   const img = document.getElementById('user-avatar-foto');
   img.src = _currentUser.foto;
@@ -1238,13 +1272,35 @@ document.getElementById('cancel-confirm-btn').addEventListener('click', async ()
 /* ── Novo agendamento ── */
 let _agPendente   = null;
 let _agDisponivel = true;   // estado atual do slot (atualizado em renderAgResult)
+let _agModoManual = false;  // true = formulário manual (fallback sem IA)
 let _agRec = null, _agRecording = false;
 let _agRecTimer = null;
 
+function agSetModo(manual, aviso = false) {
+  _agModoManual = manual;
+  document.getElementById('ag-ia-area').style.display     = manual ? 'none' : '';
+  document.getElementById('ag-manual-area').style.display = manual ? '' : 'none';
+  document.getElementById('ag-manual-aviso').style.display = (manual && aviso) ? '' : 'none';
+  document.getElementById('ag-modo-toggle').textContent   = manual ? 'Usar IA' : 'Preencher manualmente';
+  if (manual) {
+    // pré-preencher data com a selecionada no calendário, se houver
+    const dataInput = document.getElementById('ag-manual-data');
+    if (_diaSel && !dataInput.value) dataInput.value = _diaSel;
+  }
+}
+
 function agSheetOpen() {
   agStopRec();
+  _agModoManual = false;
   document.getElementById('ag-input-area').style.display   = '';
   document.getElementById('ag-result-area').style.display  = 'none';
+  document.getElementById('ag-ia-area').style.display      = '';
+  document.getElementById('ag-manual-area').style.display  = 'none';
+  document.getElementById('ag-modo-toggle').textContent    = 'Preencher manualmente';
+  document.getElementById('ag-manual-nome').value  = '';
+  document.getElementById('ag-manual-data').value  = '';
+  document.getElementById('ag-manual-inicio').value = '';
+  document.getElementById('ag-manual-fim').value   = '';
   document.getElementById('ag-texto').value = '';
   document.getElementById('ag-mic-label').textContent = 'Toque para gravar';
   document.getElementById('ag-mic-icon').style.display  = '';
@@ -1336,9 +1392,38 @@ document.getElementById('ag-mic-btn').addEventListener('click', async () => {
 });
 
 document.getElementById('ag-verificar-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('ag-verificar-btn');
+
+  if (_agModoManual) {
+    // ── Modo manual ──────────────────────────────────────────────────────
+    const nome   = document.getElementById('ag-manual-nome').value.trim();
+    const data   = document.getElementById('ag-manual-data').value;
+    const inicio = document.getElementById('ag-manual-inicio').value;
+    const fim    = document.getElementById('ag-manual-fim').value;
+    if (!nome || !data || !inicio || !fim) {
+      showToast('Preencha todos os campos para continuar.', 'error'); return;
+    }
+    btn.disabled = true; btn.textContent = 'Verificando…';
+    try {
+      const res = await apiFetch('/sec/agendamento/verificar-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, data, hora_inicio: inicio, hora_fim: fim }),
+      });
+      _agPendente = res.parsed;
+      renderAgResult(res);
+      document.getElementById('ag-input-area').style.display  = 'none';
+      document.getElementById('ag-result-area').style.display = '';
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Verificar disponibilidade';
+      showToast(e.message, 'error');
+    }
+    return;
+  }
+
+  // ── Modo IA ──────────────────────────────────────────────────────────
   const texto = document.getElementById('ag-texto').value.trim();
   if (!texto) return;
-  const btn = document.getElementById('ag-verificar-btn');
   btn.disabled = true; btn.textContent = 'Analisando…';
   try {
     const data = await apiFetch('/sec/agendamento/interpretar', {
@@ -1352,10 +1437,23 @@ document.getElementById('ag-verificar-btn').addEventListener('click', async () =
     document.getElementById('ag-result-area').style.display = '';
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Verificar disponibilidade';
-    showToast(e.message, 'error');
-    document.getElementById('ag-rec-feedback').innerHTML =
-      `<div style="color:var(--color-danger);font-size:var(--text-sm);margin-top:var(--space-2);">${escHtml(e.message)}</div>`;
+    // Auto-fallback: se o erro parece ser da IA (não um 4xx de negócio), ativa modo manual
+    const iaDown = e.message && (e.message.includes('interpretar') || e.message.includes('IA') ||
+                   e.message.includes('overloaded') || e.message.includes('timeout') ||
+                   e.message.includes('503') || e.message.includes('529'));
+    if (iaDown) {
+      showToast('IA indisponível — use o formulário manual', 'error');
+      agSetModo(true, true);
+    } else {
+      showToast(e.message, 'error');
+      document.getElementById('ag-rec-feedback').innerHTML =
+        `<div style="color:var(--color-danger);font-size:var(--text-sm);margin-top:var(--space-2);">${escHtml(e.message)}</div>`;
+    }
   }
+});
+
+document.getElementById('ag-modo-toggle').addEventListener('click', () => {
+  agSetModo(!_agModoManual, false);
 });
 
 function fmtData(s) {
@@ -2130,7 +2228,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.303';
+const APP_VERSION = 'Beta-0.307';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

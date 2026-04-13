@@ -4,6 +4,47 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.307 — 2026-04-13
+
+### Visual
+- **Sidebar e drawer escuros:** sidebar da secretaria e drawer do fisio agora têm fundo `#1A1A1A` com textura sutil de pontinhos — identidade visual unificada com o painel do login
+- Texto dos itens de nav: `rgba(255,255,255,0.55)` em repouso, `#fff` no hover/active
+- Item ativo: `rgba(255,255,255,0.12)` de fundo + texto branco
+- Ícones SVG usam `currentColor`: visíveis em 40% branco em repouso, 85% no hover/active
+- Avatar do usuário: `rgba(255,255,255,0.15)` de fundo (foi `var(--color-accent)` preto sólido)
+- "Sair" no drawer: vermelho suave `#f87171` com hover rosa escuro, legível no fundo preto
+- `powered by up it` e versão no footer do drawer atualizados para branco 25%
+
+---
+
+## Beta-0.306 — 2026-04-13
+
+### UX / Visual
+- **Login redesenhado para produção:** layout split-screen — painel esquerdo preto com monograma PN, nome da marca em DM Serif Display, tagline e 3 cards de feature (voz, agenda, pacientes); painel direito branco com card de login centralizado. Grade de pontos sutil como textura no painel escuro. Botão Google ocupa largura total do card. Mobile: painel esquerdo vira banner compacto no topo, features ocultas.
+
+---
+
+## Beta-0.305 — 2026-04-13
+
+### Correções
+- **Nome da secretaria sem email cru:** quando o JWT não traz `nome`, o display passa a mostrar "Secretária" em vez do e-mail completo
+- **Foto do Google mantida e funcionando:** avatar exibe a foto do perfil Google do login (`payload.foto`) quando disponível; iniciais como fallback quando não há foto
+
+---
+
+## Beta-0.304 — 2026-04-13
+
+### Funcionalidades
+- **Agendamento manual sem IA:** novo botão "Preencher manualmente" no modal de agendamento permite que a secretaria informe nome, data, hora início e hora fim diretamente, sem depender da interpretação por IA
+- **Auto-fallback quando IA cai:** se `/interpretar` retornar erro de IA (503, timeout, overloaded), o modal exibe aviso amarelo e ativa automaticamente o formulário manual
+- **Toggle IA ↔ Manual:** a secretaria pode alternar entre os dois modos a qualquer momento com um clique; ao voltar para IA, os campos são limpos
+
+### Técnico
+- Novo endpoint `POST /sec/agendamento/verificar-manual`: recebe `{nome, data, hora_inicio, hora_fim}`, realiza patient fuzzy matching + freebusy check no GCal e retorna o mesmo shape de resposta que `/interpretar` — o fluxo de confirmação (`renderAgResult` + `/confirmar`) funciona sem nenhuma mudança
+- Frontend: `_agModoManual` state var; `agSetModo(manual, aviso)` centraliza a lógica de troca; `agSheetOpen()` sempre reseta para modo IA
+
+---
+
 ## Beta-0.303 — 2026-04-13
 
 ### Funcionalidades

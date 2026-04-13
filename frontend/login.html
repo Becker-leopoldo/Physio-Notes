@@ -2,44 +2,43 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Entrar — Physio Notes</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Physio Notes">
+  <meta name="theme-color" content="#1A1A1A">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --color-bg:        #F9F8F6;
-      --color-surface:   #FFFFFF;
-      --color-border:    #E8E6E1;
-      --color-border-strong: #D0CEC9;
-      --color-text:      #1A1A1A;
+      --color-bg:             #F9F8F6;
+      --color-surface:        #FFFFFF;
+      --color-border:         #E8E6E1;
+      --color-text:           #1A1A1A;
       --color-text-secondary: #6B6860;
-      --color-text-muted: #A09D97;
-      --color-accent:    #1A1A1A;
-      --color-accent-light: #F0EFED;
-      --color-success:   #2D6A4F;
-      --color-success-bg: #EDF7F2;
-      --color-danger:    #9B1C1C;
-      --color-danger-bg: #FEF2F2;
-      --color-info:      #1E3A5F;
-      --color-info-bg:   #EFF6FF;
+      --color-text-muted:     #A09D97;
+      --color-accent:         #1A1A1A;
+      --color-success:        #2D6A4F;
+      --color-success-bg:     #EDF7F2;
+      --color-danger:         #9B1C1C;
+      --color-danger-bg:      #FEF2F2;
+      --color-info:           #1E3A5F;
+      --color-info-bg:        #EFF6FF;
       --font-display: 'DM Serif Display', Georgia, serif;
       --font-body:    'DM Sans', system-ui, sans-serif;
-      --radius-md: 8px;
-      --radius-lg: 12px;
+      --radius-md:  8px;
+      --radius-lg:  16px;
       --radius-full: 9999px;
-      --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
-      --space-2: 0.5rem;
-      --space-3: 0.75rem;
-      --space-4: 1rem;
-      --space-6: 1.5rem;
-      --space-8: 2rem;
-      --space-10: 2.5rem;
-      --text-sm: 0.875rem;
-      --text-3xl: 1.875rem;
+      --shadow-lg:  0 8px 32px rgba(0,0,0,0.10);
     }
+
+    html, body { height: 100%; }
 
     body {
       font-family: var(--font-body);
@@ -47,9 +46,122 @@
       color: var(--color-text);
       min-height: 100dvh;
       display: flex;
+    }
+
+    /* ── Layout split ── */
+    .login-layout {
+      display: flex;
+      width: 100%;
+      min-height: 100dvh;
+    }
+
+    /* ── Painel esquerdo (branding) ── */
+    .brand-panel {
+      flex: 0 0 480px;
+      background: var(--color-accent);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decoração sutil — grade de pontos */
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    .brand-top { position: relative; }
+
+    .brand-monogram {
+      width: 52px; height: 52px;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      color: #fff;
+      margin-bottom: 28px;
+    }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-size: 2.75rem;
+      line-height: 1.1;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+
+    .brand-tagline {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.5;
+      font-weight: 300;
+      max-width: 300px;
+    }
+
+    .brand-features {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 52px;
+    }
+
+    .brand-feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .feature-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .feature-text strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .feature-text span {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.4;
+    }
+
+    .brand-bottom {
+      position: relative;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ── Painel direito (login) ── */
+    .login-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 48px 40px;
+      background: var(--color-bg);
     }
 
     .login-card {
@@ -57,69 +169,196 @@
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-lg);
-      padding: var(--space-10);
+      padding: 48px 40px;
       width: 100%;
-      max-width: 400px;
+      max-width: 380px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: var(--space-8);
+      gap: 32px;
     }
 
-    .login-brand { text-align: center; }
-    .login-brand h1 {
+    .login-card-brand { text-align: center; }
+    .login-card-brand h2 {
       font-family: var(--font-display);
-      font-size: var(--text-3xl);
+      font-size: 1.6rem;
       color: var(--color-text);
-      margin-bottom: var(--space-2);
+      margin-bottom: 6px;
     }
-    .login-brand p {
-      font-size: var(--text-sm);
+    .login-card-brand p {
+      font-size: 0.875rem;
       color: var(--color-text-secondary);
+      line-height: 1.5;
     }
 
-    .login-body {
-      width: 100%;
+    .login-divider {
       display: flex;
-      flex-direction: column;
-      gap: var(--space-4);
+      align-items: center;
+      gap: 12px;
+      color: var(--color-text-muted);
+      font-size: 0.75rem;
+    }
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--color-border);
     }
 
     .status-msg {
-      font-size: var(--text-sm);
+      font-size: 0.875rem;
       text-align: center;
-      padding: var(--space-3) var(--space-4);
+      padding: 12px 16px;
       border-radius: var(--radius-md);
       display: none;
+      line-height: 1.5;
     }
     .status-msg.success { display: block; background: var(--color-success-bg); color: var(--color-success); }
     .status-msg.error   { display: block; background: var(--color-danger-bg);  color: var(--color-danger); }
     .status-msg.info    { display: block; background: var(--color-info-bg);    color: var(--color-info); }
 
-    .powered-bar {
+    #google-btn-wrap {
+      display: flex;
+      justify-content: center;
+      min-height: 44px;
+    }
+
+    .login-footer {
+      text-align: center;
       font-size: 0.75rem;
       color: var(--color-text-muted);
-      text-align: center;
     }
-    .powered-bar strong { color: var(--color-text-secondary); }
+    .login-footer strong { color: var(--color-text-secondary); }
+
+    /* ── Mobile: banner compacto horizontal ── */
+    @media (max-width: 860px) {
+      .login-layout { flex-direction: column; }
+
+      .brand-panel {
+        flex: 0 0 auto;
+        /* respeita notch/Dynamic Island no topo */
+        padding: calc(env(safe-area-inset-top, 0px) + 20px) 24px 20px;
+        justify-content: flex-start;
+      }
+
+      /* monograma + nome lado a lado */
+      .brand-top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .brand-monogram {
+        width: 42px; height: 42px;
+        font-size: 16px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+      }
+
+      /* "Physio Notes" em uma linha só */
+      .brand-name { font-size: 1.5rem; margin-bottom: 0; }
+      .brand-name br { display: none; }
+
+      .brand-tagline  { display: none; }
+      .brand-features { display: none; }
+      .brand-bottom   { display: none; }
+
+      .login-panel {
+        flex: 1;
+        padding: 28px 20px;
+        /* respeita home indicator no iOS */
+        padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
+      }
+
+      .login-card {
+        padding: 36px 24px;
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="login-card">
-    <div class="login-brand">
-      <h1>Physio Notes</h1>
-      <p>Prontuário clínico por voz</p>
+  <div class="login-layout">
+
+    <!-- Painel esquerdo -->
+    <div class="brand-panel">
+      <div class="brand-top">
+        <div class="brand-monogram">PN</div>
+        <div class="brand-name">Physio<br>Notes</div>
+        <p class="brand-tagline">Prontuário clínico inteligente para fisioterapeutas modernos.</p>
+
+        <div class="brand-features">
+          <div class="brand-feature">
+            <div class="feature-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="2" width="6" height="11" rx="3" stroke="rgba(255,255,255,0.7)" stroke-width="1.6"/>
+                <path d="M5 10a7 7 0 0014 0" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="12" y1="17" x2="12" y2="21" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="feature-text">
+              <strong>Prontuário por voz</strong>
+              <span>Registre evoluções e condutas falando — a IA transcreve e estrutura automaticamente.</span>
+            </div>
+          </div>
+          <div class="brand-feature">
+            <div class="feature-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="17" rx="2" stroke="rgba(255,255,255,0.7)" stroke-width="1.6"/>
+                <path d="M16 2v4M8 2v4M3 9h18" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="feature-text">
+              <strong>Agenda integrada</strong>
+              <span>Sincroniza com o Google Calendar. Conflitos de horário detectados em tempo real.</span>
+            </div>
+          </div>
+          <div class="brand-feature">
+            <div class="feature-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <circle cx="9" cy="7" r="4" stroke="rgba(255,255,255,0.7)" stroke-width="1.6"/>
+                <path d="M3 21v-1a6 6 0 0112 0v1M16 3.13a4 4 0 010 7.75M21 21v-1a4 4 0 00-3-3.85" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="feature-text">
+              <strong>Gestão de pacientes</strong>
+              <span>Pacotes, sessões e faturamento organizados em um só lugar.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="brand-bottom">
+        powered by <strong style="color:rgba(255,255,255,0.45);">up it</strong>
+      </div>
     </div>
 
-    <div class="login-body">
-      <div class="status-msg" id="statusMsg"></div>
-      <div id="google-btn-wrap" style="display:flex;justify-content:center;min-height:44px;"></div>
+    <!-- Painel direito -->
+    <div class="login-panel">
+      <div class="login-card">
+        <div class="login-card-brand">
+          <h2>Bem-vindo de volta</h2>
+          <p>Entre com sua conta Google para<br>acessar o Physio Notes.</p>
+        </div>
+
+        <div>
+          <div class="status-msg" id="statusMsg"></div>
+          <div id="google-btn-wrap"></div>
+        </div>
+
+        <div class="login-footer">
+          powered by <strong>up it</strong>
+        </div>
+      </div>
     </div>
 
-    <span class="powered-bar">powered by <strong>up it</strong></span>
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
     function setStatus(msg, type) {
       const el = document.getElementById('statusMsg');
       el.textContent = msg;
@@ -153,13 +392,13 @@
           const btn = document.createElement('button');
           btn.style.cssText = `
             display:flex;align-items:center;justify-content:center;gap:10px;
-            width:280px;height:44px;border-radius:4px;border:1px solid #dadce0;
+            width:100%;height:46px;border-radius:8px;border:1px solid #dadce0;
             background:#fff;font-family:'DM Sans',sans-serif;font-size:14px;
             font-weight:500;color:#3c4043;cursor:pointer;
-            box-shadow:0 1px 2px rgba(0,0,0,.08);transition:box-shadow .15s;
+            box-shadow:0 1px 3px rgba(0,0,0,0.08);transition:box-shadow .15s,background .15s;
           `;
-          btn.onmouseover = () => btn.style.boxShadow = '0 2px 6px rgba(0,0,0,.14)';
-          btn.onmouseout  = () => btn.style.boxShadow = '0 1px 2px rgba(0,0,0,.08)';
+          btn.onmouseover = () => { btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)'; btn.style.background = '#fafafa'; };
+          btn.onmouseout  = () => { btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'; btn.style.background = '#fff'; };
           btn.innerHTML = `
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -171,7 +410,7 @@
           `;
           btn.addEventListener('click', () => {
             btn.disabled = true;
-            btn.style.opacity = '0.7';
+            btn.style.opacity = '0.65';
             client.requestCode();
           });
           document.getElementById('google-btn-wrap').appendChild(btn);

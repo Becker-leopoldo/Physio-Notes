@@ -764,10 +764,10 @@
     .home-title { font-family: var(--font-display); font-size: var(--text-3xl); }
     .home-subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); margin-top: var(--space-1); }
 
-    /* ---- Drawer lateral ---- */
+    /* ---- Drawer lateral (dark) ---- */
     .drawer-overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.35);
+      background: rgba(0,0,0,0.45);
       z-index: 400;
       opacity: 0; pointer-events: none;
       transition: opacity 0.22s ease;
@@ -777,26 +777,28 @@
       position: fixed;
       top: 0; left: 0; bottom: 0;
       width: 260px;
-      background: var(--color-surface);
+      background: #1A1A1A;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+      background-size: 24px 24px;
       z-index: 401;
       display: flex; flex-direction: column;
-      box-shadow: var(--shadow-lg);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.3);
       transform: translateX(-100%);
       transition: transform 0.22s ease;
     }
     .drawer.open { transform: translateX(0); }
     .drawer-header {
       padding: var(--space-6) var(--space-5) var(--space-5);
-      border-bottom: var(--border);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .drawer-brand {
       font-family: var(--font-display);
       font-size: var(--text-xl);
-      color: var(--color-text);
+      color: #fff;
     }
     .drawer-subtitle {
       font-size: var(--text-xs);
-      color: var(--color-text-muted);
+      color: rgba(255,255,255,0.4);
       margin-top: var(--space-1);
     }
     .drawer-nav {
@@ -814,7 +816,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--color-text-muted);
+      color: rgba(255,255,255,0.28);
       padding: var(--space-3) var(--space-3) var(--space-1);
     }
     .drawer-item {
@@ -823,24 +825,24 @@
       border-radius: var(--radius-md);
       font-size: var(--text-sm);
       font-weight: 500;
-      color: var(--color-text);
+      color: rgba(255,255,255,0.6);
       cursor: pointer;
       background: none; border: none;
       font-family: var(--font-body);
       width: 100%; text-align: left;
-      transition: background 0.12s;
+      transition: background 0.12s, color 0.12s;
     }
-    .drawer-item:hover { background: var(--color-accent-light); }
-    .drawer-item.active { background: var(--color-accent-light); font-weight: 600; }
-    .drawer-item svg { flex-shrink: 0; color: var(--color-text-secondary); }
-    .drawer-item.active svg { color: var(--color-text); }
+    .drawer-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .drawer-item.active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .drawer-item svg { flex-shrink: 0; color: rgba(255,255,255,0.4); }
+    .drawer-item:hover svg, .drawer-item.active svg { color: rgba(255,255,255,0.85); }
     .drawer-footer {
       padding: var(--space-4) var(--space-3);
-      border-top: var(--border);
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
-    .drawer-item-danger { color: var(--color-danger) !important; }
-    .drawer-item-danger svg { color: var(--color-danger) !important; }
-    .drawer-item-danger:hover { background: var(--color-danger-bg) !important; }
+    .drawer-item-danger { color: #f87171 !important; }
+    .drawer-item-danger svg { color: #f87171 !important; }
+    .drawer-item-danger:hover { background: rgba(248,113,113,0.1) !important; }
 
     /* ---- Faturamento cards ---- */
     .fat-card {
@@ -1171,13 +1173,13 @@
   <div class="drawer-footer">
     <!-- Usuário logado -->
     <div id="drawer-user" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);margin-bottom:var(--space-1);border-radius:var(--radius-md);">
-      <div id="drawer-user-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:600;flex-shrink:0;overflow:hidden;">
+      <div id="drawer-user-avatar" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:600;flex-shrink:0;overflow:hidden;">
         <img id="drawer-user-foto" style="width:100%;height:100%;object-fit:cover;display:none;" alt="">
         <span id="drawer-user-iniciais">?</span>
       </div>
       <div style="min-width:0;">
-        <div id="drawer-user-nome" style="font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-        <div id="drawer-user-email" style="font-size:10px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        <div id="drawer-user-nome" style="font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;"></div>
+        <div id="drawer-user-email" style="font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
     </div>
     <button class="drawer-item drawer-item-danger" onclick="fecharDrawer(); fazerLogout();">
@@ -1185,8 +1187,8 @@
       Sair
     </button>
     <div style="padding:var(--space-3) var(--space-3) 0;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:var(--text-xs);color:var(--color-text-muted);">powered by <strong style="color:var(--color-text-secondary);">up it</strong></span>
-      <span id="app-version-label" style="font-size:var(--text-xs);color:var(--color-text-muted);font-variant-numeric:tabular-nums;"></span>
+      <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.25);">powered by <strong style="color:rgba(255,255,255,0.4);">up it</strong></span>
+      <span id="app-version-label" style="font-size:var(--text-xs);color:rgba(255,255,255,0.25);font-variant-numeric:tabular-nums;"></span>
     </div>
   </div>
 </div>
@@ -1733,7 +1735,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.303'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.307'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
