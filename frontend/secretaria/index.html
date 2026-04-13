@@ -1408,6 +1408,7 @@ document.getElementById('ag-mic-btn').addEventListener('click', async () => {
         document.getElementById('ag-rec-feedback').innerHTML =
           `<div class="ai-bubble" style="font-size:var(--text-sm);margin-bottom:var(--space-4);">${escHtml(texto)}</div>`;
       } catch(e) {
+        console.error('Transcription error:', e);
         document.getElementById('ag-mic-label').textContent = 'Erro na transcrição';
       }
     };
@@ -1705,7 +1706,7 @@ let _pacientes = [];
 async function carregarPacientes() {
   try {
     _pacientes = await apiFetch('/sec/pacientes');
-  } catch(e) { _pacientes = []; }
+  } catch(e) { console.error('Erro ao carregar pacientes:', e); _pacientes = []; }
   renderPacTab(_pacTabQ);
 }
 
@@ -1779,6 +1780,7 @@ document.getElementById('at-mic-btn').addEventListener('click', async () => {
         document.getElementById('at-rec-feedback').innerHTML =
           `<div class="ai-bubble" style="font-size:var(--text-sm);margin-bottom:var(--space-3);">${escHtml(texto)}</div>`;
       } catch(e) {
+        console.error('Transcription error:', e);
         document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
       }
     };
@@ -2067,7 +2069,7 @@ function renderPacPacotesLista(q) {
         <div class="pac-avatar">${initials(p.nome)}</div>
         <span class="pac-nome">${escHtml(p.nome)}</span>
       </div>`;
-    } catch (err) { return ""; }
+    } catch (err) { console.error('Render pac error:', err); return ""; }
   }).join('');
   el.querySelectorAll('.pac-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -2318,7 +2320,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.329';
+const APP_VERSION = 'Beta-0.330';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

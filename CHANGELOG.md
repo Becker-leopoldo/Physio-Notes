@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.330 — 2026-04-13
+
+### Qualidade — Sonar round 5: 10 MINOR fechados (javascript:S2486)
+- **10 catch vazios** receberam `console.error(e)` — erros de rede, microfone, transcrição, carregamento de dados e render agora são logados no console do browser em vez de silenciados
+- Arquivos: `index.html` (5), `admin.html` (1), `secretaria/index.html` (4)
+
+---
+
 ## Beta-0.329 — 2026-04-13
 
 ### Qualidade — Sonar round 4: 21 MAJOR fechados (python:S8415)

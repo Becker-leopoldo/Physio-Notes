@@ -1727,7 +1727,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.329'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.330'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2087,6 +2087,7 @@
     try {
       res = await fetch(API_BASE + path, opts);
     } catch (e) {
+      console.error('Network error:', e);
       // fetch() lança apenas em falha de rede (não em respostas 4xx/5xx)
       const err = new Error('Não foi possível conectar ao servidor. Verifique sua internet.');
       err._network = true;
@@ -2118,6 +2119,7 @@
       _pacCache = await apiFetch('/pacientes');
       _renderPacientesFiltrado(_pacCache, document.getElementById('filtro-pacientes').value.toLowerCase());
     } catch (e) {
+      console.error('Erro ao carregar pacientes:', e);
       container.innerHTML = '<div class="error-message">Erro ao carregar pacientes.</div>';
     }
   }
@@ -3194,6 +3196,7 @@
         micBtn.style.background = 'var(--color-danger)';
         feedback.textContent = 'Gravando... toque para parar';
       } catch (e) {
+        console.error('Mic access error:', e);
         feedback.textContent = 'Não foi possível acessar o microfone.';
       }
     });
@@ -4088,6 +4091,7 @@
           micLabel.textContent = 'Gravando... toque para parar';
           micFb.innerHTML = '';
         } catch (e) {
+          console.error('Mic access error:', e);
           micFb.innerHTML = `<span style="color:var(--color-danger);">Sem acesso ao microfone.</span>`;
         }
       } else {
@@ -5398,6 +5402,7 @@
       fb.textContent = 'Salvo!';
       setTimeout(() => { fb.style.display = 'none'; }, 2000);
     } catch (e) {
+      console.error('Erro ao salvar:', e);
       fb.style.display = '';
       fb.style.color = 'var(--color-danger)';
       fb.textContent = 'Erro ao salvar.';

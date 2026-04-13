@@ -473,6 +473,7 @@
         _links    = resL.ok ? await resL.json() : [];
 
       } catch (e) {
+        console.error('Erro ao carregar dados admin:', e);
         document.getElementById('lista-ativos').innerHTML = '<div class="empty">Erro ao carregar dados.</div>';
         return;
       }
