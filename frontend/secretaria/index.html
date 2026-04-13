@@ -235,10 +235,37 @@
     .cal-dots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; padding: 0 2px; }
     .cal-dot { width: 5px; height: 5px; border-radius: var(--radius-full); flex-shrink: 0; }
 
+    /* ── Layout 2 colunas da agenda ── */
+    .agenda-grid {
+      display: grid;
+      grid-template-columns: 55fr 45fr;
+      gap: var(--space-5);
+      align-items: start;
+    }
+    .agenda-col-eventos {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
     .dia-painel {
-      margin-bottom: var(--space-4);
+      position: -webkit-sticky;
+      position: sticky;
+      top: var(--space-6);
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       background: var(--color-surface); border: var(--border);
-      border-radius: var(--radius-lg); overflow: hidden;
+      border-radius: var(--radius-lg);
+    }
+    .dia-painel-vazio {
+      padding: var(--space-10) var(--space-6);
+      text-align: center;
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+    @media (max-width: 640px) {
+      .agenda-grid { grid-template-columns: 1fr; }
+      .dia-painel { position: static; max-height: none; }
     }
     .dia-header {
       padding: var(--space-3) var(--space-4);
@@ -585,39 +612,46 @@
 
     <!-- ABA: AGENDA -->
     <div id="tab-agenda"><div class="content-inner">
+      <div class="agenda-grid">
 
-      <!-- Calendário: nav + grade num card branco -->
-      <div class="cal-card">
-        <div class="mes-nav">
-          <button class="mes-btn" id="btn-mes-prev">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <div style="display:flex;align-items:center;gap:var(--space-3);">
-            <span class="mes-nome" id="mes-nome-label"></span>
-            <button class="hoje-btn" id="btn-mes-hoje" title="Ir para hoje">Hoje</button>
+        <!-- Coluna esquerda: calendário -->
+        <div>
+          <div class="cal-card">
+            <div class="mes-nav">
+              <button class="mes-btn" id="btn-mes-prev">
+                <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l-4 4.5 4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <span class="mes-nome" id="mes-nome-label"></span>
+                <button class="hoje-btn" id="btn-mes-hoje" title="Ir para hoje">Hoje</button>
+              </div>
+              <button class="mes-btn" id="btn-mes-next">
+                <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
           </div>
-          <button class="mes-btn" id="btn-mes-next">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5l4 4.5-4 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
         </div>
-        <div class="cal-grid" id="cal-grid"></div>
-      </div>
 
-      <!-- Painel do dia selecionado -->
-      <div class="dia-painel" id="dia-painel" style="display:none;">
-        <div class="dia-header">
-          <span class="dia-titulo" id="dia-titulo"></span>
-          <span class="dia-count" id="dia-count"></span>
+        <!-- Coluna direita: eventos do dia + botão novo -->
+        <div class="agenda-col-eventos">
+          <div class="dia-painel" id="dia-painel">
+            <div class="dia-header">
+              <span class="dia-titulo" id="dia-titulo"></span>
+              <span class="dia-count" id="dia-count"></span>
+            </div>
+            <div id="dia-itens">
+              <div class="dia-painel-vazio">Selecione um dia para ver os eventos</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="fab-novo" id="btn-novo-ag">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              Novo agendamento
+            </button>
+          </div>
         </div>
-        <div id="dia-itens"></div>
-      </div>
 
-      <!-- Botão novo agendamento -->
-      <div style="display:flex;justify-content:flex-end;padding-top:var(--space-2);">
-        <button class="fab-novo" id="btn-novo-ag">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          Novo agendamento
-        </button>
       </div>
     </div></div><!-- /content-inner /tab-agenda -->
 
@@ -1083,13 +1117,17 @@ let _loadingAgenda = false;
 document.getElementById('btn-mes-prev').addEventListener('click', () => {
   if (_mes === 0) { _mes = 11; _ano--; } else _mes--;
   _diaSel = null;
-  document.getElementById('dia-painel').style.display = 'none';
+  document.getElementById('dia-itens').innerHTML = '<div class="dia-painel-vazio">Selecione um dia para ver os eventos</div>';
+  document.getElementById('dia-titulo').textContent = '';
+  document.getElementById('dia-count').textContent = '';
   carregarAgenda();
 });
 document.getElementById('btn-mes-next').addEventListener('click', () => {
   if (_mes === 11) { _mes = 0; _ano++; } else _mes++;
   _diaSel = null;
-  document.getElementById('dia-painel').style.display = 'none';
+  document.getElementById('dia-itens').innerHTML = '<div class="dia-painel-vazio">Selecione um dia para ver os eventos</div>';
+  document.getElementById('dia-titulo').textContent = '';
+  document.getElementById('dia-count').textContent = '';
   carregarAgenda();
 });
 document.getElementById('btn-mes-hoje').addEventListener('click', () => {
@@ -1223,7 +1261,6 @@ function renderDia(dataKey) {
       });
     });
   }
-  painel.style.display = 'block';
 }
 
 /* ── Cancelar agendamento gcal ── */
@@ -2272,7 +2309,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.320';
+const APP_VERSION = 'Beta-0.321';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

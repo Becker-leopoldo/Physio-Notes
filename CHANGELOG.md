@@ -4,6 +4,17 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.321 — 2026-04-13
+
+### Secretaria — Agenda em 2 colunas (calendário + eventos)
+- **Layout 2 colunas:** calendário mensal à esquerda (55%), painel de eventos à direita (45%) — sem push de conteúdo ao selecionar um dia
+- **Painel de eventos sempre visível:** sticky ao lado do calendário, scroll independente, altura máxima vinculada à viewport
+- **Estado vazio:** exibe "Selecione um dia para ver os eventos" quando nenhum dia está selecionado (ocorre ao navegar para outro mês)
+- **Botão "+ Novo agendamento"** reposicionado para baixo do painel de eventos (coluna direita)
+- **Mobile:** abaixo de 640px volta para coluna única automaticamente
+
+---
+
 ## Beta-0.320 — 2026-04-13
 
 ### Secretaria — Calendário: seleção padrão e botão Hoje corrigidos
