@@ -824,7 +824,6 @@
       display: flex; flex-direction: column; gap: var(--space-1);
     }
     .drawer-nav::-webkit-scrollbar { display: none; } /* Chrome, Safari, Edge */
-    .drawer-nav::-webkit-scrollbar { display: none; }
     .drawer-nav-label {
       font-size: 10px;
       font-weight: 700;
@@ -937,8 +936,8 @@
 
     @media print {
       body > * { display: none !important; }
-      #print-view { display: block !important; }
       #print-view {
+        display: block !important;
         position: fixed; inset: 0; background: white; z-index: 9999;
         padding: 32px; font-family: 'DM Sans', sans-serif; color: #1A1A1A;
       }
@@ -1728,7 +1727,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.322'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.323'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';

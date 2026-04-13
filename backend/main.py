@@ -306,7 +306,7 @@ def listar_pacientes(request: Request):
 def buscar_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     return paciente
 
@@ -326,7 +326,7 @@ def deletar_paciente(paciente_id: int, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, owner)
     db.deletar_paciente(paciente_id)
     db.registrar_audit(owner, "paciente_deletar", f"id={paciente_id} nome={paciente['nome']}", _client_ip(request))
@@ -337,7 +337,7 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
     owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, owner)
     try:
         resultado = db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
@@ -368,7 +368,7 @@ async def _disparar_ia_pos_anamnese(paciente_id: int, anamnese: str, conduta_atu
 async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, background_tasks: BackgroundTasks, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), owner)
@@ -402,7 +402,7 @@ class ComplementarCondutaBody(BaseModel):
 async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     conduta_atualizada = await ai.complementar_conduta(body.transcricao, paciente.get("conduta_tratamento"), _owner_email(request))
     paciente_atualizado = db.atualizar_paciente(
@@ -417,7 +417,7 @@ async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, 
 async def sugerir_conduta(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     if not paciente.get("anamnese"):
         raise HTTPException(status_code=400, detail="Paciente não possui anamnese registrada. Registre a anamnese primeiro.")
@@ -431,7 +431,7 @@ async def gerar_sugestao(paciente_id: int, request: Request):
     import json as _json
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
@@ -453,7 +453,7 @@ async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBod
     """
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     texto = body.texto.strip()
@@ -487,7 +487,7 @@ async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, requ
     """Formata texto livre de conduta com tópicos via IA, sem alterar conteúdo."""
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Texto não pode ser vazio")
@@ -500,7 +500,7 @@ async def sugestao_do_dia(paciente_id: int, request: Request):
     """Gera sugestão prática do que fazer na sessão de hoje."""
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
@@ -519,7 +519,7 @@ async def feedback_clinico(paciente_id: int, request: Request):
     """Gera feedback clínico sutil ao fisio sobre pendências e itens não abordados."""
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
@@ -653,7 +653,7 @@ def criar_sessao(body: SessaoCreate, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(body.paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
 
     aberta = db.sessao_aberta_do_paciente(body.paciente_id)
     if aberta:
@@ -881,7 +881,7 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
 def listar_sessoes_paciente(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     return db.get_sessoes_com_consolidado(paciente_id)
 
@@ -1592,7 +1592,7 @@ async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
 async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
 
     historico = db.get_historico_paciente(paciente_id)
     documentos = db.get_documentos_paciente(paciente_id)
@@ -1609,7 +1609,7 @@ async def resumo_paciente(paciente_id: int, tipo: str = "completo", request: Req
 async def perguntar_ao_historico(paciente_id: int, body: PerguntaBody, request: Request = None):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
 
     if not body.pergunta.strip():
         raise HTTPException(status_code=400, detail="Pergunta não pode ser vazia")
@@ -1633,7 +1633,7 @@ async def upload_documento(paciente_id: int, arquivo: Annotated[UploadFile, File
 
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     if not arquivo.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos")
 
@@ -1670,7 +1670,7 @@ async def upload_documento(paciente_id: int, arquivo: Annotated[UploadFile, File
 def listar_documentos(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     return db.get_documentos_paciente(paciente_id)
 
@@ -1712,7 +1712,7 @@ def criar_pacote(paciente_id: int, body: PacoteCreate, request: Request):
     owner = _owner_email(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, owner)
     try:
         pacote = db.criar_pacote(paciente_id, body.total_sessoes, body.pago, body.valor_pago, body.data_pagamento, body.descricao)
@@ -1726,7 +1726,7 @@ def criar_pacote(paciente_id: int, body: PacoteCreate, request: Request):
 def listar_pacotes(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
     return db.get_pacotes_paciente(paciente_id)
 
@@ -1865,7 +1865,7 @@ async def push_vapid_key():
 async def push_subscribe(body: PushSubscribeBody, request: Request):
     owner = _owner_email(request)
     if not owner:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
     import json
     db.salvar_subscription(owner, json.dumps(body.subscription))
     return {"ok": True}
@@ -1874,7 +1874,7 @@ async def push_subscribe(body: PushSubscribeBody, request: Request):
 async def push_unsubscribe(request: Request):
     owner = _owner_email(request)
     if not owner:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
     import json
     body = await request.json()
     endpoint = body.get("endpoint", "")
@@ -1893,14 +1893,14 @@ class ConfigBody(BaseModel):
 async def get_configuracoes(request: Request):
     owner = _owner_email(request)
     if not owner:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
     return db.get_config_usuario(owner)
 
 @app.put("/configuracoes", responses={401: {"description": "Unauthorized"}})
 async def put_configuracoes(body: ConfigBody, request: Request):
     owner = _owner_email(request)
     if not owner:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
     db.set_config_usuario(owner, body.valor_sessao_avulsa, body.cobrar_avulsa)
     return db.get_config_usuario(owner)
 
@@ -2284,7 +2284,7 @@ async def atestado_interpretar(body: AtestadoInterpretarBody, request: Request =
     owner = _owner_email(request)
     paciente = db.get_paciente(body.paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     try:
         parsed = await ai.interpretar_atestado(
             body.texto,
@@ -2309,7 +2309,7 @@ def admin_vincular_secretaria(body: SecretariaVincularBody, request: Request = N
     """Fisio convida secretaria — cria vínculo com status=pendente (aguarda aprovação do admin)."""
     fisio_email = _owner_email(request)
     if not fisio_email:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
     if db.email_existe_como_fisio(body.secretaria_email):
         raise HTTPException(
             status_code=409,
@@ -2663,7 +2663,7 @@ def sec_atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Requ
     sec_email, fisio_email = _sec_context(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     
     _verificar_dono(paciente, fisio_email)
 
@@ -2702,7 +2702,7 @@ def sec_listar_pacotes(paciente_id: int, request: Request = None):
     _, fisio_email = _sec_context(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, fisio_email)
     return db.get_pacotes_paciente(paciente_id)
 
@@ -2713,7 +2713,7 @@ def sec_criar_pacote(paciente_id: int, body: PacoteCreate, request: Request = No
     _, fisio_email = _sec_context(request)
     paciente = db.get_paciente(paciente_id)
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, fisio_email)
     try:
         pacote = db.criar_pacote(paciente_id, body.total_sessoes, body.pago, body.valor_pago, body.data_pagamento, body.descricao)

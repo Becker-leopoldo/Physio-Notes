@@ -116,6 +116,15 @@
     .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
 
     .sidebar-footer { padding: var(--space-5); border-top: 1px solid rgba(255,255,255,0.08); position: relative; margin-top: auto; }
+    .sidebar-logout-btn {
+      display: flex; align-items: center; gap: var(--space-2);
+      width: 100%; padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md); background: none; border: none;
+      cursor: pointer; font-size: var(--text-sm); font-family: var(--font-body);
+      font-weight: 500; color: rgba(255,100,100,0.85);
+      transition: background 0.15s; text-align: left;
+    }
+    .sidebar-logout-btn:hover, .sidebar-logout-btn:focus-visible { background: rgba(255,80,80,0.12); }
     .user-info {
       display: flex; align-items: center; gap: var(--space-3);
       cursor: pointer; border-radius: var(--radius-md);
@@ -598,7 +607,7 @@
           <div id="user-display-email" style="font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
       </div>
-      <button id="btn-logout" style="display:flex;align-items:center;gap:var(--space-2);width:100%;padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);background:none;border:none;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-body);font-weight:500;color:rgba(255,100,100,0.85);transition:background 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,80,80,0.12)'" onmouseout="this.style.background='none'">
+      <button id="btn-logout" class="sidebar-logout-btn">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Sair
       </button>
@@ -1213,7 +1222,6 @@ function renderCalendario() {
 }
 
 function renderDia(dataKey) {
-  const painel = document.getElementById('dia-painel');
   const itens  = (_porDia[dataKey] || []).sort((a,b) => (a.hora_inicio||'').localeCompare(b.hora_inicio||''));
   const [a, m, d] = dataKey.split('-');
   const nome = new Date(+a, +m-1, +d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -2310,7 +2318,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.322';
+const APP_VERSION = 'Beta-0.323';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

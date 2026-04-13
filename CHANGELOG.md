@@ -4,6 +4,17 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.323 — 2026-04-13
+
+### Qualidade — Sonar fixes (~32 issues fechados)
+- **Python:** 30 ocorrências de strings literais `"Não autenticado"` e `"Paciente não encontrado"` substituídas pelas constantes `ERR_NOT_AUTHENTICATED` e `ERR_PACIENTE_NOT_FOUND` já definidas no topo de `main.py`
+- **Secretaria:** removida variável `painel` morta em `renderDia()` (resíduo do refactor de tabelas inline)
+- **Secretaria:** botão "Sair" migrado de `onmouseover`/`onmouseout` inline para classe CSS `.sidebar-logout-btn` com `:hover` e `:focus-visible` — corrige bug de acessibilidade `Web:MouseEventWithoutKeyboardEquivalentCheck`
+- **CSS:** removido seletor `.drawer-nav::-webkit-scrollbar` duplicado em `index.html`
+- **CSS:** seletores `#print-view` duplicados no `@media print` unificados em um único bloco
+
+---
+
 ## Beta-0.322 — 2026-04-13
 
 ### Secretaria — Agenda: centralização e botão "Novo" no header
