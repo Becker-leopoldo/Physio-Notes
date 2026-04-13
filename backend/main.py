@@ -2578,7 +2578,9 @@ async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: 
         )
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
-    return {"ok": True, "event_id": resp.json().get("id")}
+    event_id_gcal = resp.json().get("id")
+    db.registrar_audit(fisio_email, "agendamento_gcal_sec", f"event_id={event_id_gcal} paciente_id={body.paciente_id} data={body.data} hora={body.hora_inicio}", _client_ip(request))
+    return {"ok": True, "event_id": event_id_gcal}
 
 
 @app.delete("/sec/agendamento/{event_id}", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
@@ -2604,6 +2606,8 @@ async def sec_agendamento_cancelar(event_id: str, request: Request = None):
         )
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
+    sec_email, _ = _sec_context(request)
+    db.registrar_audit(fisio_email, "agendamento_gcal_cancelar_sec", f"event_id={event_id} por={sec_email}", _client_ip(request))
     return {"ok": True}
 
 
