@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.318 — 2026-04-13
+
+### Secretaria — Remover pacote com confirmação obrigatória
+- **Botão "Remover"** adicionado em cada card de pacote na aba Pacotes da secretaria
+- Modal de confirmação idêntico ao do app fisio: usuário deve digitar `EU QUERO EXCLUIR` exatamente antes de o botão ficar habilitado
+- **Novo endpoint:** `DELETE /sec/pacotes/{id}` — verifica que o pacote pertence a um paciente do fisio vinculado antes de remover; registra audit log com e-mail da secretaria
+
+---
+
 ## Beta-0.317 — 2026-04-13
 
 ### Billing — Previsão do mês e KPIs redesenhados

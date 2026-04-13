@@ -2066,11 +2066,12 @@ async function carregarTodosPacotesAtivos() {
   const wrap = document.getElementById('pacotes-lista-wrap');
   wrap.style.display = 'block';
   document.getElementById('pacotes-paciente-nome').textContent = 'Todos os pacotes ativos';
-  _pacotePacienteId = null; 
+  _pacotePacienteId = null;
   el.innerHTML = `<div style="padding:var(--space-4);text-align:center;"><span class="spinner"></span></div>`;
   try {
     const pacotes = await apiFetch('/sec/pacotes/ativos');
     el.innerHTML = renderListaPacotes(pacotes, true);
+    _bindRemoverPacotes(el);
   } catch(e) {
     el.innerHTML = `<div style="padding:var(--space-4);font-size:var(--text-sm);color:var(--color-danger);">${escHtml(e.message)}</div>`;
   }
@@ -2083,9 +2084,56 @@ async function carregarPacotes(pacienteId) {
     const pacotes = await apiFetch(`/sec/pacientes/${pacienteId}/pacotes`);
     el.innerHTML = renderListaPacotes(pacotes, false);
     el.querySelector('#btn-novo-pacote')?.addEventListener('click', novoPacoteOpen);
+    _bindRemoverPacotes(el);
   } catch(e) {
     el.innerHTML = `<div style="padding:var(--space-4);font-size:var(--text-sm);color:var(--color-danger);">${escHtml(e.message)}</div>`;
   }
+}
+
+function _bindRemoverPacotes(container) {
+  container.querySelectorAll('.btn-remover-pacote').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pacoteId = btn.dataset.id;
+      const FRASE = 'EU QUERO EXCLUIR';
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:var(--space-6);';
+      overlay.innerHTML = `
+        <div style="background:var(--color-surface);border-radius:var(--radius-xl);padding:var(--space-8);max-width:360px;width:100%;box-shadow:var(--shadow-lg);">
+          <div style="font-size:28px;text-align:center;margin-bottom:var(--space-4);">⚠️</div>
+          <h3 style="font-family:var(--font-body);font-size:var(--text-lg);font-weight:600;margin:0 0 var(--space-2);text-align:center;">Remover pacote</h3>
+          <p style="font-size:var(--text-sm);color:var(--color-text-secondary);text-align:center;margin:0 0 var(--space-5);">Esta ação não pode ser desfeita. Digite exatamente:</p>
+          <p style="text-align:center;margin:0 0 var(--space-4);"><strong style="color:var(--color-text);font-family:monospace;font-size:var(--text-xs);background:var(--color-accent-light);padding:2px 6px;border-radius:4px;letter-spacing:.03em;">${FRASE}</strong></p>
+          <input type="text" id="confirma-excluir-input" class="form-input" placeholder="Digite a frase acima" style="margin-bottom:var(--space-4);text-align:center;">
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+            <button id="confirma-excluir-ok" class="btn btn-danger btn-full" disabled>Remover pacote</button>
+            <button id="confirma-excluir-cancel" class="btn btn-ghost btn-full">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const input = overlay.querySelector('#confirma-excluir-input');
+      const okBtn = overlay.querySelector('#confirma-excluir-ok');
+      const cancelBtn = overlay.querySelector('#confirma-excluir-cancel');
+      setTimeout(() => input.focus(), 100);
+      input.addEventListener('input', () => {
+        okBtn.disabled = input.value.trim() !== FRASE;
+      });
+      cancelBtn.addEventListener('click', () => overlay.remove());
+      okBtn.addEventListener('click', async () => {
+        okBtn.disabled = true;
+        okBtn.textContent = 'Removendo...';
+        try {
+          await apiFetch(`/sec/pacotes/${pacoteId}`, { method: 'DELETE' });
+          overlay.remove();
+          showToast('Pacote removido.', 'success');
+          if (_pacotePacienteId) carregarPacotes(_pacotePacienteId);
+          else carregarTodosPacotesAtivos();
+        } catch(e) {
+          showToast('Erro ao remover: ' + e.message, 'error');
+          overlay.remove();
+        }
+      });
+    });
+  });
 }
 
 function renderListaPacotes(pacotes, global) {
@@ -2158,6 +2206,9 @@ function renderPacoteCard(pk, isAtivo, mostrarNome) {
           <button class="btn btn-ghost btn-sm" onclick="togglePagamento(${pk.id}, ${!pk.pago})" style="padding:4px 8px;font-size:10px;text-decoration:underline;">
             ${pk.pago ? 'Marcar pendente' : 'Marcar pago'}
           </button>
+          <button class="btn btn-ghost btn-sm btn-remover-pacote" data-id="${pk.id}" style="padding:4px 8px;font-size:10px;color:var(--color-danger);text-decoration:underline;">
+            Remover
+          </button>
         </div>
       </div>
     </div>`;
@@ -2228,7 +2279,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.317';
+const APP_VERSION = 'Beta-0.318';
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

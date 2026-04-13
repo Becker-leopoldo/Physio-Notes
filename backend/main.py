@@ -1127,29 +1127,48 @@ async def pagamento_webhook(request: Request):
 
 
 @app.get("/billing", responses={401: {"description": "Unauthorized"}})
-def billing(mes: str | None = None, request: Request = None):
+def billing(mes: str | None = None, cotacao: float = 5.80, request: Request = None):
     from datetime import date
     owner = _owner_email(request)
     if not owner:
         raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    if not (1.0 <= cotacao <= 20.0):
+        cotacao = 5.80
     ano_mes = mes or date.today().strftime("%Y-%m")
+    hoje = date.today().isoformat()
     link_sec = db.get_secretaria_do_fisio(owner)
     sec_email = link_sec["secretaria_email"] if link_sec and link_sec.get("status") == "ativa" else None
+    mes_atual = db.get_billing_mes(ano_mes, owner)
+    # Gasto em BRL calculado server-side — cotacao nunca exposta ao fisio
+    mes_gasto_brl  = round((mes_atual.get("total_usd") or 0) * cotacao, 2)
+    hoje_gasto_brl = round(db.get_gasto_hoje_usd(owner, hoje) * cotacao, 2)
+    mes_atual["mes_gasto_brl"]  = mes_gasto_brl
+    mes_atual["hoje_gasto_brl"] = hoje_gasto_brl
+    # Remover total_usd do payload para não expor ao fisio
+    mes_atual.pop("total_usd", None)
     return {
-        "mes_atual": db.get_billing_mes(ano_mes, owner),
+        "mes_atual": mes_atual,
         "historico": db.get_billing_meses(owner),
         "secretaria_email": sec_email,
     }
 
 
 @app.get("/billing/log", responses={401: {"description": "Unauthorized"}})
-def billing_log(mes: str | None = None, limit: int = 100, offset: int = 0, request: Request = None):
-    """Retorna log detalhado de uso de IA, paginado. Cada entrada: data/hora, tipo, paciente, tokens, custo."""
+def billing_log(mes: str | None = None, limit: int = 100, offset: int = 0, cotacao: float = 5.80, request: Request = None):
+    """Retorna log detalhado de uso de IA, paginado. Inclui custo_brl por chamada (preço de lista ao fisio)."""
     owner = _owner_email(request)
     if not owner:
         raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    if not (1.0 <= cotacao <= 20.0):
+        cotacao = 5.80
     limit = max(1, min(limit, 200))
-    return db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
+    data = db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
+    config = db.get_config_precificacao()
+    fator = (1 + config["margem_pct"] / 100) * (1 + config["imposto_pct"] / 100)
+    for item in data["items"]:
+        custo_usd = item.pop("custo_usd", None) or 0
+        item["custo_brl"] = round(custo_usd * cotacao * fator, 4)
+    return data
 
 
 @app.get("/agenda")
@@ -2011,13 +2030,25 @@ def admin_billing(mes: str | None = None, request: Request = None):
 
 
 @app.get("/admin/billing/log")
-def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offset: int = 0, request: Request = None):
-    """Admin consulta o log detalhado de uso de IA de uma fisio específica."""
+def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offset: int = 0, cotacao: float = 5.80, request: Request = None):
+    """Admin consulta o log detalhado de uso de IA de uma fisio: inclui custo interno, valor ganho e lucro por chamada."""
     _verificar_admin(request)
     if not owner:
         raise HTTPException(status_code=400, detail="Parâmetro 'owner' obrigatório.")
+    if not (1.0 <= cotacao <= 20.0):
+        cotacao = 5.80
     limit = max(1, min(limit, 200))
-    return db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
+    data = db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
+    config = db.get_config_precificacao()
+    fator = (1 + config["margem_pct"] / 100) * (1 + config["imposto_pct"] / 100)
+    for item in data["items"]:
+        custo_usd = item.get("custo_usd") or 0
+        custo_brl = round(custo_usd * cotacao, 6)
+        valor_ganho = round(custo_brl * fator, 6)
+        item["custo_brl"]      = custo_brl
+        item["valor_ganho_brl"] = valor_ganho
+        item["lucro_brl"]      = round(valor_ganho - custo_brl, 6)
+    return data
 
 
 @app.get("/admin/precificacao")
@@ -2713,6 +2744,22 @@ def sec_atualizar_pagamento_pacote(pacote_id: int, body: SecPacotePagamentoBody,
     db.atualizar_pagamento_pacote(pacote_id, body.pago)
     db.registrar_audit(fisio_email, "sec_pacote_pagamento", f"id={pacote_id} pago={body.pago} por={sec_email}", _client_ip(request))
     return {"ok": True}
+
+
+@app.delete("/sec/pacotes/{pacote_id}", status_code=204)
+def sec_deletar_pacote(pacote_id: int, request: Request = None):
+    """Secretaria remove um pacote de um paciente do fisio vinculado."""
+    sec_email, fisio_email = _sec_context(request)
+    with db.get_conn() as conn:
+        row = conn.execute("""
+            SELECT pk.id FROM pacote pk
+            JOIN paciente p ON p.id = pk.paciente_id
+            WHERE pk.id = ? AND p.owner_email = ?
+        """, (pacote_id, fisio_email)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Pacote não encontrado")
+    db.deletar_pacote(pacote_id)
+    db.registrar_audit(fisio_email, "sec_pacote_deletar", f"id={pacote_id} por={sec_email}", _client_ip(request))
 
 
 # ---------- Frontend (deve ser montado por último) ----------
