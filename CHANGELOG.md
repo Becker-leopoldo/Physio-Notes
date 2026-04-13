@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.334 — 2026-04-13
+
+### Correção — 2 bugs UX na tela de Créditos (mobile)
+- **Pré-seleção automática do R$100:** card "MAIS POPULAR" agora é selecionado automaticamente ao carregar a tela — botão "Gerar QR Code" já aparece ativo, sem exigir clique extra
+- **Saldo negativo em vermelho:** valor do saldo recebe `color: var(--color-danger)` quando < 0 — feedback visual imediato para o fisio
+
+---
+
 ## Beta-0.333 — 2026-04-13
 
 ### Correção — 4 bugs mobile na Visão Admin de Billing
