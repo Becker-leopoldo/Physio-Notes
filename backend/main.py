@@ -15,6 +15,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+import hmac
+import hashlib
 import aiofiles
 
 import database as db
@@ -354,7 +356,8 @@ async def _disparar_ia_pos_anamnese(paciente_id: int, anamnese: str, conduta_atu
     import json as _json
     try:
         sessoes = db.get_historico_paciente(paciente_id)
-        sugestao = await ai.gerar_sugestao_paciente(anamnese, sessoes, owner)
+        _pac_nome = (db.get_paciente(paciente_id) or {}).get("nome")
+        sugestao = await ai.gerar_sugestao_paciente(anamnese, sessoes, owner, paciente_nome=_pac_nome)
         db.salvar_sugestao_ia(paciente_id, _json.dumps(sugestao, ensure_ascii=False))
     except Exception as exc:
         logger.warning("_disparar_ia_pos_anamnese: paciente_id=%s: %s", paciente_id, exc)
@@ -432,7 +435,7 @@ async def gerar_sugestao(paciente_id: int, request: Request):
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
-    sugestao = await ai.gerar_sugestao_paciente(paciente.get("anamnese") or "", sessoes, owner)
+    sugestao = await ai.gerar_sugestao_paciente(paciente.get("anamnese") or "", sessoes, owner, paciente_nome=paciente.get("nome"))
     sugestao_json = _json.dumps(sugestao, ensure_ascii=False)
     db.salvar_sugestao_ia(paciente_id, sugestao_json)
     return {"sugestao_ia": sugestao, "sugestao_ia_em": db.get_paciente(paciente_id).get("sugestao_ia_em")}
@@ -506,6 +509,7 @@ async def sugestao_do_dia(paciente_id: int, request: Request):
         paciente.get("conduta_tratamento"),
         sessoes,
         owner,
+        paciente_nome=paciente.get("nome"),
     )
     return {"sugestao": sugestao}
 
@@ -524,6 +528,7 @@ async def feedback_clinico(paciente_id: int, request: Request):
         paciente.get("conduta_tratamento"),
         sessoes,
         owner,
+        paciente_nome=paciente.get("nome"),
     )
     return {"feedback": feedback}
 
@@ -764,7 +769,8 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: Annotated[Uplo
     # Re-consolida com todos os chunks (sem deducao de pacote)
     chunks = db.get_chunks_sessao(sessao_id)
     try:
-        dados = await ai.consolidar_sessao([c["transcricao"] for c in chunks], _owner_email(request))
+        _pac_nome = (db.get_paciente(sessao["paciente_id"]) or {}).get("nome")
+        dados = await ai.consolidar_sessao([c["transcricao"] for c in chunks], _owner_email(request), paciente_nome=_pac_nome)
         db.salvar_consolidado(sessao_id, dados)
     except Exception as e:
         logger.warning("adicionar_audio: falha ao re-consolidar sessao_id=%s: %s", sessao_id, e)
@@ -798,9 +804,10 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
 
     transcricoes = [c["transcricao"] for c in chunks]
     owner = _owner_email(request)
+    _pac_enc = (db.get_paciente(sessao["paciente_id"]) or {}).get("nome")
 
     try:
-        dados_consolidados = await ai.consolidar_sessao(transcricoes, owner)
+        dados_consolidados = await ai.consolidar_sessao(transcricoes, owner, paciente_nome=_pac_enc)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro ao consolidar com IA: {str(e)}")
 
@@ -916,6 +923,193 @@ def creditos_saldo(cotacao: float = 5.80, request: Request = None):
     return db.get_creditos(owner, cotacao)
 
 
+# ── Mercado Pago PIX ─────────────────────────────────────────────────────────
+
+MP_ACCESS_TOKEN    = os.getenv("MP_ACCESS_TOKEN", "")
+MP_WEBHOOK_SECRET  = os.getenv("MP_WEBHOOK_SECRET", "")
+_MP_MODO_TESTE     = os.getenv("MP_MODO_TESTE", "").lower() in ("1", "true", "yes")
+_MP_OPCOES         = {50: 0.05, 100: 0.10, 150: 0.15} if _MP_MODO_TESTE else {50: 50.0, 100: 100.0, 150: 150.0}
+
+if not MP_ACCESS_TOKEN:
+    logger.warning("MP_ACCESS_TOKEN não configurado — pagamentos PIX desativados.")
+if not MP_WEBHOOK_SECRET:
+    logger.warning("MP_WEBHOOK_SECRET não configurado — webhooks do Mercado Pago não serão validados.")
+if _MP_MODO_TESTE:
+    logger.critical("⚠️  MP_MODO_TESTE=true — valores de teste ativos (R$0,05). NÃO use em produção!")
+
+
+class PagamentoPixBody(BaseModel):
+    creditos: int   # 50, 100 ou 150
+
+
+@app.post("/pagamento/pix/criar", status_code=201,
+          responses={400: {"description": "Bad Request"}, 503: {"description": "Service Unavailable"}})
+@limiter.limit("5/minute")
+async def pagamento_pix_criar(body: PagamentoPixBody, request: Request):
+    """Cria um pagamento PIX no Mercado Pago e retorna QR code."""
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    if body.creditos not in _MP_OPCOES:
+        raise HTTPException(status_code=400, detail="Opções válidas: 50, 100 ou 150 créditos.")
+    if not MP_ACCESS_TOKEN:
+        raise HTTPException(status_code=503, detail="Pagamento via PIX não configurado no servidor.")
+
+    import httpx
+    from datetime import datetime, timezone, timedelta
+
+    valor_brl = _MP_OPCOES[body.creditos]
+    expira_em = (datetime.now(timezone.utc) + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+    idem_key  = f"{owner}-{body.creditos}-{int(datetime.now(timezone.utc).timestamp())}"
+
+    payload = {
+        "transaction_amount": valor_brl,
+        "description": f"Physio Notes — {body.creditos} créditos",
+        "payment_method_id": "pix",
+        "payer": {"email": owner},
+        "date_of_expiration": expira_em,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                "https://api.mercadopago.com/v1/payments",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {MP_ACCESS_TOKEN}",
+                    "Content-Type": "application/json",
+                    "X-Idempotency-Key": idem_key,
+                },
+            )
+        if resp.status_code not in (200, 201):
+            logger.error(f"MP erro {resp.status_code}: {resp.text[:300]}")
+            raise HTTPException(status_code=503, detail="Erro ao gerar QR code. Tente novamente.")
+        mp_data = resp.json()
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=503, detail="Mercado Pago não respondeu. Tente novamente.")
+
+    payment_id = str(mp_data["id"])
+    pix_data   = mp_data.get("point_of_interaction", {}).get("transaction_data", {})
+    qr_code    = pix_data.get("qr_code", "")
+    qr_base64  = pix_data.get("qr_code_base64", "")
+
+    try:
+        db.criar_pagamento_pix(owner, payment_id, body.creditos, valor_brl, qr_code, expira_em)
+    except Exception:
+        existing = db.get_pagamento_pix(payment_id)
+        if existing:
+            raise HTTPException(status_code=409, detail="Pagamento já registrado.")
+        raise
+    db.registrar_audit(owner, "pix_criado",
+                       f"creditos={body.creditos} payment_id={payment_id}", _client_ip(request))
+
+    return {
+        "payment_id": payment_id,
+        "qr_code": qr_code,
+        "qr_code_base64": qr_base64,
+        "valor_brl": valor_brl,
+        "creditos": body.creditos,
+        "expira_em": expira_em,
+    }
+
+
+@app.get("/pagamento/status/{payment_id}",
+         responses={401: {"description": "Unauthorized"}, 404: {"description": "Not Found"}})
+async def pagamento_status(payment_id: str, request: Request):
+    """Polling de status do pagamento — consulta o MP em tempo real e credita se aprovado."""
+    if not re.fullmatch(r'[\w\-]+', payment_id):
+        raise HTTPException(status_code=400, detail="payment_id inválido.")
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    p = db.get_pagamento_pix_por_owner(payment_id, owner)
+    if not p:
+        raise HTTPException(status_code=404, detail="Pagamento não encontrado.")
+
+    # Se já creditado, retorna direto sem consultar o MP novamente
+    if p["creditado"]:
+        return {"payment_id": payment_id, "status": "approved", "creditado": True}
+
+    # Consulta status real no MP a cada poll
+    if MP_ACCESS_TOKEN:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(
+                    f"https://api.mercadopago.com/v1/payments/{payment_id}",
+                    headers={"Authorization": f"Bearer {MP_ACCESS_TOKEN}"},
+                )
+            if resp.status_code == 200:
+                mp_status = resp.json().get("status", p["status"])
+                db.atualizar_status_pagamento_pix(payment_id, mp_status)
+                if mp_status == "approved":
+                    db.aprovar_pagamento_pix(payment_id)
+                    db.registrar_audit(owner, "pix_aprovado_polling",
+                                       f"payment_id={payment_id}", None)
+                    return {"payment_id": payment_id, "status": "approved", "creditado": True}
+                return {"payment_id": payment_id, "status": mp_status, "creditado": False}
+        except Exception as exc:
+            logger.warning(f"pagamento_status: erro ao consultar MP {payment_id}: {exc}")
+
+    return {"payment_id": payment_id, "status": p["status"], "creditado": bool(p["creditado"])}
+
+
+@app.post("/pagamento/webhook", status_code=200)
+@limiter.limit("10/minute")
+async def pagamento_webhook(request: Request):
+    """Webhook do Mercado Pago: valida assinatura, consulta status real e credita se aprovado."""
+    body_bytes = await request.body()
+
+    if MP_WEBHOOK_SECRET:
+        sig_header = request.headers.get("x-signature", "")
+        req_id     = request.headers.get("x-request-id", "")
+        parts      = dict(p.split("=", 1) for p in sig_header.split(",") if "=" in p)
+        data_id    = request.query_params.get("data.id", "")
+        manifest   = f"id:{data_id};request-id:{req_id};ts:{parts.get('ts', '')};"
+        expected   = hmac.new(MP_WEBHOOK_SECRET.encode(), manifest.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, parts.get("v1", "")):
+            logger.warning("Webhook MP: assinatura inválida")
+            raise HTTPException(status_code=401, detail="Assinatura inválida.")
+
+    try:
+        import json as _json
+        data = _json.loads(body_bytes)
+    except Exception:
+        return {"ok": False}
+
+    action     = data.get("action", "")
+    payment_id = str(data.get("data", {}).get("id", ""))
+
+    if action not in ("payment.updated", "payment.created") or not payment_id:
+        return {"ok": True}
+
+    # Consulta status real no MP — não confia apenas no payload do webhook
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"https://api.mercadopago.com/v1/payments/{payment_id}",
+                headers={"Authorization": f"Bearer {MP_ACCESS_TOKEN}"},
+            )
+        mp_payment = resp.json()
+    except Exception as exc:
+        logger.error(f"Webhook: erro ao consultar MP payment {payment_id}: {exc}")
+        return {"ok": False}
+
+    status = mp_payment.get("status", "")
+    db.atualizar_status_pagamento_pix(payment_id, status)
+
+    if status == "approved":
+        creditado = db.aprovar_pagamento_pix(payment_id)
+        p = db.get_pagamento_pix(payment_id)
+        if creditado and p:
+            db.registrar_audit(p["owner_email"], "pix_aprovado",
+                               f"creditos={p['creditos']} payment_id={payment_id}", "webhook")
+            logger.info(f"PIX aprovado: {payment_id} → {p['owner_email']} +{p['creditos']} créditos")
+
+    return {"ok": True}
+
+
 @app.get("/billing", responses={401: {"description": "Unauthorized"}})
 def billing(mes: str | None = None, request: Request = None):
     from datetime import date
@@ -930,6 +1124,16 @@ def billing(mes: str | None = None, request: Request = None):
         "historico": db.get_billing_meses(owner),
         "secretaria_email": sec_email,
     }
+
+
+@app.get("/billing/log", responses={401: {"description": "Unauthorized"}})
+def billing_log(mes: str | None = None, limit: int = 100, offset: int = 0, request: Request = None):
+    """Retorna log detalhado de uso de IA, paginado. Cada entrada: data/hora, tipo, paciente, tokens, custo."""
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    limit = max(1, min(limit, 200))
+    return db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
 
 
 @app.get("/agenda")
@@ -1788,6 +1992,16 @@ def admin_billing(mes: str | None = None, request: Request = None):
         "mes": ano_mes,
         "usuarios": db.get_billing_por_usuario(ano_mes),
     }
+
+
+@app.get("/admin/billing/log")
+def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offset: int = 0, request: Request = None):
+    """Admin consulta o log detalhado de uso de IA de uma fisio específica."""
+    _verificar_admin(request)
+    if not owner:
+        raise HTTPException(status_code=400, detail="Parâmetro 'owner' obrigatório.")
+    limit = max(1, min(limit, 200))
+    return db.get_activity_log(owner, mes=mes, limit=limit, offset=offset)
 
 
 # ---------- Auth WebAuthn ----------

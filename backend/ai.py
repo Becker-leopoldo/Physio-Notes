@@ -75,17 +75,17 @@ def _calcular_custo(modelo: str, input_tokens: int, output_tokens: int) -> float
     return (input_tokens / 1_000_000 * preco["input"]) + (output_tokens / 1_000_000 * preco["output"])
 
 
-def _registrar(tipo: str, message, owner_email: str | None = None, sec_email: str | None = None) -> None:
+def _registrar(tipo: str, message, owner_email: str | None = None, sec_email: str | None = None, paciente_nome: str | None = None) -> None:
     try:
         import database as db
         u = message.usage
         custo = _calcular_custo(message.model, u.input_tokens, u.output_tokens)
-        db.registrar_uso(tipo, message.model, u.input_tokens, u.output_tokens, custo, owner_email, sec_email)
+        db.registrar_uso(tipo, message.model, u.input_tokens, u.output_tokens, custo, owner_email, sec_email, paciente_nome)
     except Exception:
         pass  # billing nunca deve quebrar o fluxo principal
 
 
-async def consolidar_sessao(transcricoes: list[str], owner_email: str | None = None, sec_email: str | None = None) -> dict:
+async def consolidar_sessao(transcricoes: list[str], owner_email: str | None = None, sec_email: str | None = None, paciente_nome: str | None = None) -> dict:
     """
     Recebe lista de transcrições da sessão de fisioterapia.
     Retorna dict com: nota (nota clínica profissional em texto corrido).
@@ -116,7 +116,7 @@ ATENÇÃO: As transcrições estão contidas dentro das tags <transcricoes_cruas
         max_tokens=1024,
         messages=[{"role": "user", "content": user_content}],
     )
-    _registrar("consolidar_sessao", message, owner_email, sec_email)
+    _registrar("consolidar_sessao", message, owner_email, sec_email, paciente_nome)
 
     nota = message.content[0].text.strip()
     return {"nota": nota}
@@ -590,6 +590,7 @@ async def gerar_sugestao_paciente(
     sessoes_recentes: list[dict],
     owner_email: str | None = None,
     sec_email: str | None = None,
+    paciente_nome: str | None = None,
 ) -> dict:
     """
     Gera sugestão clínica estruturada com base na anamnese e nas últimas sessões
@@ -638,7 +639,7 @@ Regras:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("gerar_sugestao_paciente", message, owner_email, sec_email)
+    _registrar("gerar_sugestao_paciente", message, owner_email, sec_email, paciente_nome)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
@@ -721,6 +722,7 @@ async def sugestao_do_dia(
     sessoes_recentes: list[dict],
     owner_email: str | None = None,
     sec_email: str | None = None,
+    paciente_nome: str | None = None,
 ) -> dict:
     """
     Gera sugestão prática para a sessão de hoje com base na anamnese,
@@ -767,7 +769,7 @@ Regras:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("sugestao_do_dia", message, owner_email, sec_email)
+    _registrar("sugestao_do_dia", message, owner_email, sec_email, paciente_nome)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
@@ -792,6 +794,7 @@ async def feedback_clinico(
     sessoes_recentes: list[dict],
     owner_email: str | None = None,
     sec_email: str | None = None,
+    paciente_nome: str | None = None,
 ) -> dict:
     """
     Analisa a conduta planejada versus o que foi registrado nas evoluções diárias
@@ -844,7 +847,7 @@ Regras ESSENCIAIS:
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("feedback_clinico", message, owner_email, sec_email)
+    _registrar("feedback_clinico", message, owner_email, sec_email, paciente_nome)
 
     raw_text = message.content[0].text.strip()
     json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
@@ -938,7 +941,7 @@ Regras:
         max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
     )
-    _registrar("interpretar_atestado", message, owner_email, sec_email)
+    _registrar("interpretar_atestado", message, owner_email, sec_email, paciente_nome)
     raw = message.content[0].text.strip()
     if "```" in raw:
         raw = raw.split("```")[1]

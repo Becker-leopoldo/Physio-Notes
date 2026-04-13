@@ -104,7 +104,7 @@ _api_uso_cols_ok: bool = False
 
 
 def _ensure_api_uso_cols(conn) -> None:
-    """Garante que as colunas owner_email e sec_email existem em api_uso.
+    """Garante que as colunas owner_email, sec_email e paciente_nome existem em api_uso.
     Executa PRAGMA table_info apenas uma vez por processo (flag global)."""
     global _api_uso_cols_ok
     if _api_uso_cols_ok:
@@ -114,6 +114,8 @@ def _ensure_api_uso_cols(conn) -> None:
         conn.execute("ALTER TABLE api_uso ADD COLUMN owner_email TEXT")
     if "sec_email" not in cols:
         conn.execute("ALTER TABLE api_uso ADD COLUMN sec_email TEXT")
+    if "paciente_nome" not in cols:
+        conn.execute("ALTER TABLE api_uso ADD COLUMN paciente_nome TEXT")
     conn.commit()
     _api_uso_cols_ok = True
 
@@ -722,12 +724,12 @@ def get_historico_paciente(paciente_id: int) -> list[dict]:
 
 # ---------- Billing ----------
 
-def registrar_uso(tipo: str, modelo: str, input_tokens: int, output_tokens: int, custo_usd: float, owner_email: str | None = None, sec_email: str | None = None):
+def registrar_uso(tipo: str, modelo: str, input_tokens: int, output_tokens: int, custo_usd: float, owner_email: str | None = None, sec_email: str | None = None, paciente_nome: str | None = None):
     with get_conn() as conn:
         _ensure_api_uso_cols(conn)
         conn.execute(
-            "INSERT INTO api_uso (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, sec_email, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, sec_email, _now()),
+            "INSERT INTO api_uso (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, sec_email, paciente_nome, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (tipo, modelo, input_tokens, output_tokens, custo_usd, owner_email, sec_email, paciente_nome, _now()),
         )
         conn.commit()
 
@@ -825,6 +827,32 @@ def get_billing_por_usuario(ano_mes: str) -> list[dict]:
         return [_row_to_dict(r) for r in rows]
 
 
+def get_activity_log(owner_email: str, mes: str | None = None, limit: int = 100, offset: int = 0) -> dict:
+    """Retorna log detalhado de uso de IA para um owner, paginado.
+    mes: 'YYYY-MM' opcional. Retorna {total, items: [...]}."""
+    mes_filter = "AND strftime('%Y-%m', criado_em) = ?" if mes else ""
+    params_count = [owner_email] + ([mes] if mes else [])
+    params_rows  = [owner_email] + ([mes] if mes else []) + [limit, offset]
+    with get_conn() as conn:
+        _ensure_api_uso_cols(conn)
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM api_uso WHERE owner_email = ? {mes_filter}",
+            params_count,
+        ).fetchone()[0]
+        rows = conn.execute(
+            f"""SELECT id, criado_em, tipo, modelo, paciente_nome,
+                       input_tokens, output_tokens, custo_usd,
+                       CASE WHEN sec_email IS NULL THEN 'fisio' ELSE 'secretaria' END AS origem,
+                       sec_email
+                FROM api_uso
+               WHERE owner_email = ? {mes_filter}
+               ORDER BY criado_em DESC
+               LIMIT ? OFFSET ?""",
+            params_rows,
+        ).fetchall()
+    return {"total": total, "items": [_row_to_dict(r) for r in rows]}
+
+
 # ---------- Créditos / Recarga ----------
 
 def _init_recarga_table():
@@ -888,6 +916,96 @@ def get_creditos(owner_email: str, cotacao_usd_brl: float) -> dict:
             "cotacao_usd_brl": cotacao_usd_brl,
             "historico": [_row_to_dict(r) for r in historico],
         }
+
+
+# ---------- Pagamento PIX (Mercado Pago) ----------
+
+def _init_pagamento_pix_table():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pagamento_pix (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_email   TEXT    NOT NULL,
+                payment_id    TEXT    NOT NULL UNIQUE,
+                creditos      INTEGER NOT NULL,
+                valor_brl     REAL    NOT NULL,
+                status        TEXT    NOT NULL DEFAULT 'pending',
+                creditado     INTEGER NOT NULL DEFAULT 0,
+                qr_code       TEXT,
+                expira_em     TEXT,
+                criado_em     TEXT    NOT NULL,
+                atualizado_em TEXT    NOT NULL
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_pix_owner   ON pagamento_pix(owner_email)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_pix_payment ON pagamento_pix(payment_id)")
+        conn.commit()
+
+
+def criar_pagamento_pix(owner_email: str, payment_id: str, creditos: int,
+                        valor_brl: float, qr_code: str, expira_em: str) -> dict:
+    _init_pagamento_pix_table()
+    now = _now()
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO pagamento_pix
+                (owner_email, payment_id, creditos, valor_brl, status, creditado,
+                 qr_code, expira_em, criado_em, atualizado_em)
+            VALUES (?, ?, ?, ?, 'pending', 0, ?, ?, ?, ?)
+        """, (owner_email, payment_id, creditos, valor_brl, qr_code, expira_em, now, now))
+        conn.commit()
+    return get_pagamento_pix(payment_id)
+
+
+def get_pagamento_pix(payment_id: str) -> dict | None:
+    _init_pagamento_pix_table()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM pagamento_pix WHERE payment_id = ?", (payment_id,)
+        ).fetchone()
+    return _row_to_dict(row) if row else None
+
+
+def get_pagamento_pix_por_owner(payment_id: str, owner_email: str) -> dict | None:
+    _init_pagamento_pix_table()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM pagamento_pix WHERE payment_id = ? AND owner_email = ?",
+            (payment_id, owner_email)
+        ).fetchone()
+    return _row_to_dict(row) if row else None
+
+
+def aprovar_pagamento_pix(payment_id: str) -> bool:
+    """Marca aprovado e registra crédito. Retorna False se já creditado (idempotência)."""
+    _init_pagamento_pix_table()
+    now = _now()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM pagamento_pix WHERE payment_id = ? AND creditado = 0",
+            (payment_id,)
+        ).fetchone()
+        if not row:
+            return False
+        p = _row_to_dict(row)
+        conn.execute(
+            "UPDATE pagamento_pix SET status='approved', creditado=1, atualizado_em=? WHERE payment_id=?",
+            (now, payment_id)
+        )
+        conn.commit()
+    registrar_recarga(p["owner_email"], p["valor_brl"],
+                      descricao=f"PIX Mercado Pago — {p['creditos']} créditos")
+    return True
+
+
+def atualizar_status_pagamento_pix(payment_id: str, status: str):
+    _init_pagamento_pix_table()
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE pagamento_pix SET status=?, atualizado_em=? WHERE payment_id=?",
+            (status, _now(), payment_id)
+        )
+        conn.commit()
 
 
 # ---------- Documentos ----------

@@ -4,6 +4,81 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.312 — 2026-04-13
+
+### Segurança / Qualidade (módulo PIX)
+- **Sanitização de `payment_id`:** `re.fullmatch(r'[\w\-]+')` valida o parâmetro de path antes de usá-lo em URL externa — elimina risco de path injection
+- **409 em `payment_id` duplicado:** `try/except` em `criar_pagamento_pix` retorna 409 ao invés de 500 em caso de retry do MP
+- **Audit trail completo no polling:** `registrar_audit("pix_aprovado_polling")` registrado quando crédito ocorre via polling (já existia via webhook)
+- **Rate limit no webhook:** `@limiter.limit("10/minute")` adicionado em `POST /pagamento/webhook`
+- **Aviso crítico de modo teste:** `logger.critical` emitido na inicialização quando `MP_MODO_TESTE=true` está ativo
+
+---
+
+## Beta-0.311 — 2026-04-13
+
+### UX / Funcionalidades
+- **Tab switcher no billing:** admin vê "Meu uso" e "Visão admin" em abas separadas — sem misturar contextos
+- **Drill-down por fisio (admin):** cada fisio na lista admin é clicável; expande sub-painel inline com log detalhado (Data/Hora | Operação | Paciente | Usuário | Tokens) e paginação incremental
+- **PDF por fisio (admin):** botão "PDF" em cada sub-painel gera relatório da fisio selecionada com nome no cabeçalho
+- Função `_abrirRelatorioPDF` extraída como utilitário compartilhado entre billing pessoal e admin
+- Função `_loadAdminLog` para carregamento paginado do log de qualquer fisio
+
+### Backend
+- Novo endpoint `GET /admin/billing/log?owner=EMAIL&mes=YYYY-MM&limit=N&offset=N` — retorna log detalhado de uma fisio específica, restrito ao admin
+
+---
+
+## Beta-0.310 — 2026-04-13
+
+### Funcionalidades
+- **Relatório PDF de uso de IA:** botão "Relatório PDF" no billing gera relatório mensal completo em nova aba e aciona `window.print()` automaticamente para salvar como PDF. Layout A4 com KPIs, tabela detalhada e rodapé "powered by up it"
+- **Coluna Usuário no log de detalhes:** tabela de detalhes agora exibe quem executou cada operação — "Fisioterapeuta" ou nome da secretaria (ex: `joana (sec.)`)
+- Relatório busca até 1.000 registros do mês selecionado (sem necessidade de paginar)
+
+---
+
+## Beta-0.309 — 2026-04-13
+
+### Funcionalidades
+- **Log de atividade de IA:** nova seção "Detalhes de uso" no billing, colapsável, com registro individual de cada chamada de IA — Data/Hora, Operação, Paciente, Tokens
+- Paginação incremental ("Carregar mais") para contas com histórico extenso
+- Badge "sec" identifica chamadas originadas pela secretaria
+- `TIPO_LABEL` expandido para cobrir todos os 18 tipos de operação de IA
+
+### Backend
+- Nova coluna `paciente_nome` em `api_uso` (migration não-destrutiva via `ALTER TABLE`)
+- `registrar_uso()` e `_registrar()` propagam nome do paciente quando disponível
+- Funções de IA atualizadas: `consolidar_sessao`, `gerar_sugestao_paciente`, `sugestao_do_dia`, `feedback_clinico`, `interpretar_atestado`
+- Novo endpoint `GET /billing/log?mes=YYYY-MM&limit=N&offset=N` (paginado, autenticado)
+
+---
+
+## Beta-0.308 — 2026-04-13
+
+### Funcionalidades
+- **Integração Mercado Pago (PIX):** módulo de recarga de créditos via PIX no app do fisioterapeuta
+  - Usuário seleciona pacote de 50, 100 ou 150 créditos (R$50 / R$100 / R$150)
+  - QR Code PIX gerado em tempo real via API do Mercado Pago, com validade de 30 minutos
+  - Countdown regressivo exibido na tela (30:00 → 0:00)
+  - Polling automático a cada 4s (até 30 min) — créditos creditados imediatamente após confirmação
+  - Botão "Copiar código PIX" com feedback visual de sucesso
+  - Fallback: se `qr_code_base64` não retornar imagem, exibe apenas o código copia-cola
+  - Cancelamento detectado automaticamente (status `cancelled`/`rejected`)
+  - Rate limit de 5 requisições/minuto por usuário no endpoint de criação
+
+### Backend
+- `POST /pagamento/pix/criar` — cria pagamento PIX no MP e salva no banco
+- `GET /pagamento/status/{payment_id}` — consulta status do pagamento (validado por ownership)
+- `POST /pagamento/webhook` — recebe notificação do MP, valida assinatura HMAC-SHA256, credita créditos
+- Nova tabela `pagamento_pix` com controle de idempotência (`creditado` flag + UNIQUE `payment_id`)
+- Funções: `criar_pagamento_pix`, `get_pagamento_pix`, `aprovar_pagamento_pix` (idempotente), `atualizar_status_pagamento_pix`
+
+### Configuração
+- `.env` e `.env.example` atualizados com `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET`
+
+---
+
 ## Beta-0.307 — 2026-04-13
 
 ### Visual

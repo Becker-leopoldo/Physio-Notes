@@ -1735,7 +1735,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = window.location.origin;
-  const APP_VERSION = 'Beta-0.307'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.311'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -5386,12 +5386,138 @@
      BILLING
   ============================================================ */
 
+  // ---- Funções compartilhadas de billing ----
+
+  function _abrirRelatorioPDF(items, mes, cotacao, nomeFisio) {
+    const mesesPT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const [anoR, mesR] = mes.split('-').map(Number);
+    const labelMesRel = `${mesesPT[mesR-1]} ${anoR}`;
+    const geradoEm = new Date().toLocaleString('pt-BR');
+    const totalTokens = items.reduce((s, r) => s + (r.input_tokens||0) + (r.output_tokens||0), 0);
+    const tabelaRows = items.map(r => {
+      const dt = new Date(r.criado_em);
+      const dataFmt = dt.toLocaleDateString('pt-BR');
+      const horaFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+      const label = TIPO_LABEL[r.tipo] || r.tipo;
+      const pac = r.paciente_nome ? escHtml(r.paciente_nome) : '—';
+      const tokens = (r.input_tokens||0) + (r.output_tokens||0);
+      const usuario = r.origem === 'secretaria' && r.sec_email
+        ? escHtml(r.sec_email.split('@')[0]) + ' (sec.)'
+        : 'Fisioterapeuta';
+      return `<tr><td>${dataFmt} ${horaFmt}</td><td>${label}</td><td>${pac}</td><td>${usuario}</td><td style="text-align:right;">${tokens.toLocaleString('pt-BR')}</td></tr>`;
+    }).join('');
+    const subTitulo = nomeFisio ? `${labelMesRel} · ${escHtml(nomeFisio)} · Physio Notes` : `${labelMesRel} · Physio Notes`;
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Relatório de Uso — ${labelMesRel}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;font-size:11px;color:#1A1A1A;background:#fff;padding:40px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:2px solid #1A1A1A;padding-bottom:16px}
+  .header-left h1{font-size:20px;font-weight:600}
+  .header-left p{color:#6B6860;margin-top:4px;font-size:12px}
+  .header-right{text-align:right;color:#6B6860;font-size:11px;line-height:1.6}
+  .kpis{display:flex;gap:24px;margin-bottom:28px}
+  .kpi{background:#F9F8F6;border:1px solid #E8E6E1;border-radius:8px;padding:14px 20px;flex:1}
+  .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#A09D97;margin-bottom:6px}
+  .kpi-value{font-size:22px;font-weight:600}
+  table{width:100%;border-collapse:collapse}
+  thead tr{background:#1A1A1A;color:#fff}
+  thead th{padding:8px 10px;text-align:left;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+  thead th:last-child{text-align:right}
+  tbody tr:nth-child(even){background:#F9F8F6}
+  tbody td{padding:7px 10px;border-bottom:1px solid #E8E6E1;font-size:11px}
+  tbody td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  .footer{margin-top:32px;padding-top:12px;border-top:1px solid #E8E6E1;display:flex;justify-content:space-between;color:#A09D97;font-size:10px}
+  @media print{body{padding:20px}@page{margin:15mm;size:A4}}
+</style></head><body>
+<div class="header">
+  <div class="header-left"><h1>Relatório de Uso de IA</h1><p>${subTitulo}</p></div>
+  <div class="header-right"><div>Gerado em ${geradoEm}</div><div style="margin-top:4px;font-size:10px;color:#A09D97;">Este relatório é confidencial</div></div>
+</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Total de operações</div><div class="kpi-value">${items.length.toLocaleString('pt-BR')}</div></div>
+  <div class="kpi"><div class="kpi-label">Total de tokens</div><div class="kpi-value">${totalTokens.toLocaleString('pt-BR')}</div></div>
+</div>
+<table>
+  <thead><tr><th>Data/Hora</th><th>Operação</th><th>Paciente</th><th>Usuário</th><th>Tokens</th></tr></thead>
+  <tbody>${tabelaRows||'<tr><td colspan="5" style="text-align:center;padding:20px;color:#A09D97;">Nenhum registro neste período.</td></tr>'}</tbody>
+</table>
+<div class="footer"><span>powered by <strong>up it</strong></span><span>${labelMesRel} · ${items.length} operações · ${totalTokens.toLocaleString('pt-BR')} tokens</span></div>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`;
+    const win = window.open('', '_blank');
+    if (!win) { alert('Permita pop-ups para gerar o PDF.'); return; }
+    win.document.write(html);
+    win.document.close();
+  }
+
+  async function _loadAdminLog(container, ownerEmail, mes, offset) {
+    const limit = 50;
+    if (offset === 0) container.innerHTML = '<div style="padding:var(--space-4) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);">Carregando...</div>';
+    try {
+      const data = await apiFetch(`/admin/billing/log?owner=${encodeURIComponent(ownerEmail)}&mes=${mes}&limit=${limit}&offset=${offset}`);
+      const items = data.items || [];
+      const total = data.total || 0;
+      if (items.length === 0 && offset === 0) {
+        container.innerHTML = '<div style="padding:var(--space-4) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);">Nenhum registro neste período.</div>';
+        return;
+      }
+      const rows = items.map(r => {
+        const dt = new Date(r.criado_em);
+        const dataFmt = dt.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
+        const horaFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+        const label = TIPO_LABEL[r.tipo] || r.tipo;
+        const pac = r.paciente_nome ? escHtml(r.paciente_nome) : '—';
+        const tokens = (r.input_tokens||0) + (r.output_tokens||0);
+        const usuario = r.origem === 'secretaria' && r.sec_email
+          ? `<span style="font-size:10px;background:var(--color-info-bg);color:var(--color-info);padding:1px 5px;border-radius:var(--radius-full);font-weight:600;">${escHtml(r.sec_email.split('@')[0])}</span>`
+          : '<span style="color:var(--color-text-muted);font-size:var(--text-xs);">Fisio</span>';
+        return `<tr>
+          <td style="white-space:nowrap;color:var(--color-text-secondary);font-variant-numeric:tabular-nums;">${dataFmt} ${horaFmt}</td>
+          <td>${label}</td><td style="color:var(--color-text-secondary);">${pac}</td>
+          <td>${usuario}</td>
+          <td class="text-right" style="font-variant-numeric:tabular-nums;">${fmtTokens(tokens)}</td>
+        </tr>`;
+      }).join('');
+      const tableHtml = `<div class="table-wrapper" style="margin:0;"><table class="table" style="font-size:var(--text-xs);">
+        <thead><tr><th style="white-space:nowrap;">Data/Hora</th><th>Operação</th><th>Paciente</th><th>Usuário</th><th class="text-right">Tokens</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+      if (offset === 0) { container.innerHTML = tableHtml; } else { container.querySelector('tbody').insertAdjacentHTML('beforeend', rows); }
+      const cur = offset + items.length;
+      const btnId = `adm-mais-${ownerEmail.replace(/\W/g,'_')}`;
+      const ex = document.getElementById(btnId); if (ex) ex.remove();
+      if (cur < total) {
+        const d = document.createElement('div');
+        d.style.cssText = 'padding:var(--space-3) var(--space-5);border-top:var(--border);';
+        d.innerHTML = `<button id="${btnId}" class="btn btn-ghost btn-sm" style="width:100%;">Carregar mais (${total-cur} restantes)</button>`;
+        container.appendChild(d);
+        document.getElementById(btnId).addEventListener('click', () => _loadAdminLog(container, ownerEmail, mes, cur));
+      }
+    } catch(e) {
+      container.innerHTML = `<div style="padding:var(--space-4) var(--space-5);color:var(--color-danger);font-size:var(--text-sm);">Erro: ${e.message}</div>`;
+    }
+  }
+
   const TIPO_LABEL = {
-    consolidar_sessao:     'Consolidar sessão',
-    resumir_historico:     'Resumo do paciente',
-    responder_pergunta:    'Perguntar ao histórico',
-    extrair_dados_paciente:'Cadastro por voz',
-    resumir_documento:     'Resumo de documento',
+    consolidar_sessao:        'Nota clínica',
+    resumir_historico:        'Resumo do paciente',
+    responder_pergunta:       'Pergunta ao histórico',
+    extrair_dados_paciente:   'Cadastro por voz',
+    extrair_dados_pacote:     'Pacote por voz',
+    extrair_procedimento:     'Procedimento extraído',
+    resumir_documento:        'Resumo de documento',
+    complementar_anamnese:    'Anamnese complementada',
+    complementar_conduta:     'Conduta complementada',
+    sugerir_conduta:          'Sugestão de conduta',
+    gerar_sugestao_paciente:  'Check clínico',
+    formatar_anamnese_texto:  'Formatação de anamnese',
+    formatar_conduta_texto:   'Formatação de conduta',
+    sugestao_do_dia:          'Sugestão do dia',
+    feedback_clinico:         'Feedback clínico',
+    interpretar_agendamento:  'Agendamento por voz',
+    interpretar_atestado:     'Atestado por voz',
+    extrair_valor_sessao:     'Valor da sessão',
   };
 
   let _usdBrl = null;      // cotação em cache
@@ -5511,6 +5637,16 @@
     const labelMes = `${mesesPT[mesAtual-1]} ${anoAtual}`;
 
     body.innerHTML = `
+      ${adminData ? `
+      <div style="display:flex;gap:0;border-bottom:var(--border);margin-bottom:var(--space-6);">
+        <button id="billing-tab-meu" style="padding:var(--space-3) var(--space-5);font-size:var(--text-sm);font-weight:600;background:none;border:none;border-bottom:2px solid var(--color-accent);color:var(--color-text);cursor:pointer;font-family:var(--font-body);">Meu uso</button>
+        <button id="billing-tab-admin" style="padding:var(--space-3) var(--space-5);font-size:var(--text-sm);font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:var(--color-text-secondary);cursor:pointer;font-family:var(--font-body);">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="margin-right:4px;vertical-align:-2px;"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-3 2.2-5 5-5M10 11l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Visão admin
+        </button>
+      </div>` : ''}
+
+      <div id="billing-painel-meu">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-6);">
         <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
           <div id="billing-picker-mes-slot"></div>
@@ -5647,48 +5783,295 @@
         </div>`;
     }
 
-    // Seção admin: custo por usuário
-    if (adminData && adminData.usuarios && adminData.usuarios.length > 0) {
-      const totalAdmin = adminData.usuarios.reduce((s, u) => s + (u.total_usd || 0), 0);
-      const maxAdmin = Math.max(...adminData.usuarios.map(u => u.total_usd || 0), 0.0001);
-      const slot = body.querySelector('#billing-admin-slot');
-      slot.innerHTML = `
-        <div class="card" style="padding:0;overflow:hidden;margin-top:var(--space-6);border-top:3px solid var(--color-accent);">
+    // Seção detalhes de uso (log individual)
+    {
+      const logSlot = document.createElement('div');
+      logSlot.id = 'billing-log-slot';
+      logSlot.style.marginTop = 'var(--space-6)';
+      logSlot.innerHTML = `
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);">
+            <div>
+              <div style="font-size:var(--text-sm);font-weight:700;">Detalhes de uso</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Registro individual de cada chamada de IA</div>
+            </div>
+            <div style="display:flex;gap:var(--space-2);flex-shrink:0;">
+              <button id="billing-pdf-btn" class="btn btn-secondary btn-sm">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="margin-right:4px;"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                Relatório PDF
+              </button>
+              <button id="billing-log-toggle" class="btn btn-secondary btn-sm">Ver detalhes</button>
+            </div>
+          </div>
+          <div id="billing-log-body" style="display:none;"></div>
+        </div>`;
+      body.querySelector('#billing-admin-slot').before(logSlot);
+
+      let _logLoaded = false;
+      let _logOffset = 0;
+      const _logLimit = 50;
+      const _logMes = mes_atual.mes;
+
+      document.getElementById('billing-log-toggle').addEventListener('click', function() {
+        const panel = document.getElementById('billing-log-body');
+        if (panel.style.display === 'none') {
+          panel.style.display = 'block';
+          this.textContent = 'Ocultar';
+          if (!_logLoaded) { _logLoaded = true; loadActivityLog(_logMes, 0); }
+        } else {
+          panel.style.display = 'none';
+          this.textContent = 'Ver detalhes';
+        }
+      });
+
+      function _fmtUsuario(r) {
+        if (r.origem === 'secretaria' && r.sec_email) {
+          const nome = r.sec_email.split('@')[0];
+          return `<span style="font-size:10px;background:var(--color-info-bg);color:var(--color-info);padding:1px 6px;border-radius:var(--radius-full);font-weight:600;">${escHtml(nome)}</span>`;
+        }
+        return '<span style="color:var(--color-text-muted);font-size:var(--text-xs);">Fisioterapeuta</span>';
+      }
+
+      function _buildRows(items) {
+        return items.map(r => {
+          const dt = new Date(r.criado_em);
+          const dataFmt = dt.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
+          const horaFmt = dt.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+          const label = TIPO_LABEL[r.tipo] || r.tipo;
+          const pac = r.paciente_nome ? escHtml(r.paciente_nome) : '—';
+          const tokens = (r.input_tokens || 0) + (r.output_tokens || 0);
+          return `<tr>
+            <td style="white-space:nowrap;color:var(--color-text-secondary);font-variant-numeric:tabular-nums;">${dataFmt} ${horaFmt}</td>
+            <td style="font-size:var(--text-sm);">${label}</td>
+            <td style="color:var(--color-text-secondary);">${pac}</td>
+            <td>${_fmtUsuario(r)}</td>
+            <td class="text-right" style="font-variant-numeric:tabular-nums;white-space:nowrap;">${fmtTokens(tokens)}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      async function loadActivityLog(mes, offset) {
+        const panel = document.getElementById('billing-log-body');
+        if (offset === 0) panel.innerHTML = '<div style="padding:var(--space-4) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);">Carregando...</div>';
+        try {
+          const data = await apiFetch(`/billing/log?mes=${mes}&limit=${_logLimit}&offset=${offset}`);
+          const items = data.items || [];
+          const total = data.total || 0;
+
+          if (items.length === 0 && offset === 0) {
+            panel.innerHTML = '<div style="padding:var(--space-4) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);">Nenhum registro encontrado.</div>';
+            return;
+          }
+
+          const rows = _buildRows(items);
+          const tableHtml = `
+            <div class="table-wrapper" style="margin:0;">
+              <table class="table" style="font-size:var(--text-xs);">
+                <thead><tr>
+                  <th style="white-space:nowrap;">Data/Hora</th>
+                  <th>Operação</th>
+                  <th>Paciente</th>
+                  <th>Usuário</th>
+                  <th class="text-right">Tokens</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>`;
+
+          if (offset === 0) {
+            panel.innerHTML = tableHtml;
+          } else {
+            panel.querySelector('tbody').insertAdjacentHTML('beforeend', rows);
+          }
+          _logOffset = offset + items.length;
+
+          const btnId = 'billing-log-mais';
+          const existing = document.getElementById(btnId);
+          if (existing) existing.remove();
+          if (_logOffset < total) {
+            const mais = document.createElement('div');
+            mais.style.cssText = 'padding:var(--space-3) var(--space-5);border-top:var(--border);';
+            mais.innerHTML = `<button id="${btnId}" class="btn btn-ghost btn-sm" style="width:100%;">Carregar mais (${total - _logOffset} restantes)</button>`;
+            panel.appendChild(mais);
+            document.getElementById(btnId).addEventListener('click', () => loadActivityLog(mes, _logOffset));
+          } else if (total > _logLimit) {
+            const fim = document.createElement('div');
+            fim.style.cssText = 'padding:var(--space-3) var(--space-5);text-align:center;font-size:var(--text-xs);color:var(--color-text-muted);border-top:var(--border);';
+            fim.textContent = `${total} registros no total`;
+            panel.appendChild(fim);
+          }
+        } catch(e) {
+          panel.innerHTML = `<div style="padding:var(--space-4) var(--space-5);color:var(--color-danger);font-size:var(--text-sm);">Erro ao carregar: ${e.message}</div>`;
+        }
+      }
+
+      // Botão Relatório PDF (billing pessoal)
+      document.getElementById('billing-pdf-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('billing-pdf-btn');
+        btn.disabled = true; btn.textContent = 'Gerando...';
+        try {
+          const [logData, cot] = await Promise.all([
+            apiFetch(`/billing/log?mes=${_logMes}&limit=1000&offset=0`),
+            fetchCotacao(),
+          ]);
+          _abrirRelatorioPDF(logData.items || [], _logMes, cot, null);
+        } catch(e) {
+          alert('Erro ao gerar relatório: ' + e.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="margin-right:4px;"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Relatório PDF';
+        }
+      });
+    }
+
+    // Fecha painel "Meu uso"
+    body.querySelector('#billing-painel-meu').insertAdjacentHTML('beforeend', '</div>');
+
+    // ---- Painel Admin ----
+    if (adminData) {
+      const adminPainel = document.createElement('div');
+      adminPainel.id = 'billing-painel-admin';
+      adminPainel.style.display = 'none';
+      body.appendChild(adminPainel);
+
+      const totalAdmin = (adminData.usuarios || []).reduce((s, u) => s + (u.total_usd || 0), 0);
+      const maxAdmin = Math.max(...(adminData.usuarios || []).map(u => u.total_usd || 0), 0.0001);
+      const adminMes = adminData.mes || mes_atual.mes;
+
+      adminPainel.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-6);">
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div id="billing-admin-picker-mes-slot"></div>
+          </div>
+          <span style="font-size:var(--text-xs);color:var(--color-text-muted);">USD/BRL: R$ ${cotacao.toFixed(2)}</span>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
           <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div style="font-size:var(--text-sm);font-weight:700;">Custo por fisioterapeuta</div>
-              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">Visível apenas para o administrador</div>
+              <div style="font-size:var(--text-sm);font-weight:700;">Uso por fisioterapeuta</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${(adminData.usuarios || []).length} fisioterapeuta${(adminData.usuarios||[]).length !== 1?'s':''} ativos</div>
             </div>
             <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(totalAdmin, cotacao)}</span>
           </div>
-          ${adminData.usuarios.map(u => {
-            const pct = Math.round(((u.total_usd || 0) / maxAdmin) * 100);
-            const isMe = u.owner_email === (window._adminEmail ? window._userEmail : '');
-            return `
-            <div style="padding:var(--space-4) var(--space-5);border-bottom:var(--border);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
-                <div style="display:flex;align-items:center;gap:var(--space-2);min-width:0;">
-                  <div style="width:28px;height:28px;border-radius:50%;background:var(--color-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">
-                    ${(u.nome || u.owner_email || '?').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase()}
+          <div id="admin-fisio-list">
+            ${(adminData.usuarios || []).length === 0
+              ? `<div style="padding:var(--space-8);text-align:center;color:var(--color-text-muted);font-size:var(--text-sm);">Nenhum uso registrado neste mês.</div>`
+              : (adminData.usuarios || []).map((u, idx) => {
+                const pct = Math.round(((u.total_usd || 0) / maxAdmin) * 100);
+                const iniciais = (u.nome || u.owner_email || '?').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
+                return `
+                <div class="admin-fisio-row" style="border-bottom:var(--border);">
+                  <div style="padding:var(--space-4) var(--space-5);display:flex;align-items:center;gap:var(--space-3);cursor:pointer;" data-email="${escHtml(u.owner_email)}" data-nome="${escHtml(u.nome||u.owner_email)}" data-idx="${idx}">
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${iniciais}</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(u.nome || u.owner_email)}</div>
+                      <div style="font-size:10px;color:var(--color-text-muted);margin-top:1px;">
+                        ${u.total_chamadas} chamada${u.total_chamadas!==1?'s':''} · ${fmtTokens((u.total_input_tokens||0)+(u.total_output_tokens||0))} tokens
+                      </div>
+                      <div style="background:var(--color-border);border-radius:var(--radius-full);height:2px;overflow:hidden;margin-top:var(--space-2);">
+                        <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+                      </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:var(--space-3);flex-shrink:0;">
+                      <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(u.total_usd, cotacao)}</span>
+                      <svg class="admin-row-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" style="color:var(--color-text-muted);transition:transform 0.2s;"><path d="M4 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
                   </div>
-                  <div style="min-width:0;">
-                    <div style="font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.nome || u.owner_email}</div>
-                    <div style="font-size:10px;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.owner_email}</div>
+                  <div class="admin-fisio-detalhe" style="display:none;border-top:var(--border);background:var(--color-bg);">
+                    <div style="padding:var(--space-3) var(--space-5);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border);">
+                      <span style="font-size:var(--text-xs);font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;">
+                        ${escHtml(u.nome||u.owner_email)}
+                      </span>
+                      <button class="btn btn-secondary btn-sm admin-pdf-btn" data-email="${escHtml(u.owner_email)}" data-nome="${escHtml(u.nome||u.owner_email)}">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="margin-right:3px;"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        PDF
+                      </button>
+                    </div>
+                    <div class="admin-fisio-log-body" style="min-height:60px;">
+                      <div style="padding:var(--space-4) var(--space-5);color:var(--color-text-muted);font-size:var(--text-sm);">Carregando...</div>
+                    </div>
                   </div>
-                </div>
-                <span style="font-size:var(--text-sm);font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:var(--space-3);">${fmtBRL(u.total_usd, cotacao)}</span>
-              </div>
-              <div style="background:var(--color-border);border-radius:var(--radius-full);height:3px;overflow:hidden;">
-                <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
-              </div>
-              <div style="display:flex;gap:var(--space-4);margin-top:var(--space-1);">
-                <span style="font-size:var(--text-xs);color:var(--color-text-muted);">${u.total_chamadas} chamada${u.total_chamadas !== 1 ? 's' : ''}</span>
-                <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↑ ${fmtTokens(u.total_input_tokens)}</span>
-                <span style="font-size:var(--text-xs);color:var(--color-text-muted);">↓ ${fmtTokens(u.total_output_tokens)}</span>
-              </div>
-            </div>`;
-          }).join('')}
+                </div>`;
+              }).join('')
+            }
+          </div>
         </div>`;
+
+      // Picker de mês do painel admin
+      const pickerAdmin = criarPickerMesAno(adminMes, (novoMes) => {
+        openBilling(novoMes);
+      });
+      adminPainel.querySelector('#billing-admin-picker-mes-slot').appendChild(pickerAdmin);
+
+      // Toggle de linha + load do log
+      adminPainel.querySelectorAll('[data-email]').forEach(header => {
+        header.addEventListener('click', async () => {
+          const row = header.closest('.admin-fisio-row');
+          const detalhe = row.querySelector('.admin-fisio-detalhe');
+          const chevron = row.querySelector('.admin-row-chevron');
+          const isOpen = detalhe.style.display !== 'none';
+
+          // Fecha todos os outros
+          adminPainel.querySelectorAll('.admin-fisio-detalhe').forEach(d => { d.style.display = 'none'; });
+          adminPainel.querySelectorAll('.admin-row-chevron').forEach(c => { c.style.transform = ''; });
+
+          if (!isOpen) {
+            detalhe.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+            const logBody = detalhe.querySelector('.admin-fisio-log-body');
+            const email = header.dataset.email;
+            if (!logBody.dataset.loaded) {
+              logBody.dataset.loaded = '1';
+              await _loadAdminLog(logBody, email, adminMes, 0);
+            }
+          }
+        });
+      });
+
+      // Botões PDF por fisio
+      adminPainel.querySelectorAll('.admin-pdf-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const email = btn.dataset.email;
+          const nome = btn.dataset.nome;
+          btn.disabled = true; btn.textContent = 'Gerando...';
+          try {
+            const [logData, cot] = await Promise.all([
+              apiFetch(`/admin/billing/log?owner=${encodeURIComponent(email)}&mes=${adminMes}&limit=1000`),
+              fetchCotacao(),
+            ]);
+            _abrirRelatorioPDF(logData.items || [], adminMes, cot, nome);
+          } catch(err) {
+            alert('Erro ao gerar PDF: ' + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="margin-right:3px;"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 2v3h3M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>PDF';
+          }
+        });
+      });
+    }
+
+    // ---- Tab switcher ----
+    if (adminData) {
+      const tabMeu   = document.getElementById('billing-tab-meu');
+      const tabAdmin = document.getElementById('billing-tab-admin');
+      const painelMeu   = document.getElementById('billing-painel-meu');
+      const painelAdmin = document.getElementById('billing-painel-admin');
+
+      function ativarTab(aba) {
+        const isMeu = aba === 'meu';
+        painelMeu.style.display   = isMeu ? '' : 'none';
+        painelAdmin.style.display = isMeu ? 'none' : '';
+        tabMeu.style.borderBottomColor   = isMeu ? 'var(--color-accent)' : 'transparent';
+        tabMeu.style.color               = isMeu ? 'var(--color-text)' : 'var(--color-text-secondary)';
+        tabMeu.style.fontWeight          = isMeu ? '600' : '500';
+        tabAdmin.style.borderBottomColor = isMeu ? 'transparent' : 'var(--color-accent)';
+        tabAdmin.style.color             = isMeu ? 'var(--color-text-secondary)' : 'var(--color-text)';
+        tabAdmin.style.fontWeight        = isMeu ? '500' : '600';
+      }
+
+      tabMeu.addEventListener('click',   () => ativarTab('meu'));
+      tabAdmin.addEventListener('click', () => ativarTab('admin'));
     }
   }
 
@@ -5896,7 +6279,16 @@
      CRÉDITOS
   ============================================================ */
 
-  const CREDITOS_PRESETS = [10, 20, 50, 100];
+  // PIX state
+  let _pixSelecionado  = null;
+  let _pixPaymentId    = null;
+  let _pixPollingTimer = null;
+  let _pixCountdownTimer = null;
+
+  function _pixPararTudo() {
+    if (_pixPollingTimer)   { clearInterval(_pixPollingTimer);   _pixPollingTimer   = null; }
+    if (_pixCountdownTimer) { clearInterval(_pixCountdownTimer); _pixCountdownTimer = null; }
+  }
 
   function _atualizarIndicadorCreditos(pct) {
     const dot = document.getElementById('creditos-dot');
@@ -5926,6 +6318,9 @@
   }
 
   async function openCreditos() {
+    _pixPararTudo();
+    _pixSelecionado = null;
+    _pixPaymentId   = null;
     showSection('sec-creditos');
     const body = document.getElementById('creditos-body');
     body.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando...</div>';
@@ -6006,98 +6401,176 @@
         `}
       </div>
 
-      <!-- Recarregar -->
-      <div class="card" style="padding:var(--space-6);">
-        <div style="font-size:var(--text-sm);font-weight:700;margin-bottom:var(--space-4);">Adicionar créditos</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-2);margin-bottom:var(--space-4);" id="creditos-presets"></div>
-        <div style="display:flex;gap:var(--space-3);align-items:flex-end;">
-          <div style="flex:1;">
-            <label style="font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);display:block;margin-bottom:var(--space-1);">Outro valor (R$)</label>
-            <input id="creditos-valor-custom" type="number" min="0.01" step="0.01" placeholder="0,00"
-              style="width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);background:var(--color-surface);color:var(--color-text);outline:none;">
-          </div>
-          <div style="flex:1;">
-            <label style="font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);display:block;margin-bottom:var(--space-1);">Descrição (opcional)</label>
-            <input id="creditos-descricao" type="text" placeholder="Ex: recarga mensal"
-              style="width:100%;padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);background:var(--color-surface);color:var(--color-text);outline:none;">
-          </div>
+      <!-- Recarregar via PIX -->
+      <div class="card" style="padding:var(--space-6);" id="pix-selecao-card">
+        <div style="font-size:var(--text-sm);font-weight:700;margin-bottom:var(--space-5);">Adicionar créditos via PIX</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3);margin-bottom:var(--space-5);">
+          ${[
+            {c:50,  preco:'R$ 50',  sub:'~20 sessões de IA', pop:false},
+            {c:100, preco:'R$ 100', sub:'~40 sessões de IA', pop:true},
+            {c:150, preco:'R$ 150', sub:'~60 sessões de IA', pop:false},
+          ].map(op => `
+            <button class="pix-opcao" data-creditos="${op.c}"
+              style="border:2px solid ${op.pop ? 'var(--color-accent)' : 'var(--color-border)'};
+                     border-radius:var(--radius-lg);padding:var(--space-4);text-align:center;
+                     cursor:pointer;background:${op.pop ? 'var(--color-accent)' : 'var(--color-surface)'};
+                     color:${op.pop ? '#fff' : 'var(--color-text)'};
+                     transition:border-color .15s,transform .1s;font-family:var(--font-body);">
+              <div style="font-size:9px;font-weight:700;letter-spacing:.08em;opacity:.6;margin-bottom:3px;min-height:13px;">${op.pop ? 'MAIS POPULAR' : ''}</div>
+              <div style="font-size:1.15rem;font-weight:700;">${op.preco}</div>
+              <div style="font-size:var(--text-sm);margin-top:2px;opacity:${op.pop?'.85':'1'};color:${op.pop?'inherit':'var(--color-text-secondary)'};">${op.c} créditos</div>
+              <div style="font-size:11px;margin-top:3px;opacity:.5;">${op.sub}</div>
+            </button>
+          `).join('')}
         </div>
-        <button id="creditos-recarregar-btn"
-          style="margin-top:var(--space-4);width:100%;padding:var(--space-3) var(--space-4);background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;cursor:pointer;transition:background .15s;">
-          Confirmar recarga
+        <button id="pix-gerar-btn" disabled
+          style="width:100%;padding:var(--space-3) var(--space-4);background:var(--color-accent);
+                 color:#fff;border:none;border-radius:var(--radius-md);font-family:var(--font-body);
+                 font-size:var(--text-sm);font-weight:600;cursor:pointer;opacity:.4;transition:opacity .15s;">
+          Selecione um pacote para continuar
         </button>
-        <div id="creditos-feedback" style="display:none;margin-top:var(--space-3);font-size:var(--text-sm);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);"></div>
+        <div id="pix-gerar-feedback" style="display:none;margin-top:var(--space-3);font-size:var(--text-sm);
+             padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);"></div>
+      </div>
+
+      <!-- QR Code (oculto até gerar) -->
+      <div class="card" id="pix-qr-card" style="display:none;padding:var(--space-6);text-align:center;margin-top:var(--space-4);">
+        <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-2);">Escaneie o QR Code com seu banco</div>
+        <div id="pix-expira-countdown" style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-5);">Expira em 30:00</div>
+        <img id="pix-qr-img" src="" alt="QR Code PIX"
+          style="width:200px;height:200px;border:var(--border);border-radius:var(--radius-md);margin:0 auto var(--space-4);display:block;">
+        <button id="pix-copiar-btn"
+          style="width:100%;padding:var(--space-3);border:var(--border-strong);border-radius:var(--radius-md);
+                 background:var(--color-surface);font-family:var(--font-body);font-size:var(--text-sm);
+                 font-weight:500;cursor:pointer;margin-bottom:var(--space-4);">
+          Copiar código PIX (copia e cola)
+        </button>
+        <div id="pix-status-msg" style="font-size:var(--text-sm);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;gap:var(--space-2);">
+          <span class="spinner" style="width:14px;height:14px;"></span> Aguardando confirmação do pagamento...
+        </div>
+        <div style="margin-top:var(--space-5);">
+          <button id="pix-cancelar-btn"
+            style="background:none;border:none;font-family:var(--font-body);font-size:var(--text-sm);
+                   color:var(--color-text-muted);cursor:pointer;text-decoration:underline;">
+            Cancelar e escolher outro pacote
+          </button>
+        </div>
       </div>
 
       ${historicoHtml}
     `;
 
-    // Presets
-    let valorSelecionado = 0;
-    const presetsEl = body.querySelector('#creditos-presets');
-    CREDITOS_PRESETS.forEach(v => {
-      const btn = document.createElement('button');
-      btn.textContent = `R$ ${v}`;
-      btn.style.cssText = 'padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--text-sm);font-weight:500;cursor:pointer;background:var(--color-surface);color:var(--color-text);transition:all .15s;';
+    // ── Seleção de pacote ──────────────────────────────────────────────
+    body.querySelectorAll('.pix-opcao').forEach(btn => {
       btn.addEventListener('click', () => {
-        valorSelecionado = v;
-        body.querySelector('#creditos-valor-custom').value = '';
-        presetsEl.querySelectorAll('button').forEach(b => {
-          b.style.background = 'var(--color-surface)';
-          b.style.borderColor = 'var(--color-border)';
-          b.style.color = 'var(--color-text)';
+        _pixSelecionado = parseInt(btn.dataset.creditos);
+        body.querySelectorAll('.pix-opcao').forEach(b => {
+          const isMe  = parseInt(b.dataset.creditos) === _pixSelecionado;
+          const isPop = parseInt(b.dataset.creditos) === 100;
+          b.style.borderColor = isMe ? 'var(--color-accent)' : 'var(--color-border)';
+          b.style.transform   = isMe ? 'scale(1.03)' : 'scale(1)';
+          if (!isPop) {
+            b.style.background = isMe ? 'var(--color-accent-light)' : 'var(--color-surface)';
+            b.style.color      = isMe ? 'var(--color-accent)' : 'var(--color-text)';
+          }
         });
-        btn.style.background = 'var(--color-accent)';
-        btn.style.borderColor = 'var(--color-accent)';
-        btn.style.color = '#fff';
-      });
-      presetsEl.appendChild(btn);
-    });
-
-    const inputCustom = body.querySelector('#creditos-valor-custom');
-    inputCustom.addEventListener('input', () => {
-      valorSelecionado = 0;
-      presetsEl.querySelectorAll('button').forEach(b => {
-        b.style.background = 'var(--color-surface)';
-        b.style.borderColor = 'var(--color-border)';
-        b.style.color = 'var(--color-text)';
+        const gerarBtn = body.querySelector('#pix-gerar-btn');
+        gerarBtn.disabled = false;
+        gerarBtn.style.opacity = '1';
+        gerarBtn.textContent = `Gerar QR Code — R$ ${_pixSelecionado},00`;
       });
     });
 
-    body.querySelector('#creditos-recarregar-btn').addEventListener('click', async () => {
-      const customVal = parseFloat(inputCustom.value.replace(',', '.'));
-      const valor = customVal > 0 ? customVal : valorSelecionado;
-      const fb = body.querySelector('#creditos-feedback');
-      if (!valor || valor <= 0) {
-        fb.style.display = '';
-        fb.style.background = 'var(--color-danger-bg)';
-        fb.style.color = 'var(--color-danger)';
-        fb.textContent = 'Selecione ou informe um valor para recarregar.';
-        return;
-      }
-      const descricao = body.querySelector('#creditos-descricao').value.trim() || null;
-      const btn = body.querySelector('#creditos-recarregar-btn');
-      btn.disabled = true;
-      btn.textContent = '…';
+    // ── Gerar QR ──────────────────────────────────────────────────────
+    body.querySelector('#pix-gerar-btn').addEventListener('click', async () => {
+      if (!_pixSelecionado) return;
+      const btn = body.querySelector('#pix-gerar-btn');
+      const fb  = body.querySelector('#pix-gerar-feedback');
+      btn.disabled = true; btn.textContent = 'Gerando QR Code…';
+      fb.style.display = 'none';
       try {
-        await apiFetch('/creditos/recarregar', {
+        const res = await apiFetch('/pagamento/pix/criar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ valor_brl: valor, descricao }),
+          body: JSON.stringify({ creditos: _pixSelecionado }),
         });
-        fb.style.display = '';
-        fb.style.background = 'var(--color-success-bg)';
-        fb.style.color = 'var(--color-success)';
-        fb.textContent = `R$ ${valor.toFixed(2).replace('.', ',')} adicionados com sucesso!`;
-        setTimeout(() => openCreditos(), 900);
-      } catch (e) {
+        _pixPaymentId = res.payment_id;
+
+        // Exibir QR area
+        body.querySelector('#pix-selecao-card').style.display = 'none';
+        const qrCard = body.querySelector('#pix-qr-card');
+        qrCard.style.display = '';
+
+        const qrImg = body.querySelector('#pix-qr-img');
+        if (res.qr_code_base64) {
+          qrImg.src = 'data:image/png;base64,' + res.qr_code_base64;
+        } else {
+          qrImg.style.display = 'none';
+        }
+
+        // Copiar
+        body.querySelector('#pix-copiar-btn').addEventListener('click', () => {
+          navigator.clipboard.writeText(res.qr_code).then(() => {
+            const cb = body.querySelector('#pix-copiar-btn');
+            cb.textContent = 'Copiado!';
+            setTimeout(() => { cb.textContent = 'Copiar código PIX (copia e cola)'; }, 2500);
+          });
+        });
+
+        // Countdown 30min
+        let _expiraSecs = 30 * 60;
+        _pixCountdownTimer = setInterval(() => {
+          _expiraSecs--;
+          if (_expiraSecs <= 0) { clearInterval(_pixCountdownTimer); return; }
+          const m = String(Math.floor(_expiraSecs / 60)).padStart(2,'0');
+          const s = String(_expiraSecs % 60).padStart(2,'0');
+          const el = body.querySelector('#pix-expira-countdown');
+          if (el) el.textContent = `Expira em ${m}:${s}`;
+        }, 1000);
+
+        // Polling 30min (450 × 4s)
+        let tentativas = 0;
+        _pixPollingTimer = setInterval(async () => {
+          tentativas++;
+          if (tentativas > 450) {
+            _pixPararTudo();
+            const el = body.querySelector('#pix-status-msg');
+            if (el) el.innerHTML = 'QR Code expirado. <a href="#" id="pix-novo-link">Gerar novo</a>';
+            body.querySelector('#pix-novo-link')?.addEventListener('click', e => { e.preventDefault(); openCreditos(); });
+            return;
+          }
+          try {
+            const st = await apiFetch(`/pagamento/status/${_pixPaymentId}`);
+            if (st.status === 'approved') {
+              _pixPararTudo();
+              const el = body.querySelector('#pix-status-msg');
+              if (el) el.innerHTML = '<span style="color:var(--color-success);font-weight:600;">Pagamento confirmado! Créditos adicionados.</span>';
+              const cb = body.querySelector('#pix-copiar-btn');
+              if (cb) cb.style.display = 'none';
+              setTimeout(() => openCreditos(), 1800);
+            } else if (st.status === 'cancelled' || st.status === 'rejected') {
+              _pixPararTudo();
+              const el = body.querySelector('#pix-status-msg');
+              if (el) el.innerHTML = '<span style="color:var(--color-danger);">Pagamento não aprovado. <a href="#" id="pix-retry-link">Tentar novamente</a></span>';
+              body.querySelector('#pix-retry-link')?.addEventListener('click', e => { e.preventDefault(); openCreditos(); });
+            }
+          } catch { /* silencioso */ }
+        }, 4000);
+
+      } catch(e) {
+        btn.disabled = false; btn.style.opacity = '1';
+        btn.textContent = `Gerar QR Code — R$ ${_pixSelecionado},00`;
         fb.style.display = '';
         fb.style.background = 'var(--color-danger-bg)';
         fb.style.color = 'var(--color-danger)';
-        fb.textContent = `Erro: ${e.message}`;
-        btn.disabled = false;
-        btn.textContent = 'Confirmar recarga';
+        fb.textContent = e.message;
       }
+    });
+
+    // ── Cancelar ──────────────────────────────────────────────────────
+    body.querySelector('#pix-cancelar-btn').addEventListener('click', () => {
+      _pixPararTudo();
+      openCreditos();
     });
   }
 
