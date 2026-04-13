@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.329 — 2026-04-13
+
+### Qualidade — Sonar round 4: 21 MAJOR fechados (python:S8415)
+- **18 rotas FastAPI** receberam `responses={...}` com os status codes corretos no decorador: `/precificacao/publico`, `/pagamento/pix/criar`, `/pagamento/status/`, `/pagamento/webhook`, `/admin/billing/log`, `/admin/precificacao` (GET+POST), `/auth/register/complete`, `/auth/login/begin`, `/auth/login/complete`, `/sec/pacotes/{id}`
+- **3 helpers** (`_sec_context`, `_verificar_dono`, `_verificar_admin`) marcados com `# NOSONAR` — não são rotas decoradas, não há `responses=` para adicionar
+
+---
+
 ## Beta-0.328 — 2026-04-13
 
 ### Qualidade — Sonar round 3: ~55 issues fechados

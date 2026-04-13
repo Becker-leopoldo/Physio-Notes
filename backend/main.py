@@ -258,13 +258,13 @@ def _sec_context(request: Request) -> tuple[str, str]:
             logger.error(f"_sec_context: Erro ao verificar JWT: {e}")
             pass
     logger.warning(f"_sec_context: BLOQUEIO 403 para {request.url.path} [{request.method}] - Header: {bool(auth)}")
-    raise HTTPException(status_code=403, detail=ERR_ACCESS_DENIED_SEC)
+    raise HTTPException(status_code=403, detail=ERR_ACCESS_DENIED_SEC)  # NOSONAR
 
 
 def _verificar_dono(paciente: dict, owner: str | None):
     """Lança 404 se o paciente não pertence ao usuário (None = WebAuthn, vê tudo)."""
     if owner and paciente.get("owner_email") and paciente["owner_email"] != owner:
-        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)  # NOSONAR
 
 
 def _verificar_dono_sessao(sessao: dict, owner: str | None):
@@ -912,7 +912,7 @@ def creditos_recarregar(body: RecargaBody, request: Request):
     db.registrar_audit(owner, "credito_recarga", f"valor_brl={body.valor_brl}", _client_ip(request))
     return recarga
 
-@app.get("/precificacao/publico")
+@app.get("/precificacao/publico", responses={400: {"description": "Cotação fora do intervalo"}})
 def precificacao_publico(cotacao: float = 5.80):
     """Retorna APENAS o preço sugerido ao cliente final — sem margens, cotação ou modelo."""
     if not (1.0 <= cotacao <= 20.0):
@@ -959,7 +959,7 @@ class PagamentoPixBody(BaseModel):
 
 
 @app.post("/pagamento/pix/criar", status_code=201,
-          responses={400: {"description": "Bad Request"}, 503: {"description": "Service Unavailable"}})
+          responses={400: {"description": "Bad Request"}, 401: {"description": "Unauthorized"}, 409: {"description": "Conflict"}, 503: {"description": "Service Unavailable"}})
 @limiter.limit("5/minute")
 async def pagamento_pix_criar(body: PagamentoPixBody, request: Request):
     """Cria um pagamento PIX no Mercado Pago e retorna QR code."""
@@ -1030,7 +1030,7 @@ async def pagamento_pix_criar(body: PagamentoPixBody, request: Request):
 
 
 @app.get("/pagamento/status/{payment_id}",
-         responses={401: {"description": "Unauthorized"}, 404: {"description": "Not Found"}})
+         responses={400: {"description": "Bad Request"}, 401: {"description": "Unauthorized"}, 404: {"description": "Not Found"}})
 async def pagamento_status(payment_id: str, request: Request):
     """Polling de status do pagamento — consulta o MP em tempo real e credita se aprovado."""
     if not re.fullmatch(r'[\w\-]+', payment_id):
@@ -1070,7 +1070,7 @@ async def pagamento_status(payment_id: str, request: Request):
     return {"payment_id": payment_id, "status": p["status"], "creditado": bool(p["creditado"])}
 
 
-@app.post("/pagamento/webhook", status_code=200)
+@app.post("/pagamento/webhook", status_code=200, responses={401: {"description": "Unauthorized"}})
 @limiter.limit("10/minute")
 async def pagamento_webhook(request: Request):
     """Webhook do Mercado Pago: valida assinatura, consulta status real e credita se aprovado."""
@@ -1987,7 +1987,7 @@ def _verificar_admin(request: Request):
     admin_email = os.environ.get("ADMIN_EMAIL", "")
     email = _owner_email(request)
     if not email or email != admin_email:
-        raise HTTPException(status_code=403, detail="Acesso restrito ao administrador.")
+        raise HTTPException(status_code=403, detail="Acesso restrito ao administrador.")  # NOSONAR
 
 
 @app.get("/admin/usuarios")
@@ -2040,7 +2040,7 @@ def admin_billing(mes: str | None = None, request: Request = None):
     }
 
 
-@app.get("/admin/billing/log")
+@app.get("/admin/billing/log", responses={400: {"description": "Bad Request"}})
 def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offset: int = 0, cotacao: float = 5.80, request: Request = None):
     """Admin consulta o log detalhado de uso de IA de uma fisio: inclui custo interno, valor ganho e lucro por chamada."""
     _verificar_admin(request)
@@ -2062,7 +2062,7 @@ def admin_billing_log(owner: str, mes: str | None = None, limit: int = 100, offs
     return data
 
 
-@app.get("/admin/precificacao")
+@app.get("/admin/precificacao", responses={400: {"description": "Cotação fora do intervalo"}})
 def admin_precificacao(cotacao: float = 5.80, request: Request = None):
     """Retorna modelo de IA, cotação USD/BRL, custo médio/usuário/mês e preço sugerido."""
     _verificar_admin(request)
@@ -2101,7 +2101,7 @@ class PrecificacaoBody(BaseModel):
     margem_pct:  float
     imposto_pct: float
 
-@app.post("/admin/precificacao")
+@app.post("/admin/precificacao", responses={400: {"description": "Bad Request"}})
 def admin_precificacao_salvar(body: PrecificacaoBody, request: Request = None):
     """Salva configuração de margem e imposto para precificação."""
     _verificar_admin(request)
@@ -2146,7 +2146,7 @@ async def auth_register_begin(request: Request):
     return json.loads(options_to_json(options))
 
 
-@app.post("/auth/register/complete")
+@app.post("/auth/register/complete", responses={400: {"description": "Bad Request"}})
 @limiter.limit("5/minute")
 async def auth_register_complete(request: Request, body: dict):
     from webauthn import verify_registration_response
@@ -2192,7 +2192,7 @@ async def auth_register_complete(request: Request, body: dict):
     return {"token": token, "message": "Dispositivo registrado com sucesso"}
 
 
-@app.post("/auth/login/begin")
+@app.post("/auth/login/begin", responses={404: {"description": "Not Found"}})
 @limiter.limit("10/minute")
 async def auth_login_begin(request: Request):
     from webauthn import generate_authentication_options, options_to_json
@@ -2217,7 +2217,7 @@ async def auth_login_begin(request: Request):
     return json.loads(options_to_json(options))
 
 
-@app.post("/auth/login/complete")
+@app.post("/auth/login/complete", responses={400: {"description": "Bad Request"}, 401: {"description": "Unauthorized"}, 404: {"description": "Not Found"}})
 @limiter.limit("10/minute")
 async def auth_login_complete(request: Request, body: dict):
     from webauthn import verify_authentication_response
@@ -2761,7 +2761,7 @@ def sec_atualizar_pagamento_pacote(pacote_id: int, body: SecPacotePagamentoBody,
     return {"ok": True}
 
 
-@app.delete("/sec/pacotes/{pacote_id}", status_code=204)
+@app.delete("/sec/pacotes/{pacote_id}", status_code=204, responses={404: {"description": "Not Found"}})
 def sec_deletar_pacote(pacote_id: int, request: Request = None):
     """Secretaria remove um pacote de um paciente do fisio vinculado."""
     sec_email, fisio_email = _sec_context(request)
