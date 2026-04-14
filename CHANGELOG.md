@@ -4,6 +4,77 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.344 — 2026-04-14
+
+### Melhorias — Acesso ao manual do usuário
+- **Fisio:** botão flutuante `?` fixo no canto inferior direito, visível em todas as seções
+- **Secretaria:** link "Manual" como item de nav na sidebar (ícone + label), empurrado para o fundo; visível recolhida (só ícone) e expandida (ícone + texto)
+- **Backend:** `/manual` adicionado aos prefixos públicos — abre sem exigir token (nova aba não envia Bearer)
+
+---
+
+## Beta-0.343 — 2026-04-14
+
+### Melhorias — App fisio: lista de pacientes equiparada à secretaria
+- **KPI dashboard:** barra segmentada + 5 chips clicáveis (Atenção → Inativos → Regulares → Ativos → Sem registro) com total absoluto e botão "Limpar filtro"
+- **Cards de paciente:** nome em titleCase, idade calculada, telefone formatado e dot colorido de última visita (verde ≤30d / azul 31–60d / amarelo 61–90d / vermelho >90d)
+- **Paginação:** 20 pacientes por página com navegação Anterior/Próximo
+- **Estado vazio contextual:** quando filtro KPI ativo e sem resultados, indica a categoria filtrada com link "Limpar filtro" inline
+- **Helpers adicionados:** `titleCase`, `calcIdade`, `fmtTelefone`, `fmtDataBrFisio`, `visitaStatusFisio`
+
+---
+
+## Beta-0.342 — 2026-04-14
+
+### Melhorias — UX do dashboard KPI de pacientes (secretaria)
+- **Total absoluto visível:** contador "N pacientes" exibido acima da barra segmentada, à esquerda; botão "Limpar filtro" movido para a direita da mesma linha
+- **"Sem registro" como 5º chip:** convênio de pacientes sem `ultima_consulta` agora é um chip clicável de largura total (cinza), filtrável como os demais
+- **Chips reordenados por urgência:** nova ordem — Atenção → Inativos → Regulares → Ativos (categorias que exigem ação aparecem primeiro)
+- **Estado vazio contextual:** quando filtro KPI está ativo e sem resultados, mensagem indica a categoria filtrada (ex: "Nenhum paciente em: Atenção, Inativos.") com link "Limpar filtro" inline
+
+---
+
+## Beta-0.340 — 2026-04-13
+
+### Correção — Secretaria: fluxos de áudio sem feedback de erro
+- **`apiFetch` da secretaria:** agora anexa `.status` e `._network` ao erro (igual ao app fisio) — necessário para `friendlyError` funcionar corretamente
+- **`friendlyError` adicionado à secretaria:** função de humanização de erros idêntica à do app fisio — mensagens consistentes em ambos os apps
+- **Agenda por voz (secretaria):** erro de transcrição exibia apenas "Erro na transcrição" no label. Agora mostra mensagem amigável na área de feedback
+- **Atestado por voz (secretaria):** mesmo problema — corrigido da mesma forma
+
+---
+
+## Beta-0.339 — 2026-04-13
+
+### Correção — Auditoria completa dos fluxos de áudio (erros silenciosos)
+- **Agenda por voz:** transcription failure era `console.warn` silencioso — usuário não sabia o que havia acontecido. Agora exibe mensagem de erro no card de resultado usando `friendlyError`
+- **Atestado por voz (fisio):** erros de transcrição e interpretação exibiam `e.message` raw. Substituído por `friendlyError` para mensagens consistentes e humanizadas
+
+---
+
+## Beta-0.338 — 2026-04-13
+
+### Correção — Nota clínica sempre escrita na perspectiva errada ("Paciente refere...")
+- **Prompt de `consolidar_sessao` reescrito:** a IA agora entende que quem fala na transcrição é sempre a **fisioterapeuta**, não o paciente
+- Conduta da fisio é documentada como "Realizado...", "Aplicado...", "Foram realizadas..." — nunca mais "Paciente refere que foi realizado..."
+- "Paciente relata/refere" passa a ser usado **somente** quando a fisio cita explicitamente algo que o paciente disse (queixas, sintomas reportados)
+- Adicionados exemplos concretos no prompt para reforçar o padrão
+
+---
+
+## Beta-0.337 — 2026-04-13
+
+### Correção — Erro "serviço indisponível" generalizado em todos os fluxos de IA
+- **Auditoria completa dos endpoints de IA:** 6 endpoints sem `try/except` retornavam HTTP 500 quando o Gemini falhava (`/complementar-anamnese`, `/complementar-conduta`, `/sugerir-conduta`, `/gerar-sugestao`, `/salvar-anamnese-manual`, `/formatar-conduta`, `/sugestao-dia`, `/feedback-clinico`) — agora todos retornam 502 com mensagem descritiva
+- **Frontend — `isNetworkError`:** 502 com "Erro no processamento com IA" não é mais confundido com erro de rede do usuário — evita banner "Sem internet" quando o problema é o Gemini
+- **Frontend — `friendlyError`:** novo caso específico para falha de IA → exibe "O serviço de IA está temporariamente indisponível. Aguarde alguns instantes e tente novamente."
+
+### Funcionalidade — Importação em lote de pacientes (secretaria)
+- Novo endpoint `POST /sec/pacientes/importar`: importa lista de pacientes de um JSON, ignora duplicatas por nome, retorna resumo (criados / ignorados / erros)
+- Botão "Importar" na aba Pacientes da secretaria: upload de arquivo JSON, preview tabular antes de confirmar, resultado com contagem
+
+---
+
 ## Beta-0.336 — 2026-04-13
 
 ### Correção — Layout mobile: conteúdo não encaixando (parte 2)

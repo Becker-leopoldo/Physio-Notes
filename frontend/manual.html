@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual do Usuário - Physio Notes</title>
+  <meta name="description" content="Manual do usuário do Physio Notes com foco em secretaria e fisioterapeuta." />
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#667085;
+      --line:#d9e2ec;
+      --brand:#123c66;
+      --brand-2:#1f5d99;
+      --soft:#ecf4fc;
+      --ok-bg:#eefbf6;
+      --ok-line:#0f766e;
+      --warn-bg:#fff8ed;
+      --warn-line:#b45309;
+      --shadow:0 10px 30px rgba(18,60,102,.08);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.6;
+    }
+
+    .hero{
+      background:linear-gradient(135deg, var(--brand), var(--brand-2));
+      color:#fff;
+      padding:48px 24px 36px;
+    }
+    .hero-inner,.wrap,.footer-inner{
+      max-width:1140px;
+      margin:0 auto;
+    }
+    .hero h1{
+      margin:0 0 10px;
+      font-size:36px;
+      line-height:1.2;
+    }
+    .hero p{
+      margin:0;
+      max-width:840px;
+      font-size:18px;
+      color:#e7eef8;
+    }
+    .hero-badge{
+      display:inline-block;
+      margin-top:16px;
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.15);
+      font-size:14px;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:290px 1fr;
+      gap:24px;
+      padding:28px 24px 40px;
+    }
+
+    .nav{
+      position:sticky;
+      top:16px;
+      align-self:start;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+    .nav h2{
+      margin:0 0 12px;
+      font-size:16px;
+      color:var(--brand);
+    }
+    .nav a{
+      display:block;
+      text-decoration:none;
+      color:var(--text);
+      font-size:14px;
+      padding:9px 10px;
+      border-radius:10px;
+      margin:4px 0;
+    }
+    .nav a:hover{
+      background:var(--soft);
+      color:var(--brand);
+    }
+
+    .content section{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:26px;
+      margin-bottom:20px;
+      box-shadow:var(--shadow);
+    }
+
+    h2.section-title{
+      margin:0 0 8px;
+      color:var(--brand);
+      font-size:28px;
+      line-height:1.2;
+    }
+    h3{
+      color:var(--brand-2);
+      margin:20px 0 8px;
+      font-size:20px;
+    }
+    p{margin:10px 0}
+    ul,ol{padding-left:22px}
+    li + li{margin-top:6px}
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+      gap:14px;
+      margin-top:16px;
+    }
+
+    .card{
+      background:#fbfdff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .tag{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:999px;
+      background:var(--soft);
+      color:var(--brand);
+      font-size:12px;
+      font-weight:bold;
+      margin-bottom:8px;
+    }
+
+    .example, .tip, .warn{
+      padding:14px 16px;
+      border-radius:12px;
+      margin-top:14px;
+    }
+    .example{
+      background:#f7fbff;
+      border-left:5px solid var(--brand-2);
+    }
+    .tip{
+      background:var(--ok-bg);
+      border-left:5px solid var(--ok-line);
+    }
+    .warn{
+      background:var(--warn-bg);
+      border-left:5px solid var(--warn-line);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:14px;
+      overflow:hidden;
+    }
+    th,td{
+      border:1px solid var(--line);
+      padding:12px;
+      text-align:left;
+      vertical-align:top;
+    }
+    th{
+      background:var(--soft);
+      color:var(--brand);
+    }
+
+    .steps{
+      counter-reset: step;
+      list-style:none;
+      padding-left:0;
+      margin:18px 0 0;
+    }
+    .steps li{
+      position:relative;
+      padding:14px 14px 14px 56px;
+      background:#fbfdff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      margin-bottom:10px;
+    }
+    .steps li::before{
+      counter-increment: step;
+      content: counter(step);
+      position:absolute;
+      left:14px;
+      top:12px;
+      width:28px;
+      height:28px;
+      border-radius:50%;
+      background:var(--brand);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      font-size:14px;
+    }
+
+    footer{
+      padding:0 24px 42px;
+    }
+    .footer-inner{
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    /* Bot */
+    .bot-button{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+      width:70px;
+      height:70px;
+      border:none;
+      border-radius:50%;
+      background:linear-gradient(135deg, var(--brand), var(--brand-2));
+      color:#fff;
+      box-shadow:0 16px 30px rgba(18,60,102,.28);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:31px;
+      z-index:999;
+    }
+
+    .bot-panel{
+      position:fixed;
+      right:20px;
+      bottom:102px;
+      width:380px;
+      max-width:calc(100vw - 28px);
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:0 24px 50px rgba(18,60,102,.20);
+      overflow:hidden;
+      z-index:999;
+      display:none;
+    }
+    .bot-panel.open{display:block}
+
+    .bot-header{
+      background:linear-gradient(135deg, var(--brand), var(--brand-2));
+      color:#fff;
+      padding:16px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .bot-avatar{
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      background:rgba(255,255,255,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      flex-shrink:0;
+    }
+    .bot-header strong{
+      display:block;
+      font-size:16px;
+    }
+    .bot-header span{
+      color:#e7eef8;
+      font-size:13px;
+    }
+
+    .bot-body{
+      background:#f9fbfe;
+      padding:16px;
+      max-height:360px;
+      overflow:auto;
+    }
+    .bot-msg{
+      padding:12px 14px;
+      border-radius:14px;
+      margin-bottom:10px;
+      font-size:14px;
+    }
+    .bot-msg.bot{
+      background:#eef5fd;
+      border:1px solid #dce8f7;
+    }
+    .bot-msg.user{
+      background:#eefbf6;
+      border:1px solid #d4eee4;
+    }
+
+    .bot-suggestions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .bot-suggestions button{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      border-radius:999px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .bot-suggestions button:hover{
+      background:var(--soft);
+      color:var(--brand);
+    }
+
+    .bot-input{
+      display:flex;
+      gap:8px;
+      padding:14px 16px 16px;
+      background:#fff;
+      border-top:1px solid var(--line);
+    }
+    .bot-input input{
+      flex:1;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      outline:none;
+      font-size:14px;
+    }
+    .bot-input button{
+      padding:12px 16px;
+      border:none;
+      border-radius:12px;
+      background:var(--brand);
+      color:#fff;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    @media (max-width: 920px){
+      .layout{grid-template-columns:1fr}
+      .nav{position:relative; top:0}
+      .hero h1{font-size:30px}
+      .hero p{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <h1>Manual do Usuário - Physio Notes</h1>
+      <p>Guia operacional com foco nos perfis de <strong>secretaria</strong> e <strong>fisioterapeuta</strong>, com linguagem simples, passos objetivos e assistente visual para dúvidas rápidas.</p>
+      <div class="hero-badge">Versão revisada para produção • Avatar incluído</div>
+    </div>
+  </header>
+
+  <div class="wrap layout">
+    <aside class="nav">
+      <h2>Navegação</h2>
+      <a href="#objetivo">1. Objetivo do sistema</a>
+      <a href="#perfis">2. Perfis de uso</a>
+      <a href="#acesso">3. Como acessar</a>
+      <a href="#secretaria">4. Rotina da secretaria</a>
+      <a href="#fisio">5. Rotina do fisioterapeuta</a>
+      <a href="#pacientes">6. Cadastro e busca de pacientes</a>
+      <a href="#gravacao">7. Gravação da sessão</a>
+      <a href="#notas">8. Notas e registros</a>
+      <a href="#agenda">9. Agenda</a>
+      <a href="#cuidados">10. Cuidados importantes</a>
+      <a href="#faq">11. Dúvidas frequentes</a>
+    </aside>
+
+    <main class="content">
+      <section id="objetivo">
+        <h2 class="section-title">1. Objetivo do sistema</h2>
+        <p>O <strong>Physio Notes</strong> é um sistema de apoio à rotina clínica e operacional. Ele permite organizar pacientes, consultar a agenda, registrar atendimentos e manter o histórico de informações do paciente de forma centralizada.</p>
+        <div class="grid">
+          <div class="card">
+            <div class="tag">Secretaria</div>
+            <p>Utiliza o sistema para acompanhar a agenda, localizar pacientes e apoiar o fluxo diário de atendimento.</p>
+          </div>
+          <div class="card">
+            <div class="tag">Fisioterapeuta</div>
+            <p>Utiliza o sistema para pesquisar pacientes, gravar sessões, revisar informações e registrar notas de atendimento.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="perfis">
+        <h2 class="section-title">2. Perfis de uso</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Perfil</th>
+              <th>Principais atividades</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Secretaria</td>
+              <td>Consultar agenda, localizar cadastro do paciente, conferir dados e apoiar a organização dos atendimentos.</td>
+            </tr>
+            <tr>
+              <td>Fisioterapeuta</td>
+              <td>Pesquisar paciente, abrir atendimento, gravar sessão, revisar conteúdo e salvar registros.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tip"><strong>Revisão aplicada:</strong> o conteúdo administrativo foi removido para deixar o manual mais claro e útil para a operação.</div>
+      </section>
+
+      <section id="acesso">
+        <h2 class="section-title">3. Como acessar</h2>
+        <ol class="steps">
+          <li>Acesse a página de login do sistema.</li>
+          <li>Faça a autenticação com a conta autorizada.</li>
+          <li>Aguarde o redirecionamento para a área principal.</li>
+        </ol>
+        <div class="example"><strong>Exemplo:</strong> no início do expediente, a secretaria entra no sistema para verificar a agenda do dia, enquanto o fisioterapeuta acessa a área principal para se preparar para os atendimentos.</div>
+        <div class="warn">Se o acesso não for concluído corretamente, o sistema pode retornar para a tela de login.</div>
+      </section>
+
+      <section id="secretaria">
+        <h2 class="section-title">4. Rotina da secretaria</h2>
+        <p>As ações mais comuns da secretaria são:</p>
+        <ol class="steps">
+          <li>Entrar no sistema e abrir a agenda.</li>
+          <li>Conferir os pacientes previstos para cada período.</li>
+          <li>Localizar o cadastro do paciente quando necessário.</li>
+          <li>Apoiar o fluxo do atendimento com informações operacionais.</li>
+        </ol>
+        <div class="example"><strong>Exemplo:</strong> a secretaria verifica os horários do período da manhã, confirma a chegada do paciente e localiza o cadastro antes do atendimento começar.</div>
+      </section>
+
+      <section id="fisio">
+        <h2 class="section-title">5. Rotina do fisioterapeuta</h2>
+        <p>As ações mais comuns do fisioterapeuta são:</p>
+        <ol class="steps">
+          <li>Pesquisar o paciente.</li>
+          <li>Abrir o atendimento correspondente.</li>
+          <li>Iniciar a gravação da sessão, quando necessário.</li>
+          <li>Revisar e registrar as notas do atendimento.</li>
+          <li>Salvar as informações ao final.</li>
+        </ol>
+        <div class="example"><strong>Exemplo:</strong> o fisioterapeuta abre o atendimento do paciente, registra observações por voz durante a sessão e revisa as notas antes de salvar.</div>
+      </section>
+
+      <section id="pacientes">
+        <h2 class="section-title">6. Cadastro e busca de pacientes</h2>
+        <h3>Buscar paciente</h3>
+        <ol class="steps">
+          <li>Acesse a área de pacientes.</li>
+          <li>Digite o nome ou outra informação de identificação.</li>
+          <li>Selecione o paciente correto na lista de resultados.</li>
+        </ol>
+
+        <h3>Cadastrar paciente</h3>
+        <ol class="steps">
+          <li>Escolha a opção de novo cadastro.</li>
+          <li>Preencha os dados solicitados.</li>
+          <li>Salve o registro.</li>
+        </ol>
+
+        <div class="tip">Antes de criar um novo cadastro, faça uma busca para evitar duplicidade de pacientes.</div>
+      </section>
+
+      <section id="gravacao">
+        <h2 class="section-title">7. Gravação da sessão</h2>
+        <p>O sistema permite registrar o atendimento por áudio diretamente no navegador.</p>
+        <ol class="steps">
+          <li>Abra o atendimento do paciente.</li>
+          <li>Clique em <strong>Iniciar gravação</strong>.</li>
+          <li>Permita o uso do microfone, se o navegador solicitar.</li>
+          <li>Conduza o atendimento normalmente.</li>
+          <li>Clique em <strong>Parar gravação</strong> ao finalizar.</li>
+        </ol>
+        <div class="example"><strong>Exemplo:</strong> durante a sessão, o fisioterapeuta usa a gravação para registrar a evolução do atendimento e depois revisa o conteúdo gerado.</div>
+        <div class="warn">Se o microfone estiver bloqueado ou indisponível, a gravação não será iniciada.</div>
+      </section>
+
+      <section id="notas">
+        <h2 class="section-title">8. Notas e registros</h2>
+        <p>As notas ajudam a manter o histórico do paciente organizado e acessível para consultas futuras.</p>
+        <ul>
+          <li>Registrar observações do atendimento.</li>
+          <li>Revisar o conteúdo antes de salvar.</li>
+          <li>Consultar informações anteriores do paciente.</li>
+        </ul>
+        <div class="example"><strong>Exemplo:</strong> após o atendimento, o fisioterapeuta revisa a evolução registrada, ajusta o texto quando necessário e salva no histórico do paciente.</div>
+      </section>
+
+      <section id="agenda">
+        <h2 class="section-title">9. Agenda</h2>
+        <p>A agenda é uma área importante para os dois perfis operacionais.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Perfil</th>
+              <th>Como utiliza a agenda</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Secretaria</td>
+              <td>Confere horários, organiza o fluxo de chegada e acompanha a sequência dos atendimentos.</td>
+            </tr>
+            <tr>
+              <td>Fisioterapeuta</td>
+              <td>Consulta a programação do dia e se prepara para os próximos atendimentos.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="tip">A recomendação é consultar a agenda no início do dia e novamente antes de cada período de atendimento.</div>
+      </section>
+
+      <section id="cuidados">
+        <h2 class="section-title">10. Cuidados importantes</h2>
+        <ul>
+          <li>Utilize navegador atualizado.</li>
+          <li>Verifique o microfone antes de iniciar uma gravação.</li>
+          <li>Confirme se o paciente selecionado está correto antes de registrar informações.</li>
+          <li>Revise as notas antes de salvar.</li>
+          <li>Evite criar cadastros duplicados.</li>
+        </ul>
+      </section>
+
+      <section id="faq">
+        <h2 class="section-title">11. Dúvidas frequentes</h2>
+
+        <h3>Não encontrei o paciente. O que devo fazer?</h3>
+        <p>Revise a grafia do nome e tente novamente. Se ainda não localizar, confirme se realmente não existe cadastro antes de criar um novo.</p>
+
+        <h3>O áudio não começou a gravar. O que devo fazer?</h3>
+        <p>Verifique se o navegador liberou o microfone e se outro aplicativo não está usando o dispositivo.</p>
+
+        <h3>Quem deve consultar a agenda?</h3>
+        <p>Tanto a secretaria quanto o fisioterapeuta. A secretaria usa a agenda para organizar o fluxo, e o fisioterapeuta usa para acompanhar os atendimentos do dia.</p>
+
+        <h3>Quando devo revisar as notas?</h3>
+        <p>Sempre antes de salvar o atendimento, para garantir que o histórico fique correto.</p>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      Manual revisado para produção com foco operacional em secretaria e fisioterapeuta. Esta versão mantém o assistente visual para dúvidas rápidas dentro do próprio HTML.
+    </div>
+  </footer>
+
+  <button class="bot-button" id="botToggle" aria-label="Abrir assistente">🤖</button>
+
+  <div class="bot-panel" id="botPanel" aria-live="polite">
+    <div class="bot-header">
+      <div class="bot-avatar">🤖</div>
+      <div>
+        <strong>Assistente do Manual</strong>
+        <span>Faça uma pergunta sobre o sistema</span>
+      </div>
+    </div>
+
+    <div class="bot-body" id="botBody">
+      <div class="bot-msg bot">Olá. Posso ajudar com dúvidas rápidas sobre pacientes, agenda, gravação e notas.</div>
+      <div class="bot-suggestions">
+        <button onclick="askSuggestion('Como buscar paciente?')">Como buscar paciente?</button>
+        <button onclick="askSuggestion('Como gravar uma sessão?')">Como gravar uma sessão?</button>
+        <button onclick="askSuggestion('Como a secretaria usa a agenda?')">Como a secretaria usa a agenda?</button>
+        <button onclick="askSuggestion('Quando revisar as notas?')">Quando revisar as notas?</button>
+      </div>
+    </div>
+
+    <div class="bot-input">
+      <input type="text" id="botQuestion" placeholder="Faça uma pergunta sobre o sistema" />
+      <button onclick="sendQuestion()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const botToggle = document.getElementById('botToggle');
+      const botPanel = document.getElementById('botPanel');
+      const botBody = document.getElementById('botBody');
+      const botQuestion = document.getElementById('botQuestion');
+
+      botToggle.addEventListener('click', () => {
+        botPanel.classList.toggle('open');
+      });
+
+      botQuestion.addEventListener('keydown', function(e){
+        if(e.key === 'Enter'){
+          sendQuestion();
+        }
+      });
+
+      function normalize(text){
+        return text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+      }
+
+      function getAnswer(question){
+        const q = normalize(question);
+
+        if(q.includes('buscar') || q.includes('localizar') || q.includes('paciente')){
+          return 'Para buscar um paciente, acesse a área de pacientes, digite o nome ou outra informação de identificação e selecione o registro correto na lista.';
+        }
+        if(q.includes('gravar') || q.includes('gravacao') || q.includes('audio')){
+          return 'Para gravar uma sessão, abra o atendimento, clique em iniciar gravação, permita o uso do microfone e finalize a gravação ao concluir a consulta.';
+        }
+        if(q.includes('agenda') && q.includes('secretaria')){
+          return 'A secretaria usa a agenda para verificar horários, organizar a chegada dos pacientes e acompanhar a sequência dos atendimentos.';
+        }
+        if(q.includes('agenda')){
+          return 'A agenda é usada para acompanhar os atendimentos do dia. A secretaria organiza o fluxo, e o fisioterapeuta consulta sua programação.';
+        }
+        if(q.includes('nota') || q.includes('registro') || q.includes('revisar')){
+          return 'As notas devem ser revisadas antes de salvar, para garantir que as informações do atendimento fiquem corretas no histórico do paciente.';
+        }
+        if(q.includes('cadastro') || q.includes('cadastrar')){
+          return 'Antes de cadastrar um novo paciente, faça uma busca. Se não encontrar, preencha os dados solicitados e salve o registro.';
+        }
+        if(q.includes('login') || q.includes('acesso') || q.includes('entrar')){
+          return 'Para acessar o sistema, abra a página de login, faça a autenticação com a conta autorizada e aguarde o redirecionamento.';
+        }
+
+        return 'Ainda não tenho uma resposta específica para essa pergunta nesta versão. Você pode consultar as seções do manual ou expandir este assistente com novas perguntas e respostas.';
+      }
+
+      function appendMessage(text, type){
+        const div = document.createElement('div');
+        div.className = 'bot-msg ' + type;
+        div.textContent = text;
+        botBody.appendChild(div);
+        botBody.scrollTop = botBody.scrollHeight;
+      }
+
+      window.sendQuestion = function(){
+        const question = botQuestion.value.trim();
+        if(!question) return;
+        appendMessage(question, 'user');
+        appendMessage(getAnswer(question), 'bot');
+        botQuestion.value = '';
+      }
+
+      window.askSuggestion = function(text){
+        botQuestion.value = text;
+        window.sendQuestion();
+      }
+    })();
+  </script>
+</body>
+</html>

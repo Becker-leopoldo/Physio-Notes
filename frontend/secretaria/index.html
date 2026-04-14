@@ -427,6 +427,38 @@
     }
 
 
+    /* ── KPI chips ── */
+    .kpi-chip {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      border: var(--border-strong);
+      background: var(--color-surface);
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      text-align: left; width: 100%;
+      font-family: var(--font-body);
+    }
+    .kpi-chip:hover { background: var(--color-accent-light); }
+    .kpi-chip.active { border-color: transparent; }
+    .kpi-chip[data-kpi="verde"].active   { background: #EDF7F2; border-color: #2D6A4F; }
+    .kpi-chip[data-kpi="azul"].active    { background: #EFF6FF; border-color: #1E3A5F; }
+    .kpi-chip[data-kpi="amarelo"].active { background: #FEF7EC; border-color: #92600A; }
+    .kpi-chip[data-kpi="vermelho"].active{ background: #FEF2F2; border-color: #9B1C1C; }
+    .kpi-chip[data-kpi="sem"].active     { background: var(--color-accent-light); border-color: var(--color-border-strong); }
+    .kpi-dot {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+    .kpi-num {
+      font-size: var(--text-lg); font-weight: 600;
+      color: var(--color-text); line-height: 1; min-width: 20px;
+    }
+    .kpi-lbl {
+      font-size: var(--text-xs); color: var(--color-text-secondary);
+      line-height: 1.3;
+    }
+
     /* ── Pacientes tab ── */
     .pac-list-item {
       display: flex; align-items: center; gap: var(--space-3);
@@ -594,6 +626,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Pacotes
       </button>
+      <a href="../manual.html" target="_blank" class="nav-item" style="margin-top:auto;text-decoration:none;" title="Manual do usuário">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Manual
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -611,7 +647,7 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Sair
       </button>
-      <div style="padding:var(--space-3) var(--space-3) 0;display:flex;align-items:center;justify-content:space-between;">
+      <div class="sidebar-bottom-bar" style="padding:var(--space-3) var(--space-3) 0;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.25);">powered by <strong style="color:rgba(255,255,255,0.4);">up it</strong></span>
         <span id="app-version-label" style="font-size:var(--text-xs);color:rgba(255,255,255,0.25);font-variant-numeric:tabular-nums;"></span>
       </div>
@@ -712,11 +748,62 @@
         <div class="cal-card">
           <div style="padding:var(--space-4);border-bottom:var(--border);display:flex;gap:var(--space-3);align-items:center;">
             <input id="pac-tab-busca" class="form-input" type="search" placeholder="Buscar paciente..." style="flex:1;">
+            <button class="fab-novo" id="btn-importar-pac" style="white-space:nowrap;background:var(--color-surface);color:var(--color-accent);border:var(--border-strong);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importar
+            </button>
             <button class="fab-novo" id="btn-novo-pac" style="white-space:nowrap;">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
               Novo
             </button>
           </div>
+          <!-- KPIs de status de visita -->
+          <div id="pac-kpi-area" style="padding:var(--space-3) var(--space-4);border-bottom:var(--border);display:none;">
+            <!-- Total + barra segmentada -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
+              <span style="font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500;" id="kpi-total-label">0 pacientes</span>
+              <button id="kpi-limpar" onclick="limparKpiFilter()" style="display:none;font-size:var(--text-xs);color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Limpar filtro</button>
+            </div>
+            <div style="display:flex;height:6px;border-radius:var(--radius-full);overflow:hidden;margin-bottom:var(--space-3);background:var(--color-border);">
+              <div id="kpi-bar-amarelo" style="background:#92600A;width:0%;transition:width .4s ease;"></div>
+              <div id="kpi-bar-vermelho"style="background:#9B1C1C;width:0%;transition:width .4s ease;"></div>
+              <div id="kpi-bar-azul"    style="background:#1E3A5F;width:0%;transition:width .4s ease;"></div>
+              <div id="kpi-bar-verde"   style="background:#2D6A4F;width:0%;transition:width .4s ease;"></div>
+              <div id="kpi-bar-sem"     style="background:var(--color-border-strong);width:0%;transition:width .4s ease;"></div>
+            </div>
+            <!-- Chips de filtro — ordenados por urgência -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
+              <button class="kpi-chip" data-kpi="amarelo" onclick="toggleKpiFilter('amarelo')">
+                <span class="kpi-dot" style="background:#92600A;box-shadow:0 0 0 2px #FEF7EC;"></span>
+                <span class="kpi-num" id="kpi-num-amarelo">0</span>
+                <span class="kpi-lbl">Atenção <span style="font-size:var(--text-xs);opacity:.7;">61–90 dias</span></span>
+              </button>
+              <button class="kpi-chip" data-kpi="vermelho" onclick="toggleKpiFilter('vermelho')">
+                <span class="kpi-dot" style="background:#9B1C1C;box-shadow:0 0 0 2px #FEF2F2;"></span>
+                <span class="kpi-num" id="kpi-num-vermelho">0</span>
+                <span class="kpi-lbl">Inativos <span style="font-size:var(--text-xs);opacity:.7;">> 90 dias</span></span>
+              </button>
+              <button class="kpi-chip" data-kpi="azul"    onclick="toggleKpiFilter('azul')">
+                <span class="kpi-dot" style="background:#1E3A5F;box-shadow:0 0 0 2px #EFF6FF;"></span>
+                <span class="kpi-num" id="kpi-num-azul">0</span>
+                <span class="kpi-lbl">Regulares <span style="font-size:var(--text-xs);opacity:.7;">31–60 dias</span></span>
+              </button>
+              <button class="kpi-chip" data-kpi="verde"   onclick="toggleKpiFilter('verde')">
+                <span class="kpi-dot" style="background:#2D6A4F;box-shadow:0 0 0 2px #EDF7F2;"></span>
+                <span class="kpi-num" id="kpi-num-verde">0</span>
+                <span class="kpi-lbl">Ativos <span style="font-size:var(--text-xs);opacity:.7;">≤ 30 dias</span></span>
+              </button>
+            </div>
+            <!-- 5º chip: sem registro -->
+            <div style="padding:0 2px;">
+              <button class="kpi-chip" data-kpi="sem" onclick="toggleKpiFilter('sem')" style="width:100%;justify-content:flex-start;">
+                <span class="kpi-dot" style="background:var(--color-border-strong);"></span>
+                <span class="kpi-num" id="kpi-num-sem">0</span>
+                <span class="kpi-lbl">Sem registro <span style="font-size:var(--text-xs);opacity:.7;">sem visita registrada</span></span>
+              </button>
+            </div>
+          </div>
+
           <div id="pac-tab-lista"></div>
         </div>
       </div>
@@ -849,12 +936,39 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
         <div class="form-group" style="margin:0;">
-          <label class="form-label" for="novo-pac-cpf">CPF</label>
+          <label class="form-label" for="novo-pac-cpf">CPF <span style="color:var(--color-danger);">*</span></label>
           <input class="form-input" type="text" id="novo-pac-cpf" placeholder="000.000.000-00" maxlength="14">
+          <span id="novo-pac-cpf-hint" style="display:none;font-size:var(--text-xs);margin-top:2px;"></span>
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" for="novo-pac-nasc">Nascimento</label>
+          <label class="form-label" for="novo-pac-nasc">Nascimento <span style="color:var(--color-danger);">*</span></label>
           <input class="form-input" type="date" id="novo-pac-nasc">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-4);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" for="novo-pac-telefone">Celular <span style="color:var(--color-danger);">*</span></label>
+          <input class="form-input" type="tel" id="novo-pac-telefone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" for="novo-pac-convenio">Convênio</label>
+          <input class="form-input" type="text" id="novo-pac-convenio" placeholder="Ex: Particular">
+        </div>
+      </div>
+      <div style="margin-top:var(--space-4);">
+        <label class="form-label" style="margin-bottom:var(--space-2);display:block;">Endereço <span style="font-size:var(--text-xs);font-weight:400;color:var(--color-text-muted);">— CEP preenche automaticamente</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
+          <div>
+            <input class="form-input" type="text" id="novo-pac-cep" placeholder="CEP 00000-000" maxlength="9">
+            <span id="novo-pac-cep-hint" style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;display:none;"></span>
+          </div>
+          <input class="form-input" type="text" id="novo-pac-numero" placeholder="Número">
+        </div>
+        <input class="form-input" type="text" id="novo-pac-logradouro" placeholder="Logradouro" style="margin-bottom:var(--space-2);">
+        <div style="display:grid;grid-template-columns:1fr 1fr 52px;gap:var(--space-2);">
+          <input class="form-input" type="text" id="novo-pac-bairro" placeholder="Bairro">
+          <input class="form-input" type="text" id="novo-pac-cidade" placeholder="Cidade">
+          <input class="form-input" type="text" id="novo-pac-estado" placeholder="UF" style="padding-left:var(--space-2);padding-right:var(--space-2);">
         </div>
       </div>
       <div class="form-group" style="margin-top:var(--space-4);">
@@ -865,6 +979,52 @@
       <div style="display:flex;flex-direction:column;gap:var(--space-2);">
         <button id="novo-pac-salvar" class="btn btn-primary btn-full btn-lg">Cadastrar paciente</button>
         <button id="novo-pac-cancelar" class="btn btn-ghost btn-full">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHEET: Importar pacientes -->
+  <div class="overlay" id="importar-pac-overlay" style="display:none;"></div>
+  <div class="sheet" id="importar-pac-sheet" style="display:none;max-height:90dvh;overflow-y:auto;">
+    <div class="drag-handle"></div>
+    <div class="sheet-body">
+      <h2 class="sheet-title">Importar pacientes</h2>
+      <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-5);">Selecione o arquivo JSON exportado do sistema anterior. Pacientes com o mesmo nome serão ignorados.</p>
+
+      <div id="importar-upload-area" style="border:2px dashed var(--color-border-strong);border-radius:var(--radius-lg);padding:var(--space-8);text-align:center;cursor:pointer;transition:background 0.15s;margin-bottom:var(--space-5);" onclick="document.getElementById('importar-file-input').click()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto var(--space-3);display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text-secondary);">Clique para selecionar o arquivo</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1);">Formato: JSON</div>
+      </div>
+      <input type="file" id="importar-file-input" accept=".json,application/json" style="display:none;">
+
+      <div id="importar-preview" style="display:none;margin-bottom:var(--space-5);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+          <span id="importar-preview-count" style="font-size:var(--text-sm);font-weight:600;"></span>
+          <button onclick="document.getElementById('importar-file-input').click()" style="font-size:var(--text-xs);color:var(--color-text-secondary);background:none;border:none;cursor:pointer;text-decoration:underline;">Trocar arquivo</button>
+        </div>
+        <div style="border:var(--border);border-radius:var(--radius-md);overflow:hidden;">
+          <div style="max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+            <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm);">
+              <thead>
+                <tr style="background:var(--color-bg);">
+                  <th style="padding:var(--space-2) var(--space-3);text-align:left;font-weight:600;color:var(--color-text-secondary);border-bottom:var(--border);">Nome</th>
+                  <th style="padding:var(--space-2) var(--space-3);text-align:left;font-weight:600;color:var(--color-text-secondary);border-bottom:var(--border);">Nascimento</th>
+                  <th style="padding:var(--space-2) var(--space-3);text-align:left;font-weight:600;color:var(--color-text-secondary);border-bottom:var(--border);">Convênio</th>
+                </tr>
+              </thead>
+              <tbody id="importar-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="importar-erro" style="display:none;font-size:var(--text-sm);color:var(--color-danger);margin-bottom:var(--space-3);padding:var(--space-3);background:var(--color-danger-bg);border-radius:var(--radius-md);"></div>
+      <div id="importar-resultado" style="display:none;margin-bottom:var(--space-4);"></div>
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+        <button id="importar-pac-confirmar" class="btn btn-primary btn-full btn-lg" disabled>Importar pacientes</button>
+        <button id="importar-pac-cancelar" class="btn btn-ghost btn-full">Cancelar</button>
       </div>
     </div>
   </div>
@@ -882,17 +1042,40 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
         <div class="form-group" style="margin:0;">
-          <label class="form-label" for="edit-pac-cpf">CPF</label>
+          <label class="form-label" for="edit-pac-cpf">CPF <span style="color:var(--color-danger);">*</span></label>
           <input class="form-input" type="text" id="edit-pac-cpf" placeholder="000.000.000-00" maxlength="14">
+          <span id="edit-pac-cpf-hint" style="display:none;font-size:var(--text-xs);margin-top:2px;"></span>
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" for="edit-pac-nasc">Nascimento</label>
+          <label class="form-label" for="edit-pac-nasc">Nascimento <span style="color:var(--color-danger);">*</span></label>
           <input class="form-input" type="date" id="edit-pac-nasc">
         </div>
       </div>
-      <div class="form-group" style="margin-top:var(--space-4);">
-        <label class="form-label" for="edit-pac-endereco">Endereço</label>
-        <input class="form-input" type="text" id="edit-pac-endereco" placeholder="Rua, número, bairro...">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-4);">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" for="edit-pac-telefone">Celular <span style="color:var(--color-danger);">*</span></label>
+          <input class="form-input" type="tel" id="edit-pac-telefone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" for="edit-pac-convenio">Convênio</label>
+          <input class="form-input" type="text" id="edit-pac-convenio" placeholder="Ex: Particular">
+        </div>
+      </div>
+      <div style="margin-top:var(--space-4);">
+        <label class="form-label" style="margin-bottom:var(--space-2);display:block;">Endereço <span style="font-size:var(--text-xs);font-weight:400;color:var(--color-text-muted);">— CEP preenche automaticamente</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
+          <div>
+            <input class="form-input" type="text" id="edit-pac-cep" placeholder="CEP 00000-000" maxlength="9">
+            <span id="edit-pac-cep-hint" style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;display:none;"></span>
+          </div>
+          <input class="form-input" type="text" id="edit-pac-numero" placeholder="Número">
+        </div>
+        <input class="form-input" type="text" id="edit-pac-logradouro" placeholder="Logradouro" style="margin-bottom:var(--space-2);">
+        <div style="display:grid;grid-template-columns:1fr 1fr 52px;gap:var(--space-2);">
+          <input class="form-input" type="text" id="edit-pac-bairro" placeholder="Bairro">
+          <input class="form-input" type="text" id="edit-pac-cidade" placeholder="Cidade">
+          <input class="form-input" type="text" id="edit-pac-estado" placeholder="UF" style="padding-left:var(--space-2);padding-right:var(--space-2);">
+        </div>
       </div>
       <div class="form-group" style="margin-top:var(--space-4);">
         <label class="form-label" for="edit-pac-obs">Observações</label>
@@ -1023,7 +1206,14 @@ function initials(name) {
 
 async function apiFetch(path, opts = {}) {
   opts.headers = { ...opts.headers, Authorization: `Bearer ${secToken()}` };
-  const res = await fetch(API_BASE + path, opts);
+  let res;
+  try {
+    res = await fetch(API_BASE + path, opts);
+  } catch (e) {
+    const err = new Error('Não foi possível conectar ao servidor. Verifique sua internet.');
+    err._network = true;
+    throw err;
+  }
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('sec_token');
     localStorage.removeItem('sec_user');
@@ -1031,8 +1221,31 @@ async function apiFetch(path, opts = {}) {
     return;
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || `Erro ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(data.detail || `Erro ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
+}
+
+function friendlyError(err) {
+  const msg = (err?.message || '').toLowerCase();
+  const status = err?.status || 0;
+  if (err?._network || msg.includes('failed to fetch') || msg.includes('conectar ao servidor')) {
+    return 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
+  }
+  if (msg.includes('processamento com ia')) {
+    return 'O serviço de IA está temporariamente indisponível. Aguarde alguns instantes e tente novamente.';
+  }
+  if (msg.includes('transcri') || msg.includes('áudio') || msg.includes('audio')) {
+    return 'Não foi possível processar o áudio. Verifique sua conexão e tente gravar novamente.';
+  }
+  if (status === 409) return 'Já existe um cadastro com essas informações.';
+  if (status === 401 || status === 403) return 'Sua sessão expirou. Faça login novamente.';
+  if (status >= 500) return 'O serviço está temporariamente indisponível. Tente novamente em alguns instantes.';
+  if (status === 404) return 'As informações solicitadas não foram encontradas.';
+  return err?.message || 'Algo deu errado. Tente novamente.';
 }
 
 /* ── User info — lê do JWT para garantir dados do usuário atual ── */
@@ -1408,8 +1621,9 @@ document.getElementById('ag-mic-btn').addEventListener('click', async () => {
         document.getElementById('ag-rec-feedback').innerHTML =
           `<div class="ai-bubble" style="font-size:var(--text-sm);margin-bottom:var(--space-4);">${escHtml(texto)}</div>`;
       } catch(e) {
-        console.error('Transcription error:', e);
-        document.getElementById('ag-mic-label').textContent = 'Erro na transcrição';
+        document.getElementById('ag-mic-label').textContent = 'Toque para gravar';
+        document.getElementById('ag-rec-feedback').innerHTML =
+          `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${friendlyError(e)}</div>`;
       }
     };
     _agRec.start();
@@ -1707,6 +1921,7 @@ async function carregarPacientes() {
   try {
     _pacientes = await apiFetch('/sec/pacientes');
   } catch(e) { console.error('Erro ao carregar pacientes:', e); _pacientes = []; }
+  renderKpis();
   renderPacTab(_pacTabQ);
 }
 
@@ -1735,7 +1950,7 @@ function renderPacLista(q) {
   el.innerHTML = lista.map(p =>
     `<div class="pac-item" data-id="${p.id}" data-nome="${escHtml(p.nome)}">
       <div class="pac-avatar">${initials(p.nome)}</div>
-      <span class="pac-nome">${escHtml(p.nome)}</span>
+      <span class="pac-nome">${escHtml(titleCase(p.nome))}</span>
     </div>`
   ).join('');
   el.querySelectorAll('.pac-item').forEach(item => {
@@ -1780,8 +1995,9 @@ document.getElementById('at-mic-btn').addEventListener('click', async () => {
         document.getElementById('at-rec-feedback').innerHTML =
           `<div class="ai-bubble" style="font-size:var(--text-sm);margin-bottom:var(--space-3);">${escHtml(texto)}</div>`;
       } catch(e) {
-        console.error('Transcription error:', e);
-        document.getElementById('at-mic-label').textContent = 'Erro na transcrição';
+        document.getElementById('at-mic-label').textContent = 'Toque para gravar';
+        document.getElementById('at-rec-feedback').innerHTML =
+          `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${friendlyError(e)}</div>`;
       }
     };
     _atRec.start();
@@ -1895,23 +2111,158 @@ document.getElementById('rev-gerar-btn').addEventListener('click', () => {
    TAB PACIENTES
 ══════════════════════════════════════════════ */
 let _pacTabQ = '';
+let _pacTabPage = 0;
+const _PAC_PAGE_SIZE = 20;
+let _kpiAtivos = new Set(); // status selecionados: 'verde','azul','amarelo','vermelho'
 
-function renderPacTab(q) {
-  const lista = _pacientes.filter(p => !q || p.nome.toLowerCase().includes(q.toLowerCase()));
+function _kpiStatus(p) {
+  const vs = visitaStatus(p.ultima_consulta);
+  if (!vs) return 'sem';
+  if (vs.cor === '#2D6A4F') return 'verde';
+  if (vs.cor === '#1E3A5F') return 'azul';
+  if (vs.cor === '#92600A') return 'amarelo';
+  return 'vermelho';
+}
+
+function renderKpis() {
+  const contagem = { verde: 0, azul: 0, amarelo: 0, vermelho: 0, sem: 0 };
+  _pacientes.forEach(p => contagem[_kpiStatus(p)]++);
+  const total = _pacientes.length;
+  const totalDiv = total || 1;
+
+  ['verde','azul','amarelo','vermelho','sem'].forEach(k => {
+    const pct = (contagem[k] / totalDiv * 100).toFixed(1);
+    const bar = document.getElementById(`kpi-bar-${k}`);
+    if (bar) bar.style.width = pct + '%';
+    const num = document.getElementById(`kpi-num-${k}`);
+    if (num) num.textContent = contagem[k];
+  });
+
+  const label = document.getElementById('kpi-total-label');
+  if (label) label.textContent = `${total} paciente${total !== 1 ? 's' : ''}`;
+
+  const area = document.getElementById('pac-kpi-area');
+  if (area) area.style.display = total ? '' : 'none';
+}
+
+function toggleKpiFilter(status) {
+  if (_kpiAtivos.has(status)) _kpiAtivos.delete(status);
+  else _kpiAtivos.add(status);
+
+  document.querySelectorAll('.kpi-chip').forEach(chip => {
+    chip.classList.toggle('active', _kpiAtivos.has(chip.dataset.kpi));
+  });
+  const limpar = document.getElementById('kpi-limpar');
+  if (limpar) limpar.style.display = _kpiAtivos.size ? '' : 'none';
+  _pacTabPage = 0;
+  renderPacTab(_pacTabQ);
+}
+
+function limparKpiFilter() {
+  _kpiAtivos.clear();
+  document.querySelectorAll('.kpi-chip').forEach(c => c.classList.remove('active'));
+  const limpar = document.getElementById('kpi-limpar');
+  if (limpar) limpar.style.display = 'none';
+  _pacTabPage = 0;
+  renderPacTab(_pacTabQ);
+}
+
+function titleCase(str) {
+  if (!str) return str;
+  return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
+function calcIdade(dataNasc) {
+  if (!dataNasc) return null;
+  const hoje = new Date();
+  const nasc = new Date(dataNasc + 'T00:00:00');
+  if (isNaN(nasc.getTime())) return null;
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade >= 0 ? idade : null;
+}
+
+function fmtTelefone(tel) {
+  if (!tel) return null;
+  const d = tel.replace(/\D/g, '');
+  if (d.length === 13) return `(${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`;
+  if (d.length === 12) return `(${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`;
+  if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  return tel;
+}
+
+function visitaStatus(iso) {
+  if (!iso) return null;
+  const hoje = new Date();
+  const visita = new Date(iso + 'T00:00:00');
+  if (isNaN(visita.getTime())) return null;
+  const dias = Math.floor((hoje - visita) / 86400000);
+  if (dias <= 30)  return { cor: '#2D6A4F', bg: '#EDF7F2', label: 'Última visita' };
+  if (dias <= 60)  return { cor: '#1E3A5F', bg: '#EFF6FF', label: 'Última visita' };
+  if (dias <= 90)  return { cor: '#92600A', bg: '#FEF7EC', label: 'Última visita' };
+  return           { cor: '#9B1C1C', bg: '#FEF2F2', label: 'Última visita' };
+}
+
+function fmtDataBr(iso) {
+  if (!iso) return '';
+  const [a, m, d] = iso.split('-');
+  return `${d}/${m}/${a}`;
+}
+
+function renderPacTab(q, page) {
+  if (page !== undefined) _pacTabPage = page;
+  let lista = _pacientes.filter(p => !q || p.nome.toLowerCase().includes(q.toLowerCase()));
+  if (_kpiAtivos.size > 0) lista = lista.filter(p => _kpiAtivos.has(_kpiStatus(p)));
   const el = document.getElementById('pac-tab-lista');
   if (!el) return;
   if (!lista.length) {
-    el.innerHTML = `<div style="padding:var(--space-8) var(--space-4);text-align:center;font-size:var(--text-sm);color:var(--color-text-muted);">${_pacientes.length ? 'Nenhum paciente encontrado.' : 'Ainda não há pacientes cadastrados.'}</div>`;
+    let msg, sub = '';
+    if (!_pacientes.length) {
+      msg = 'Ainda não há pacientes cadastrados.';
+    } else if (_kpiAtivos.size > 0 && q) {
+      msg = 'Nenhum paciente corresponde à busca e ao filtro ativo.';
+      sub = '<br><button onclick="limparKpiFilter()" style="margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Limpar filtro</button>';
+    } else if (_kpiAtivos.size > 0) {
+      const nomes = { verde:'Ativos', azul:'Regulares', amarelo:'Atenção', vermelho:'Inativos', sem:'Sem registro' };
+      const labels = [..._kpiAtivos].map(k => nomes[k] || k).join(', ');
+      msg = `Nenhum paciente em: ${labels}.`;
+      sub = '<br><button onclick="limparKpiFilter()" style="margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Limpar filtro</button>';
+    } else {
+      msg = 'Nenhum paciente encontrado.';
+    }
+    el.innerHTML = `<div style="padding:var(--space-8) var(--space-4);text-align:center;font-size:var(--text-sm);color:var(--color-text-muted);">${msg}${sub}</div>`;
     return;
   }
-  el.innerHTML = lista.map(p => {
+  const totalPag = Math.ceil(lista.length / _PAC_PAGE_SIZE);
+  if (_pacTabPage >= totalPag) _pacTabPage = totalPag - 1;
+  const inicio = _pacTabPage * _PAC_PAGE_SIZE;
+  const pagina = lista.slice(inicio, inicio + _PAC_PAGE_SIZE);
+
+  const rows = pagina.map(p => {
     try {
-      const sub = [p.cpf, p.data_nascimento ? 'Nasc. ' + fmtDataBr(p.data_nascimento) : ''].filter(Boolean).join(' · ');
+      const nome = titleCase(p.nome);
+      const idade = calcIdade(p.data_nascimento);
+      const tel = fmtTelefone(p.telefone);
+      const sub = [
+        idade !== null ? `${idade} anos` : (p.data_nascimento ? 'Nasc. ' + fmtDataBr(p.data_nascimento) : null),
+        tel,
+        p.convenio || null,
+      ].filter(Boolean).join(' · ');
+      const vs = visitaStatus(p.ultima_consulta);
+      const visitaHtml = vs
+        ? `<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;">
+             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${vs.cor};flex-shrink:0;box-shadow:0 0 0 2px ${vs.bg};"></span>
+             <span style="font-size:var(--text-xs);color:var(--color-text-muted);">Última visita ${fmtDataBr(p.ultima_consulta)}</span>
+           </div>`
+        : '';
       return `<div class="pac-list-item">
         <div class="pac-list-avatar">${initials(p.nome)}</div>
         <div class="pac-list-info" style="min-width:0;">
-          <div class="pac-list-nome">${escHtml(p.nome)}</div>
+          <div class="pac-list-nome">${escHtml(nome)}</div>
           ${sub ? `<div class="pac-list-sub">${escHtml(sub)}</div>` : ''}
+          ${visitaHtml}
         </div>
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); editPacOpen(${p.id})" style="padding:8px; border-radius:50%; flex-shrink:0; margin-left:var(--space-2);" title="Editar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1925,26 +2276,39 @@ function renderPacTab(q) {
       return "";
     }
   }).join('');
-}
 
-function fmtDataBr(iso) {
-  if (!iso) return '';
-  const [a, m, d] = iso.split('-');
-  return `${d}/${m}/${a}`;
+  const paginacao = totalPag > 1
+    ? `<div style="display:flex;align-items:center;justify-content:center;gap:var(--space-4);padding:var(--space-4);border-top:var(--border);font-size:var(--text-sm);color:var(--color-text-secondary);">
+        <button class="btn btn-ghost btn-sm" ${_pacTabPage === 0 ? 'disabled' : ''} onclick="renderPacTab(_pacTabQ,${_pacTabPage-1})">← Anterior</button>
+        <span>${_pacTabPage + 1} / ${totalPag} <span style="color:var(--color-text-muted);">(${lista.length} pacientes)</span></span>
+        <button class="btn btn-ghost btn-sm" ${_pacTabPage >= totalPag-1 ? 'disabled' : ''} onclick="renderPacTab(_pacTabQ,${_pacTabPage+1})">Próxima →</button>
+      </div>`
+    : `<div style="padding:var(--space-3) var(--space-4);text-align:right;font-size:var(--text-sm);color:var(--color-text-muted);border-top:var(--border);">${lista.length} paciente${lista.length !== 1 ? 's' : ''}</div>`;
+
+  el.innerHTML = rows + paginacao;
 }
 
 document.getElementById('pac-tab-busca').addEventListener('input', e => {
   _pacTabQ = e.target.value.trim();
+  _pacTabPage = 0;
   renderPacTab(_pacTabQ);
 });
 
 /* Sheet novo paciente */
 function novoPacOpen() {
-  document.getElementById('novo-pac-nome').value = '';
-  document.getElementById('novo-pac-cpf').value  = '';
-  document.getElementById('novo-pac-nasc').value = '';
-  document.getElementById('novo-pac-obs').value  = '';
+  ['novo-pac-nome','novo-pac-nasc','novo-pac-obs',
+   'novo-pac-telefone','novo-pac-convenio',
+   'novo-pac-cep','novo-pac-numero','novo-pac-logradouro',
+   'novo-pac-bairro','novo-pac-cidade','novo-pac-estado'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('novo-pac-cpf').value = '';
+  document.getElementById('novo-pac-cpf-hint').style.display = 'none';
+  document.getElementById('novo-pac-cpf').style.borderColor = '';
+  document.getElementById('novo-pac-cep-hint').style.display = 'none';
   document.getElementById('novo-pac-erro').style.display = 'none';
+  bindCpfInput('novo-pac-cpf', 'novo-pac-cpf-hint');
   document.getElementById('novo-pac-salvar').disabled = false;
   document.getElementById('novo-pac-salvar').textContent = 'Cadastrar paciente';
   document.getElementById('novo-pac-overlay').style.display = 'block';
@@ -1959,6 +2323,87 @@ document.getElementById('btn-novo-pac').addEventListener('click', novoPacOpen);
 document.getElementById('novo-pac-overlay').addEventListener('click', novoPacClose);
 document.getElementById('novo-pac-cancelar').addEventListener('click', novoPacClose);
 
+/* CPF: máscara, dígito verificador e bind */
+function cpfMascara(v) {
+  return v.replace(/\D/g, '').slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
+function cpfValido(cpf) {
+  const n = cpf.replace(/\D/g, '');
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(n[i]) * (10 - i);
+  let r = (soma * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  if (r !== parseInt(n[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(n[i]) * (11 - i);
+  r = (soma * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  return r === parseInt(n[10]);
+}
+
+function bindCpfInput(inputId, hintId) {
+  const el = document.getElementById(inputId);
+  const hint = document.getElementById(hintId);
+  if (!el || !hint) return;
+  el.addEventListener('input', () => { el.value = cpfMascara(el.value); });
+  el.addEventListener('blur', () => {
+    const v = el.value.replace(/\D/g, '');
+    if (!v.length) { hint.style.display = 'none'; el.style.borderColor = ''; return; }
+    if (!cpfValido(el.value)) {
+      hint.textContent = 'CPF inválido'; hint.style.color = 'var(--color-danger)';
+      hint.style.display = 'block'; el.style.borderColor = 'var(--color-danger)';
+    } else {
+      hint.textContent = 'CPF válido'; hint.style.color = 'var(--color-success)';
+      hint.style.display = 'block'; el.style.borderColor = 'var(--color-success)';
+    }
+  });
+  el.addEventListener('focus', () => { hint.style.display = 'none'; el.style.borderColor = ''; });
+}
+
+/* CEP auto-fill via ViaCEP */
+async function buscarCep(cep, prefix) {
+  const d = cep.replace(/\D/g, '');
+  if (d.length !== 8) return;
+  const hint = document.getElementById(`${prefix}-cep-hint`);
+  if (hint) { hint.textContent = 'Buscando...'; hint.style.color = 'var(--color-text-muted)'; hint.style.display = 'block'; }
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${d}/json/`);
+    const data = await r.json();
+    if (data.erro) {
+      if (hint) { hint.textContent = 'CEP não encontrado.'; hint.style.color = 'var(--color-danger)'; }
+      return;
+    }
+    document.getElementById(`${prefix}-logradouro`).value = data.logradouro || '';
+    document.getElementById(`${prefix}-bairro`).value     = data.bairro     || '';
+    document.getElementById(`${prefix}-cidade`).value     = data.localidade || '';
+    document.getElementById(`${prefix}-estado`).value     = data.uf         || '';
+    if (hint) { hint.textContent = ''; hint.style.display = 'none'; }
+    document.getElementById(`${prefix}-numero`).focus();
+  } catch(e) {
+    if (hint) { hint.textContent = 'Erro ao buscar CEP.'; hint.style.color = 'var(--color-danger)'; hint.style.display = 'block'; }
+  }
+}
+
+function fmtCep(v) {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0,5)}-${d.slice(5)}` : d;
+}
+
+document.getElementById('edit-pac-cep').addEventListener('input', function() {
+  this.value = fmtCep(this.value);
+  if (this.value.replace(/\D/g,'').length === 8) buscarCep(this.value, 'edit-pac');
+});
+
+document.getElementById('novo-pac-cep').addEventListener('input', function() {
+  this.value = fmtCep(this.value);
+  if (this.value.replace(/\D/g,'').length === 8) buscarCep(this.value, 'novo-pac');
+});
+
 /* Sheet editar paciente */
 function editPacOpen(id) {
   const p = _pacientes.find(x => x.id == id);
@@ -1966,15 +2411,26 @@ function editPacOpen(id) {
     console.warn("Paciente não encontrado para edição:", id);
     return;
   }
-  document.getElementById('edit-pac-id').value = p.id;
-  document.getElementById('edit-pac-nome').value = p.nome;
-  document.getElementById('edit-pac-cpf').value  = p.cpf || '';
-  document.getElementById('edit-pac-nasc').value = p.data_nascimento || '';
-  document.getElementById('edit-pac-endereco').value = p.endereco || '';
-  document.getElementById('edit-pac-obs').value  = p.observacoes || '';
+  document.getElementById('edit-pac-id').value       = p.id;
+  document.getElementById('edit-pac-nome').value     = p.nome;
+  document.getElementById('edit-pac-cpf').value      = p.cpf || '';
+  document.getElementById('edit-pac-nasc').value     = p.data_nascimento || '';
+  document.getElementById('edit-pac-telefone').value = p.telefone || '';
+  document.getElementById('edit-pac-convenio').value = p.convenio || '';
+  document.getElementById('edit-pac-cep').value      = fmtCep(p.cep || '');
+  document.getElementById('edit-pac-numero').value   = p.numero || '';
+  document.getElementById('edit-pac-logradouro').value = p.logradouro || '';
+  document.getElementById('edit-pac-bairro').value   = p.bairro || '';
+  document.getElementById('edit-pac-cidade').value   = p.cidade || '';
+  document.getElementById('edit-pac-estado').value   = p.estado || '';
+  document.getElementById('edit-pac-obs').value      = p.observacoes || '';
+  document.getElementById('edit-pac-cep-hint').style.display = 'none';
+  document.getElementById('edit-pac-cpf-hint').style.display = 'none';
+  document.getElementById('edit-pac-cpf').style.borderColor = '';
   document.getElementById('edit-pac-erro').style.display = 'none';
   document.getElementById('edit-pac-salvar').disabled = false;
   document.getElementById('edit-pac-salvar').textContent = 'Salvar alterações';
+  bindCpfInput('edit-pac-cpf', 'edit-pac-cpf-hint');
   document.getElementById('edit-pac-overlay').style.display = 'block';
   document.getElementById('edit-pac-sheet').style.display   = 'block';
 }
@@ -1987,12 +2443,18 @@ document.getElementById('edit-pac-cancelar').addEventListener('click', editPacCl
 
 document.getElementById('edit-pac-salvar').addEventListener('click', async () => {
   const idValue = document.getElementById('edit-pac-id').value;
-  const nome = document.getElementById('edit-pac-nome').value.trim();
-  if (!nome) {
-    document.getElementById('edit-pac-erro').textContent = 'O nome é obrigatório.';
-    document.getElementById('edit-pac-erro').style.display = 'block';
-    return;
+  const erroEl = document.getElementById('edit-pac-erro');
+  function erroEdit(msg, focusId) {
+    erroEl.textContent = msg; erroEl.style.display = 'block';
+    if (focusId) document.getElementById(focusId).focus();
   }
+  const nome = document.getElementById('edit-pac-nome').value.trim();
+  if (!nome) return erroEdit('O nome é obrigatório.', 'edit-pac-nome');
+  if (!document.getElementById('edit-pac-nasc').value) return erroEdit('A data de nascimento é obrigatória.', 'edit-pac-nasc');
+  const cpfRaw = document.getElementById('edit-pac-cpf').value.replace(/\D/g, '');
+  if (!cpfRaw) return erroEdit('O CPF é obrigatório.', 'edit-pac-cpf');
+  if (!cpfValido(document.getElementById('edit-pac-cpf').value)) return erroEdit('CPF inválido. Verifique os dígitos.', 'edit-pac-cpf');
+  if (!document.getElementById('edit-pac-telefone').value.trim()) return erroEdit('O celular é obrigatório.', 'edit-pac-telefone');
   const btn = document.getElementById('edit-pac-salvar');
   btn.disabled = true; btn.textContent = 'Salvando...';
   document.getElementById('edit-pac-erro').style.display = 'none';
@@ -2002,10 +2464,17 @@ document.getElementById('edit-pac-salvar').addEventListener('click', async () =>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nome,
-        cpf:             document.getElementById('edit-pac-cpf').value.trim()  || null,
-        data_nascimento: document.getElementById('edit-pac-nasc').value         || null,
-        endereco:        document.getElementById('edit-pac-endereco').value.trim() || null,
-        observacoes:     document.getElementById('edit-pac-obs').value.trim()   || null,
+        cpf:             document.getElementById('edit-pac-cpf').value.trim()      || null,
+        data_nascimento: document.getElementById('edit-pac-nasc').value            || null,
+        telefone:        document.getElementById('edit-pac-telefone').value.trim() || null,
+        convenio:        document.getElementById('edit-pac-convenio').value.trim() || null,
+        cep:             document.getElementById('edit-pac-cep').value.replace(/\D/g,'') || null,
+        numero:          document.getElementById('edit-pac-numero').value.trim()   || null,
+        logradouro:      document.getElementById('edit-pac-logradouro').value.trim() || null,
+        bairro:          document.getElementById('edit-pac-bairro').value.trim()   || null,
+        cidade:          document.getElementById('edit-pac-cidade').value.trim()   || null,
+        estado:          document.getElementById('edit-pac-estado').value.trim()   || null,
+        observacoes:     document.getElementById('edit-pac-obs').value.trim()      || null,
       }),
     });
     editPacClose();
@@ -2019,12 +2488,18 @@ document.getElementById('edit-pac-salvar').addEventListener('click', async () =>
 });
 
 document.getElementById('novo-pac-salvar').addEventListener('click', async () => {
-  const nome = document.getElementById('novo-pac-nome').value.trim();
-  if (!nome) {
-    document.getElementById('novo-pac-erro').textContent = 'O nome é obrigatório.';
-    document.getElementById('novo-pac-erro').style.display = 'block';
-    return;
+  const erroEl = document.getElementById('novo-pac-erro');
+  function erroNovo(msg, focusId) {
+    erroEl.textContent = msg; erroEl.style.display = 'block';
+    if (focusId) document.getElementById(focusId).focus();
   }
+  const nome = document.getElementById('novo-pac-nome').value.trim();
+  if (!nome) return erroNovo('O nome é obrigatório.', 'novo-pac-nome');
+  if (!document.getElementById('novo-pac-nasc').value) return erroNovo('A data de nascimento é obrigatória.', 'novo-pac-nasc');
+  const cpfRaw = document.getElementById('novo-pac-cpf').value.replace(/\D/g, '');
+  if (!cpfRaw) return erroNovo('O CPF é obrigatório.', 'novo-pac-cpf');
+  if (!cpfValido(document.getElementById('novo-pac-cpf').value)) return erroNovo('CPF inválido. Verifique os dígitos.', 'novo-pac-cpf');
+  if (!document.getElementById('novo-pac-telefone').value.trim()) return erroNovo('O celular é obrigatório.', 'novo-pac-telefone');
   const btn = document.getElementById('novo-pac-salvar');
   btn.disabled = true; btn.textContent = 'Cadastrando…';
   document.getElementById('novo-pac-erro').style.display = 'none';
@@ -2034,9 +2509,17 @@ document.getElementById('novo-pac-salvar').addEventListener('click', async () =>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nome,
-        cpf:             document.getElementById('novo-pac-cpf').value.trim()  || null,
-        data_nascimento: document.getElementById('novo-pac-nasc').value         || null,
-        observacoes:     document.getElementById('novo-pac-obs').value.trim()   || null,
+        cpf:             document.getElementById('novo-pac-cpf').value.replace(/\D/g,'')  || null,
+        data_nascimento: document.getElementById('novo-pac-nasc').value                    || null,
+        telefone:        document.getElementById('novo-pac-telefone').value.trim()         || null,
+        convenio:        document.getElementById('novo-pac-convenio').value.trim()         || null,
+        cep:             document.getElementById('novo-pac-cep').value.replace(/\D/g,'')  || null,
+        numero:          document.getElementById('novo-pac-numero').value.trim()           || null,
+        logradouro:      document.getElementById('novo-pac-logradouro').value.trim()       || null,
+        bairro:          document.getElementById('novo-pac-bairro').value.trim()           || null,
+        cidade:          document.getElementById('novo-pac-cidade').value.trim()           || null,
+        estado:          document.getElementById('novo-pac-estado').value.trim()           || null,
+        observacoes:     document.getElementById('novo-pac-obs').value.trim()              || null,
       }),
     });
     novoPacClose();
@@ -2046,6 +2529,115 @@ document.getElementById('novo-pac-salvar').addEventListener('click', async () =>
     document.getElementById('novo-pac-erro').textContent = e.message;
     document.getElementById('novo-pac-erro').style.display = 'block';
     btn.disabled = false; btn.textContent = 'Cadastrar paciente';
+  }
+});
+
+/* ══════════════════════════════════════════════
+   IMPORTAR PACIENTES
+══════════════════════════════════════════════ */
+let _importarPacientes = [];
+
+function importarPacOpen() {
+  _importarPacientes = [];
+  document.getElementById('importar-preview').style.display = 'none';
+  document.getElementById('importar-erro').style.display = 'none';
+  document.getElementById('importar-resultado').style.display = 'none';
+  document.getElementById('importar-pac-confirmar').disabled = true;
+  document.getElementById('importar-file-input').value = '';
+  document.getElementById('importar-upload-area').style.display = '';
+  document.getElementById('importar-pac-overlay').style.display = 'block';
+  document.getElementById('importar-pac-sheet').style.display = 'block';
+}
+function importarPacClose() {
+  document.getElementById('importar-pac-overlay').style.display = 'none';
+  document.getElementById('importar-pac-sheet').style.display = 'none';
+}
+
+document.getElementById('btn-importar-pac').addEventListener('click', importarPacOpen);
+document.getElementById('importar-pac-overlay').addEventListener('click', importarPacClose);
+document.getElementById('importar-pac-cancelar').addEventListener('click', importarPacClose);
+
+document.getElementById('importar-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    document.getElementById('importar-erro').style.display = 'none';
+    document.getElementById('importar-resultado').style.display = 'none';
+    try {
+      const json = JSON.parse(ev.target.result);
+      const lista = Array.isArray(json) ? json : (json.patients || json.pacientes || []);
+      if (!lista.length) throw new Error('Nenhum paciente encontrado no arquivo.');
+      _importarPacientes = lista.map(p => ({
+        nome:            (p.name || p.nome || '').trim(),
+        telefone:        p.phone || p.telefone_digits || p.telefone || null,
+        data_nascimento: p.birth_date || p.data_nascimento || null,
+        convenio:        p.payment_type || p.convenio || null,
+        ultima_consulta: p.last_visit || p.ultima_consulta || null,
+        codigo:          p.record_number || p.codigo || p.system_id || null,
+      })).filter(p => p.nome);
+      if (!_importarPacientes.length) throw new Error('Nenhum paciente válido no arquivo.');
+      document.getElementById('importar-preview-count').textContent = `${_importarPacientes.length} paciente(s) encontrado(s)`;
+      const fmt = (d) => {
+        if (!d) return '—';
+        const parts = d.split('-');
+        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
+      };
+      document.getElementById('importar-preview-tbody').innerHTML = _importarPacientes.map(p =>
+        `<tr style="border-bottom:var(--border);">
+          <td style="padding:var(--space-2) var(--space-3);">${escHtml(titleCase(p.nome))}</td>
+          <td style="padding:var(--space-2) var(--space-3);color:var(--color-text-secondary);">${fmt(p.data_nascimento)}</td>
+          <td style="padding:var(--space-2) var(--space-3);color:var(--color-text-secondary);">${escHtml(p.convenio || '—')}</td>
+        </tr>`
+      ).join('');
+      document.getElementById('importar-upload-area').style.display = 'none';
+      document.getElementById('importar-preview').style.display = '';
+      document.getElementById('importar-pac-confirmar').disabled = false;
+    } catch (err) {
+      document.getElementById('importar-erro').textContent = `Erro ao ler arquivo: ${err.message}`;
+      document.getElementById('importar-erro').style.display = 'block';
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('importar-pac-confirmar').addEventListener('click', async () => {
+  const btn = document.getElementById('importar-pac-confirmar');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+  document.getElementById('importar-erro').style.display = 'none';
+  try {
+    const res = await apiFetch('/sec/pacientes/importar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pacientes: _importarPacientes }),
+    });
+    const resultEl = document.getElementById('importar-resultado');
+    let html = `<div style="padding:var(--space-4);background:var(--color-success-bg);border-radius:var(--radius-md);border:1px solid #b7dfc9;">
+      <div style="font-weight:600;color:var(--color-success);margin-bottom:var(--space-2);">Importação concluída</div>
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary);">
+        <span style="color:var(--color-success);font-weight:600;">${res.criados} criado(s)</span> ·
+        ${res.ignorados} ignorado(s) (já existiam)`;
+    if (res.erros && res.erros.length) {
+      html += ` · <span style="color:var(--color-danger);">${res.erros.length} erro(s)</span>`;
+    }
+    html += `</div>`;
+    if (res.erros && res.erros.length) {
+      html += `<div style="margin-top:var(--space-3);font-size:var(--text-xs);color:var(--color-danger);">${res.erros.map(e => escHtml(e.nome)).join(', ')}</div>`;
+    }
+    html += `</div>`;
+    resultEl.innerHTML = html;
+    resultEl.style.display = '';
+    document.getElementById('importar-preview').style.display = 'none';
+    btn.textContent = 'Importar novamente';
+    btn.disabled = false;
+    _importarPacientes = [];
+    await carregarPacientes();
+  } catch (e) {
+    document.getElementById('importar-erro').textContent = e.message;
+    document.getElementById('importar-erro').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Importar pacientes';
   }
 });
 
@@ -2320,7 +2912,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 });
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.336';
+const APP_VERSION = 'Beta-0.344';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

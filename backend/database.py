@@ -188,6 +188,27 @@ def _migrate():
             conn.execute("ALTER TABLE paciente ADD COLUMN sugestao_ia TEXT")
         if "sugestao_ia_em" not in cols_pac2:
             conn.execute("ALTER TABLE paciente ADD COLUMN sugestao_ia_em TEXT")
+
+        # Dados de contato e convênio (importação de cadastro externo)
+        cols_pac3 = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
+        if "telefone" not in cols_pac3:
+            conn.execute("ALTER TABLE paciente ADD COLUMN telefone TEXT")
+        if "convenio" not in cols_pac3:
+            conn.execute("ALTER TABLE paciente ADD COLUMN convenio TEXT")
+        if "ultima_consulta" not in cols_pac3:
+            conn.execute("ALTER TABLE paciente ADD COLUMN ultima_consulta TEXT")
+
+        # Endereço estruturado (CEP + logradouro + número + bairro + cidade + estado)
+        cols_pac4 = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
+        for col in ("cep", "logradouro", "numero", "bairro", "cidade", "estado"):
+            if col not in cols_pac4:
+                conn.execute(f"ALTER TABLE paciente ADD COLUMN {col} TEXT")
+
+        # Soft delete em paciente deve vir antes do índice que referencia deletado_em
+        cols_del = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
+        if "deletado_em" not in cols_del:
+            conn.execute("ALTER TABLE paciente ADD COLUMN deletado_em TEXT")
+
         conn.execute("DROP INDEX IF EXISTS idx_paciente_cpf_owner")
         conn.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_cpf_hash_owner
@@ -208,11 +229,10 @@ def _migrate():
             )
         """)
 
-        # Soft delete
-        for tabela in ("paciente", "sessao"):
-            cols_t = [r[1] for r in conn.execute(f"PRAGMA table_info({tabela})").fetchall()]
-            if "deletado_em" not in cols_t:
-                conn.execute(f"ALTER TABLE {tabela} ADD COLUMN deletado_em TEXT")
+        # Soft delete em sessao (paciente já foi tratado acima)
+        cols_sessao = [r[1] for r in conn.execute("PRAGMA table_info(sessao)").fetchall()]
+        if "deletado_em" not in cols_sessao:
+            conn.execute("ALTER TABLE sessao ADD COLUMN deletado_em TEXT")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS documento (
@@ -235,10 +255,7 @@ def _migrate():
         if "deletado_em" not in cols_doc:
             conn.execute("ALTER TABLE documento ADD COLUMN deletado_em TEXT")
 
-        # Multi-tenant: owner em nota_fiscal
-        cols_nf = [r[1] for r in conn.execute("PRAGMA table_info(nota_fiscal)").fetchall()]
-        if "owner_email" not in cols_nf:
-            conn.execute("ALTER TABLE nota_fiscal ADD COLUMN owner_email TEXT")
+        # (owner_email em nota_fiscal é adicionado após o CREATE TABLE abaixo)
 
         # Pacotes de sessões
         conn.execute("""
@@ -293,6 +310,11 @@ def _migrate():
             )
         """)
 
+        # Multi-tenant: owner em nota_fiscal (após CREATE TABLE)
+        cols_nf = [r[1] for r in conn.execute("PRAGMA table_info(nota_fiscal)").fetchall()]
+        if "owner_email" not in cols_nf:
+            conn.execute("ALTER TABLE nota_fiscal ADD COLUMN owner_email TEXT")
+
         # WebAuthn
         conn.execute("""
             CREATE TABLE IF NOT EXISTS usuario (
@@ -322,6 +344,9 @@ def _migrate():
                 ip          TEXT
             )
         """)
+
+        # Garante colunas owner_email/sec_email/paciente_nome em api_uso antes dos índices
+        _ensure_api_uso_cols(conn)
 
         conn.executescript("""
             CREATE INDEX IF NOT EXISTS idx_sessao_paciente_id ON sessao(paciente_id);
@@ -380,21 +405,46 @@ def get_audit_log(owner_email: str | None = None, limit: int = 200) -> list[dict
 
 # ---------- Paciente ----------
 
-def criar_paciente(nome: str, data_nascimento: str | None, observacoes: str | None, anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None, owner_email: str | None = None, conduta_tratamento: str | None = None) -> dict:
+def criar_paciente(
+    nome: str, data_nascimento: str | None, observacoes: str | None,
+    anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None,
+    owner_email: str | None = None, conduta_tratamento: str | None = None,
+    telefone: str | None = None, convenio: str | None = None, ultima_consulta: str | None = None,
+    cep: str | None = None, logradouro: str | None = None, numero: str | None = None,
+    bairro: str | None = None, cidade: str | None = None, estado: str | None = None,
+) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO paciente (nome, data_nascimento, observacoes, anamnese, cpf, cpf_hash, endereco, owner_email, conduta_tratamento, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco), owner_email, conduta_tratamento, _now()),
+            """INSERT INTO paciente
+               (nome, data_nascimento, observacoes, anamnese, cpf, cpf_hash, endereco,
+                owner_email, conduta_tratamento, telefone, convenio, ultima_consulta,
+                cep, logradouro, numero, bairro, cidade, estado, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _cpf_hash(cpf),
+             _encrypt_field(endereco), owner_email, conduta_tratamento, telefone, convenio,
+             ultima_consulta, cep, logradouro, numero, bairro, cidade, estado, _now()),
         )
         conn.commit()
         return _decrypt_paciente(_row_to_dict(conn.execute(_SQL_GET_PACIENTE_BY_ID, (cur.lastrowid,)).fetchone()))
 
 
-def atualizar_paciente(paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None, cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None) -> dict:
+def atualizar_paciente(
+    paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None,
+    cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None,
+    telefone: str | None = None, convenio: str | None = None,
+    cep: str | None = None, logradouro: str | None = None, numero: str | None = None,
+    bairro: str | None = None, cidade: str | None = None, estado: str | None = None,
+) -> dict:
     with get_conn() as conn:
         conn.execute(
-            "UPDATE paciente SET nome = ?, data_nascimento = ?, anamnese = ?, cpf = ?, cpf_hash = ?, endereco = ?, conduta_tratamento = ? WHERE id = ?",
-            (nome, data_nascimento, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco), conduta_tratamento, paciente_id),
+            """UPDATE paciente SET
+               nome=?, data_nascimento=?, anamnese=?, cpf=?, cpf_hash=?, endereco=?,
+               conduta_tratamento=?, telefone=?, convenio=?,
+               cep=?, logradouro=?, numero=?, bairro=?, cidade=?, estado=?
+               WHERE id=?""",
+            (nome, data_nascimento, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco),
+             conduta_tratamento, telefone, convenio,
+             cep, logradouro, numero, bairro, cidade, estado, paciente_id),
         )
         conn.commit()
         return _decrypt_paciente(_row_to_dict(conn.execute(_SQL_GET_PACIENTE_BY_ID, (paciente_id,)).fetchone()))
@@ -570,6 +620,11 @@ def encerrar_sessao(sessao_id: int, owner_email: str | None = None, cobrar: bool
             return {"teve_pacote": True, "sessao_avulsa_valor": None, "_ja_encerrada": True, "cobrar": cobrar}
         sessao_avulsa_valor = None
         if sessao:
+            data_sessao = sessao["data"] or date.today().isoformat()
+            conn.execute(
+                "UPDATE paciente SET ultima_consulta = ? WHERE id = ?",
+                (data_sessao, sessao["paciente_id"]),
+            )
             teve_pacote = _usar_sessao_pacote(conn, sessao["paciente_id"])
             if not teve_pacote and owner_email and cobrar:
                 valor = valor_override

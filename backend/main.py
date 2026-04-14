@@ -91,7 +91,7 @@ async def security_headers(request: Request, call_next):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https://accounts.google.com; "
+        "connect-src 'self' https://accounts.google.com https://viacep.com.br; "
         "frame-src https://accounts.google.com; "
         "object-src 'none';"
     )
@@ -113,8 +113,9 @@ _ROTAS_PUBLICAS = {
     "/auth/register/begin", "/auth/register/complete",
     "/auth/login/begin", "/auth/login/complete", "/auth/status",
     "/push/vapid-public-key",
+    "/healthz",
 }
-_PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known", "/secretaria/")
+_PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known", "/secretaria/", "/manual")
 
 @app.middleware("http")
 async def verificar_autenticacao(request: Request, call_next):
@@ -146,6 +147,51 @@ async def verificar_autenticacao(request: Request, call_next):
     return JSONResponse(status_code=401, content={"detail": ERR_NOT_AUTHENTICATED})
 
 
+# ---------- Health / Diagnóstico ----------
+
+@app.get("/healthz")
+async def healthz():
+    """Endpoint público de diagnóstico — verifica variáveis de ambiente e conectividade."""
+    import httpx
+    checks = {}
+
+    # Variáveis de ambiente obrigatórias
+    checks["groq_key_set"]    = bool(os.getenv("GROQ_API_KEY", "").strip())
+    checks["gemini_key_set"]  = bool(os.getenv("GOOGLE_AI_KEY", "").strip())
+    checks["enc_key_set"]     = bool(os.getenv("FIELD_ENCRYPTION_KEY", "").strip())
+
+    # Conectividade com Groq
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as hc:
+            r = await hc.get("https://api.groq.com/openai/v1/models",
+                             headers={"Authorization": f"Bearer {os.getenv('GROQ_API_KEY','')}"})
+        checks["groq_reachable"] = r.status_code in (200, 401)  # 401 = chave errada mas servidor acessível
+        checks["groq_auth_ok"]   = r.status_code == 200
+    except Exception as e:
+        checks["groq_reachable"] = False
+        checks["groq_auth_ok"]   = False
+        checks["groq_error"]     = str(e)
+
+    # Conectividade com Gemini
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as hc:
+            r = await hc.get(
+                f"https://generativelanguage.googleapis.com/v1beta/models?key={os.getenv('GOOGLE_AI_KEY','')}",
+            )
+        checks["gemini_reachable"] = r.status_code in (200, 400, 403)
+        checks["gemini_auth_ok"]   = r.status_code == 200
+    except Exception as e:
+        checks["gemini_reachable"] = False
+        checks["gemini_auth_ok"]   = False
+        checks["gemini_error"]     = str(e)
+
+    ok = all([
+        checks["groq_key_set"], checks["gemini_key_set"], checks["enc_key_set"],
+        checks.get("groq_reachable", False), checks.get("gemini_reachable", False),
+    ])
+    return {"status": "ok" if ok else "degraded", "checks": checks}
+
+
 # ---------- Schemas ----------
 
 class PacienteCreate(BaseModel):
@@ -156,6 +202,27 @@ class PacienteCreate(BaseModel):
     data_atendimento: str | None = None
     cpf: str | None = None
     endereco: str | None = None
+    telefone: str | None = None
+    convenio: str | None = None
+    cep: str | None = None
+    logradouro: str | None = None
+    numero: str | None = None
+    bairro: str | None = None
+    cidade: str | None = None
+    estado: str | None = None
+
+
+class PacienteImportItem(BaseModel):
+    nome: str
+    telefone: str | None = None
+    data_nascimento: str | None = None
+    convenio: str | None = None
+    ultima_consulta: str | None = None
+    codigo: str | None = None
+
+
+class PacienteImportBody(BaseModel):
+    pacientes: list[PacienteImportItem]
 
 
 class SessaoCreate(BaseModel):
@@ -319,6 +386,14 @@ class PacienteUpdate(BaseModel):
     cpf: str | None = None
     endereco: str | None = None
     conduta_tratamento: str | None = None
+    telefone: str | None = None
+    convenio: str | None = None
+    cep: str | None = None
+    logradouro: str | None = None
+    numero: str | None = None
+    bairro: str | None = None
+    cidade: str | None = None
+    estado: str | None = None
 
 
 @app.delete("/pacientes/{paciente_id}", status_code=204, responses={404: {"description": "Not Found"}})
@@ -340,7 +415,12 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
         raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, owner)
     try:
-        resultado = db.atualizar_paciente(paciente_id, body.nome, body.data_nascimento, body.anamnese, body.cpf, body.endereco, body.conduta_tratamento)
+        resultado = db.atualizar_paciente(
+            paciente_id, body.nome, body.data_nascimento, body.anamnese,
+            body.cpf, body.endereco, body.conduta_tratamento,
+            body.telefone, body.convenio,
+            body.cep, body.logradouro, body.numero, body.bairro, body.cidade, body.estado,
+        )
     except (sqlite3.IntegrityError, ValueError):
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
     db.registrar_audit(owner, "paciente_atualizar", f"id={paciente_id}", _client_ip(request))
@@ -371,7 +451,10 @@ async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody
         raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
-    anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), owner)
+    try:
+        anamnese_atualizada = await ai.complementar_anamnese(body.transcricao, paciente.get("anamnese"), owner)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     conduta_atual = paciente.get("conduta_tratamento")
     conduta_gerada = None
     if not conduta_atual:
@@ -404,7 +487,10 @@ async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, 
     if not paciente:
         raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
     _verificar_dono(paciente, _owner_email(request))
-    conduta_atualizada = await ai.complementar_conduta(body.transcricao, paciente.get("conduta_tratamento"), _owner_email(request))
+    try:
+        conduta_atualizada = await ai.complementar_conduta(body.transcricao, paciente.get("conduta_tratamento"), _owner_email(request))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     paciente_atualizado = db.atualizar_paciente(
         paciente_id, paciente["nome"], paciente.get("data_nascimento"),
         paciente.get("anamnese"), paciente.get("cpf"), paciente.get("endereco"),
@@ -421,7 +507,10 @@ async def sugerir_conduta(paciente_id: int, request: Request):
     _verificar_dono(paciente, _owner_email(request))
     if not paciente.get("anamnese"):
         raise HTTPException(status_code=400, detail="Paciente não possui anamnese registrada. Registre a anamnese primeiro.")
-    sugestao = await ai.sugerir_conduta(paciente["anamnese"], _owner_email(request))
+    try:
+        sugestao = await ai.sugerir_conduta(paciente["anamnese"], _owner_email(request))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     return {"sugestao": sugestao}
 
 
@@ -435,7 +524,10 @@ async def gerar_sugestao(paciente_id: int, request: Request):
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
-    sugestao = await ai.gerar_sugestao_paciente(paciente.get("anamnese") or "", sessoes, owner, paciente_nome=paciente.get("nome"))
+    try:
+        sugestao = await ai.gerar_sugestao_paciente(paciente.get("anamnese") or "", sessoes, owner, paciente_nome=paciente.get("nome"))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     sugestao_json = _json.dumps(sugestao, ensure_ascii=False)
     db.salvar_sugestao_ia(paciente_id, sugestao_json)
     return {"sugestao_ia": sugestao, "sugestao_ia_em": db.get_paciente(paciente_id).get("sugestao_ia_em")}
@@ -462,7 +554,10 @@ async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBod
         return {"anamnese": None, "conduta_tratamento": paciente.get("conduta_tratamento")}
 
     # 1. Formata anamnese
-    anamnese_formatada = await ai.formatar_anamnese_texto(texto, owner)
+    try:
+        anamnese_formatada = await ai.formatar_anamnese_texto(texto, owner)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
 
     # 2. Gera conduta se vazia (síncrono — retorna para o frontend)
     conduta_atual = paciente.get("conduta_tratamento")
@@ -491,7 +586,10 @@ async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, requ
     _verificar_dono(paciente, _owner_email(request))
     if not body.transcricao.strip():
         raise HTTPException(status_code=400, detail="Texto não pode ser vazio")
-    formatado = await ai.formatar_conduta_texto(body.transcricao, _owner_email(request))
+    try:
+        formatado = await ai.formatar_conduta_texto(body.transcricao, _owner_email(request))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     return {"conduta_formatada": formatado}
 
 
@@ -504,13 +602,16 @@ async def sugestao_do_dia(paciente_id: int, request: Request):
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
-    sugestao = await ai.sugestao_do_dia(
-        paciente.get("anamnese") or "",
-        paciente.get("conduta_tratamento"),
-        sessoes,
-        owner,
-        paciente_nome=paciente.get("nome"),
-    )
+    try:
+        sugestao = await ai.sugestao_do_dia(
+            paciente.get("anamnese") or "",
+            paciente.get("conduta_tratamento"),
+            sessoes,
+            owner,
+            paciente_nome=paciente.get("nome"),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     return {"sugestao": sugestao}
 
 
@@ -523,13 +624,16 @@ async def feedback_clinico(paciente_id: int, request: Request):
     owner = _owner_email(request)
     _verificar_dono(paciente, owner)
     sessoes = db.get_historico_paciente(paciente_id)
-    feedback = await ai.feedback_clinico(
-        paciente.get("anamnese") or "",
-        paciente.get("conduta_tratamento"),
-        sessoes,
-        owner,
-        paciente_nome=paciente.get("nome"),
-    )
+    try:
+        feedback = await ai.feedback_clinico(
+            paciente.get("anamnese") or "",
+            paciente.get("conduta_tratamento"),
+            sessoes,
+            owner,
+            paciente_nome=paciente.get("nome"),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro no processamento com IA: {str(e)}")
     return {"feedback": feedback}
 
 
@@ -2676,6 +2780,32 @@ async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Re
 
 # ---------- Secretaria — Pacientes ----------
 
+@app.post("/sec/pacientes/importar")
+def sec_importar_pacientes(body: PacienteImportBody, request: Request = None):
+    """Importação em lote de pacientes. Ignora pacientes cujo nome já existe para o fisio."""
+    _, fisio_email = _sec_context(request)
+    existentes = {p["nome"].strip().upper() for p in db.listar_pacientes(fisio_email)}
+    criados, ignorados, erros = 0, 0, []
+    for item in body.pacientes:
+        nome_norm = item.nome.strip().upper()
+        if nome_norm in existentes:
+            ignorados += 1
+            continue
+        obs = f"Código: {item.codigo}" if item.codigo else None
+        try:
+            db.criar_paciente(
+                item.nome.strip(), item.data_nascimento, obs,
+                None, None, None, fisio_email, None,
+                item.telefone, item.convenio, item.ultima_consulta,
+            )
+            existentes.add(nome_norm)
+            criados += 1
+        except Exception as exc:
+            erros.append({"nome": item.nome, "motivo": str(exc)})
+    db.registrar_audit(fisio_email, "sec_importar_pacientes", f"criados={criados} ignorados={ignorados} erros={len(erros)}", None)
+    return {"criados": criados, "ignorados": ignorados, "erros": erros}
+
+
 @app.get("/sec/pacientes")
 def sec_listar_pacientes(request: Request = None):
     """Secretaria lista os pacientes do fisio vinculado."""
@@ -2691,6 +2821,9 @@ def sec_criar_paciente(body: PacienteCreate, request: Request = None):
         paciente = db.criar_paciente(
             body.nome, body.data_nascimento, body.observacoes,
             body.anamnese, body.cpf, body.endereco, fisio_email,
+            None, body.telefone, body.convenio, None,
+            body.cep, body.logradouro, body.numero,
+            body.bairro, body.cidade, body.estado,
         )
     except (sqlite3.IntegrityError, ValueError):
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado.")
@@ -2719,7 +2852,15 @@ def sec_atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Requ
             body.anamnese or paciente.get("anamnese"),
             body.cpf,
             body.endereco,
-            body.conduta_tratamento or paciente.get("conduta_tratamento")
+            body.conduta_tratamento or paciente.get("conduta_tratamento"),
+            body.telefone,
+            body.convenio,
+            body.cep,
+            body.logradouro,
+            body.numero,
+            body.bairro,
+            body.cidade,
+            body.estado,
         )
         # Observações (campo novo solicitado)
         if body.observacoes is not None:

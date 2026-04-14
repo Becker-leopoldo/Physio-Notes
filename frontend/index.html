@@ -196,6 +196,12 @@
       margin-top: auto;
     }
 
+    /* ---- Botão FAB manual ---- */
+    #btn-manual-fab:hover {
+      color: var(--color-text);
+      box-shadow: var(--shadow-lg);
+    }
+
     /* ---- Cards ---- */
     .card {
       background: var(--color-surface);
@@ -585,6 +591,25 @@
     }
     .pac-tab:hover { color: var(--color-text); }
     .pac-tab.active { color: var(--color-text); border-bottom-color: var(--color-accent); }
+
+    /* ---- KPI chips (lista de pacientes) ---- */
+    .kpi-chip-fisio {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      background: var(--color-surface);
+      border: var(--border-strong);
+      border-radius: var(--radius-full);
+      cursor: pointer; font-size: var(--text-xs);
+      font-family: var(--font-body);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .kpi-chip-fisio:hover { background: var(--color-accent-light); }
+    .kpi-chip-fisio.active { border-color: transparent; }
+    .kpi-chip-fisio[data-kpi="amarelo"].active { background: #FEF7EC; border-color: #92600A; }
+    .kpi-chip-fisio[data-kpi="vermelho"].active { background: #FEF2F2; border-color: #9B1C1C; }
+    .kpi-chip-fisio[data-kpi="azul"].active    { background: #EFF6FF; border-color: #1E3A5F; }
+    .kpi-chip-fisio[data-kpi="verde"].active   { background: #EDF7F2; border-color: #2D6A4F; }
+    .kpi-chip-fisio[data-kpi="sem"].active     { background: var(--color-accent-light); border-color: var(--color-border-strong); }
 
     /* ---- Session History List ---- */
     .session-card {
@@ -1220,6 +1245,48 @@
       </button>
     </div>
 
+    <!-- KPI dashboard de pacientes -->
+    <div id="pac-kpi-fisio" style="padding:var(--space-3) var(--space-5);border-bottom:var(--border);display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2);">
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500;" id="kpi-fisio-total">0 pacientes</span>
+        <button id="kpi-fisio-limpar" onclick="limparKpiFisio()" style="display:none;font-size:var(--text-xs);color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Limpar filtro</button>
+      </div>
+      <div style="display:flex;height:6px;border-radius:9999px;overflow:hidden;margin-bottom:var(--space-3);background:var(--color-border);">
+        <div id="kfi-bar-amarelo" style="background:#92600A;width:0%;transition:width .4s ease;"></div>
+        <div id="kfi-bar-vermelho" style="background:#9B1C1C;width:0%;transition:width .4s ease;"></div>
+        <div id="kfi-bar-azul"    style="background:#1E3A5F;width:0%;transition:width .4s ease;"></div>
+        <div id="kfi-bar-verde"   style="background:#2D6A4F;width:0%;transition:width .4s ease;"></div>
+        <div id="kfi-bar-sem"     style="background:var(--color-border-strong);width:0%;transition:width .4s ease;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+        <button class="kpi-chip-fisio" data-kpi="amarelo" onclick="toggleKpiFisio('amarelo')">
+          <span style="width:8px;height:8px;border-radius:50%;background:#92600A;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #FEF7EC;"></span>
+          <strong id="kfi-num-amarelo" style="font-size:var(--text-sm);min-width:16px;">0</strong>
+          <span style="color:var(--color-text-secondary);">Atenção <span style="opacity:.7;">61–90d</span></span>
+        </button>
+        <button class="kpi-chip-fisio" data-kpi="vermelho" onclick="toggleKpiFisio('vermelho')">
+          <span style="width:8px;height:8px;border-radius:50%;background:#9B1C1C;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #FEF2F2;"></span>
+          <strong id="kfi-num-vermelho" style="font-size:var(--text-sm);min-width:16px;">0</strong>
+          <span style="color:var(--color-text-secondary);">Inativos <span style="opacity:.7;">>90d</span></span>
+        </button>
+        <button class="kpi-chip-fisio" data-kpi="azul" onclick="toggleKpiFisio('azul')">
+          <span style="width:8px;height:8px;border-radius:50%;background:#1E3A5F;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #EFF6FF;"></span>
+          <strong id="kfi-num-azul" style="font-size:var(--text-sm);min-width:16px;">0</strong>
+          <span style="color:var(--color-text-secondary);">Regulares <span style="opacity:.7;">31–60d</span></span>
+        </button>
+        <button class="kpi-chip-fisio" data-kpi="verde" onclick="toggleKpiFisio('verde')">
+          <span style="width:8px;height:8px;border-radius:50%;background:#2D6A4F;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #EDF7F2;"></span>
+          <strong id="kfi-num-verde" style="font-size:var(--text-sm);min-width:16px;">0</strong>
+          <span style="color:var(--color-text-secondary);">Ativos <span style="opacity:.7;">≤30d</span></span>
+        </button>
+      </div>
+      <button class="kpi-chip-fisio" data-kpi="sem" onclick="toggleKpiFisio('sem')" style="width:100%;justify-content:flex-start;">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--color-border-strong);flex-shrink:0;display:inline-block;"></span>
+        <strong id="kfi-num-sem" style="font-size:var(--text-sm);min-width:16px;">0</strong>
+        <span style="color:var(--color-text-secondary);">Sem registro</span>
+      </button>
+    </div>
+
     <div id="home-content" style="flex:1; overflow-y:auto;">
       <div id="pacientes-list"></div>
     </div>
@@ -1525,6 +1592,10 @@
 
 </div>
 
+<!-- Botão flutuante: Manual -->
+<a href="manual.html" target="_blank" id="btn-manual-fab" title="Manual do usuário"
+   style="position:fixed;bottom:72px;right:16px;width:36px;height:36px;border-radius:50%;background:var(--color-surface);border:1px solid var(--color-border-strong);box-shadow:var(--shadow-md);display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--color-text-muted);font-size:14px;font-weight:700;font-family:var(--font-body);z-index:90;transition:box-shadow 0.15s,color 0.15s;">?</a>
+
 <!-- ======================== SHEET: ATESTADO ======================== -->
 <div id="at-overlay" style="display:none;"></div>
 <div id="at-sheet" style="display:none;">
@@ -1666,17 +1737,21 @@
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
           <div class="form-group" style="margin:0;">
-            <label class="form-label" for="input-dob">Data de nascimento</label>
+            <label class="form-label" for="input-dob">Nascimento <span style="color:var(--color-danger);">*</span></label>
             <input class="form-input" type="date" id="input-dob">
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label" for="input-cpf">CPF *</label>
+            <label class="form-label" for="input-cpf">CPF <span style="color:var(--color-danger);">*</span></label>
             <input class="form-input" type="text" id="input-cpf" placeholder="000.000.000-00" maxlength="14">
             <span class="form-hint" id="input-cpf-hint" style="display:none;"></span>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="input-endereco">Endereço *</label>
+          <label class="form-label" for="input-telefone">Celular <span style="color:var(--color-danger);">*</span></label>
+          <input class="form-input" type="tel" id="input-telefone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="input-endereco">Endereço</label>
           <input class="form-input" type="text" id="input-endereco" placeholder="Rua, número, bairro, cidade">
         </div>
         <div id="modal-paciente-error"></div>
@@ -1711,8 +1786,24 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label" for="edit-endereco">Endereço</label>
-        <input class="form-input" type="text" id="edit-endereco" placeholder="Rua, número, bairro, cidade">
+        <label class="form-label" for="edit-telefone">Telefone</label>
+        <input class="form-input" type="tel" id="edit-telefone" placeholder="(11) 99999-9999">
+      </div>
+      <div style="margin-top:var(--space-4);">
+        <label class="form-label" style="margin-bottom:var(--space-2);display:block;">Endereço <span style="font-size:0.75rem;font-weight:400;color:#A09D97;">— CEP preenche automaticamente</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
+          <div>
+            <input class="form-input" type="text" id="edit-cep" placeholder="CEP 00000-000" maxlength="9">
+            <span id="edit-cep-hint" style="font-size:0.75rem;color:#A09D97;margin-top:2px;display:none;"></span>
+          </div>
+          <input class="form-input" type="text" id="edit-numero" placeholder="Número">
+        </div>
+        <input class="form-input" type="text" id="edit-logradouro" placeholder="Logradouro" style="margin-bottom:var(--space-2);">
+        <div style="display:grid;grid-template-columns:1fr 1fr 52px;gap:var(--space-2);">
+          <input class="form-input" type="text" id="edit-bairro" placeholder="Bairro">
+          <input class="form-input" type="text" id="edit-cidade" placeholder="Cidade">
+          <input class="form-input" type="text" id="edit-estado" placeholder="UF" style="padding-left:var(--space-2);padding-right:var(--space-2);">
+        </div>
       </div>
       <div id="edit-paciente-error"></div>
       <div class="modal-actions">
@@ -1730,11 +1821,53 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.336'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.344'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
     return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+  }
+
+  function titleCase(str) {
+    if (!str) return str;
+    return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  }
+
+  function calcIdade(dataNasc) {
+    if (!dataNasc) return null;
+    const hoje = new Date();
+    const nasc = new Date(dataNasc + 'T00:00:00');
+    if (isNaN(nasc.getTime())) return null;
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    return idade >= 0 ? idade : null;
+  }
+
+  function fmtTelefone(t) {
+    if (!t) return '';
+    const d = t.replace(/\D/g, '');
+    if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    return t;
+  }
+
+  function fmtDataBrFisio(iso) {
+    if (!iso) return '';
+    const [a, m, d] = iso.split('-');
+    return `${d}/${m}/${a}`;
+  }
+
+  function visitaStatusFisio(iso) {
+    if (!iso) return null;
+    const hoje = new Date();
+    const visita = new Date(iso + 'T00:00:00');
+    if (isNaN(visita.getTime())) return null;
+    const dias = Math.floor((hoje - visita) / 86400000);
+    if (dias <= 30)  return { cor: '#2D6A4F', bg: '#EDF7F2' };
+    if (dias <= 60)  return { cor: '#1E3A5F', bg: '#EFF6FF' };
+    if (dias <= 90)  return { cor: '#92600A', bg: '#FEF7EC' };
+    return           { cor: '#9B1C1C', bg: '#FEF2F2' };
   }
 
   function _getAudioMimeType() {
@@ -1887,6 +2020,9 @@
       return !navigator.onLine
         ? 'Sem internet — o áudio foi salvo e será enviado ao reconectar.'
         : 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
+    }
+    if (msg.includes('processamento com ia')) {
+      return 'O serviço de IA está temporariamente indisponível. Aguarde alguns instantes e tente novamente.';
     }
     if (msg.includes('transcri') || msg.includes('áudio') || msg.includes('audio')) {
       return 'Não foi possível processar o áudio. Verifique sua conexão e tente gravar novamente.';
@@ -2120,6 +2256,7 @@
     container.innerHTML = '<div class="loading-message"><span class="spinner"></span> Carregando pacientes...</div>';
     try {
       _pacCache = await apiFetch('/pacientes');
+      renderKpisFisio(_pacCache);
       _renderPacientesFiltrado(_pacCache, document.getElementById('filtro-pacientes').value.toLowerCase());
     } catch (e) {
       console.error('Erro ao carregar pacientes:', e);
@@ -2127,64 +2264,113 @@
     }
   }
 
-  function _renderPacientesFiltrado(pacientes, q) {
+  function _renderPacientesFiltrado(pacientes, q, page) {
+    if (page !== undefined) _pacPage = page;
     const container = document.getElementById('pacientes-list');
-    const filtrados = q ? pacientes.filter(p => {
+
+    // 1. Filtro de texto
+    let lista = q ? pacientes.filter(p => {
       const qNum = q.replaceAll(/\D/g, '');
       if (p.nome.toLowerCase().includes(q)) return true;
       if (p.cpf && qNum && p.cpf.replaceAll(/\D/g, '').includes(qNum)) return true;
       if (p.data_nascimento && p.data_nascimento.includes(q)) return true;
       if (p.data_nascimento) {
-        // Aceita formatos dd/mm/aaaa, dd/mm ou mm/aaaa digitados
         const [y, m, d] = p.data_nascimento.split('-');
         if ([`${d}/${m}/${y}`, `${d}/${m}`, `${m}/${y}`].some(f => f.includes(q))) return true;
       }
       if (p.endereco && p.endereco.toLowerCase().includes(q)) return true;
       return false;
     }) : pacientes;
+
+    // 2. Filtro KPI
+    if (_kpiFisioAtivos.size > 0) lista = lista.filter(p => _kpiFisioAtivos.has(_kpiFisioStatus(p)));
+
     container.innerHTML = '';
-    if (filtrados.length === 0) {
+
+    if (lista.length === 0) {
+      let titulo, texto, extra = '';
+      if (!pacientes.length) {
+        titulo = 'Nenhum paciente';
+        texto = 'Toque em "+ Paciente" para cadastrar o primeiro paciente.';
+      } else if (_kpiFisioAtivos.size > 0) {
+        const nomes = { verde:'Ativos', azul:'Regulares', amarelo:'Atenção', vermelho:'Inativos', sem:'Sem registro' };
+        const labels = [..._kpiFisioAtivos].map(k => nomes[k] || k).join(', ');
+        titulo = `Nenhum resultado em: ${labels}`;
+        texto = '';
+        extra = `<button onclick="limparKpiFisio()" style="margin-top:8px;font-size:var(--text-xs);color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Limpar filtro</button>`;
+      } else {
+        titulo = 'Nenhum resultado';
+        texto = `Nenhum paciente encontrado para "${q}".`;
+      }
       const wrap = el('div', { className: 'empty-state' });
-      wrap.innerHTML = q
-        ? `<div class="empty-state-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#A09D97" stroke-width="1.5"/><path d="M16.5 16.5L21 21" stroke="#A09D97" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="empty-state-title">Nenhum resultado</div><div class="empty-state-text">Nenhum paciente encontrado para "${q}".</div>`
-        : `<div class="empty-state-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#A09D97" stroke-width="1.5"/><path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="#A09D97" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="empty-state-title">Nenhum paciente</div><div class="empty-state-text">Toque em "+ Paciente" para cadastrar o primeiro paciente.</div>`;
+      wrap.innerHTML = `<div class="empty-state-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#A09D97" stroke-width="1.5"/><path d="M16.5 16.5L21 21" stroke="#A09D97" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="empty-state-title">${titulo}</div>${texto ? `<div class="empty-state-text">${texto}</div>` : ''}${extra}`;
       container.appendChild(wrap);
       return;
     }
-    filtrados.forEach(p => {
-        const item = el('div', { className: 'list-item' });
-        const badgeClass = p.sessoes_restantes <= 2 ? 'badge-warning' : 'badge-info';
-        const sessaoLabel = p.sessoes_restantes === 1 ? 'sessão' : 'sessões';
-        const restanteSuffix = p.sessoes_restantes === 1 ? '' : 's';
-        const sessoesBadge = p.sessoes_restantes != null
-          ? `<span class="badge ${badgeClass}" style="font-size:10px;">${p.sessoes_restantes} ${sessaoLabel} restante${restanteSuffix}</span>`
-          : '';
-        item.innerHTML = `
-          <div class="list-item-avatar">${initials(escHtml(p.nome))}</div>
-          <div class="list-item-content">
-            <div class="list-item-title">${escHtml(p.nome)}</div>
-            <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
-              <div class="list-item-subtitle">${p.data_nascimento ? 'Nasc. ' + formatDate(p.data_nascimento) : 'Data de nascimento não informada'}</div>
-              ${sessoesBadge}
-            </div>
+
+    // 3. Paginação
+    const totalPag = Math.ceil(lista.length / _PAC_PAGE_SIZE);
+    if (_pacPage >= totalPag) _pacPage = totalPag - 1;
+    const inicio = _pacPage * _PAC_PAGE_SIZE;
+    const pagina = lista.slice(inicio, inicio + _PAC_PAGE_SIZE);
+
+    pagina.forEach(p => {
+      const item = el('div', { className: 'list-item' });
+      const nome = titleCase(p.nome);
+      const idade = calcIdade(p.data_nascimento);
+      const tel = fmtTelefone(p.telefone);
+      const sub = [
+        idade !== null ? `${idade} anos` : (p.data_nascimento ? fmtDataBrFisio(p.data_nascimento) : null),
+        tel,
+        p.convenio || null,
+      ].filter(Boolean).join(' · ');
+      const badgeClass = p.sessoes_restantes <= 2 ? 'badge-warning' : 'badge-info';
+      const sessaoLabel = p.sessoes_restantes === 1 ? 'sessão' : 'sessões';
+      const sessoesBadge = p.sessoes_restantes != null
+        ? `<span class="badge ${badgeClass}" style="font-size:10px;">${p.sessoes_restantes} ${sessaoLabel} restante${p.sessoes_restantes !== 1 ? 's' : ''}</span>`
+        : '';
+      const vs = visitaStatusFisio(p.ultima_consulta);
+      const visitaHtml = vs
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;margin-top:2px;"><span style="width:7px;height:7px;border-radius:50%;background:${vs.cor};flex-shrink:0;box-shadow:0 0 0 2px ${vs.bg};display:inline-block;"></span><span style="font-size:10px;color:var(--color-text-muted);">Última visita ${fmtDataBrFisio(p.ultima_consulta)}</span></span>`
+        : '';
+      item.innerHTML = `
+        <div class="list-item-avatar">${initials(escHtml(nome))}</div>
+        <div class="list-item-content">
+          <div class="list-item-title">${escHtml(nome)}</div>
+          <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
+            ${sub ? `<div class="list-item-subtitle">${escHtml(sub)}</div>` : ''}
+            ${sessoesBadge}
           </div>
-          <button class="btn-delete-inline" data-id="${p.id}" title="Excluir paciente" style="margin-left:auto;flex-shrink:0;background:none;border:none;cursor:pointer;padding:var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <svg class="list-item-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-        item.addEventListener('click', (e) => {
-          if (e.target.closest('.btn-delete-inline')) return;
-          openPaciente(p.id);
-        });
-        item.querySelector('.btn-delete-inline').addEventListener('click', (e) => {
-          e.stopPropagation();
-          confirmarExcluirPaciente(p.nome, async () => {
-            await apiFetch(`/pacientes/${p.id}`, { method: 'DELETE' });
-            loadPacientes();
-          });
-        });
-        container.appendChild(item);
+          ${visitaHtml}
+        </div>
+        <button class="btn-delete-inline" data-id="${p.id}" title="Excluir paciente" style="margin-left:auto;flex-shrink:0;background:none;border:none;cursor:pointer;padding:var(--space-2);color:var(--color-text-muted);border-radius:var(--radius-sm);transition:color 0.15s,background 0.15s;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <svg class="list-item-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-delete-inline')) return;
+        openPaciente(p.id);
       });
+      item.querySelector('.btn-delete-inline').addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmarExcluirPaciente(p.nome, async () => {
+          await apiFetch(`/pacientes/${p.id}`, { method: 'DELETE' });
+          loadPacientes();
+        });
+      });
+      container.appendChild(item);
+    });
+
+    // 4. Paginação — navegação
+    if (totalPag > 1) {
+      const nav = el('div', {});
+      nav.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:var(--space-4);padding:var(--space-4);border-top:var(--border);font-size:var(--text-sm);color:var(--color-text-secondary);';
+      nav.innerHTML = `
+        <button onclick="_renderPacientesFiltrado(_pacCache, document.getElementById('filtro-pacientes').value.toLowerCase(), ${_pacPage - 1})" ${_pacPage === 0 ? 'disabled' : ''} style="background:none;border:none;cursor:pointer;color:inherit;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);opacity:${_pacPage === 0 ? '.35' : '1'};">‹ Anterior</button>
+        <span>${_pacPage + 1} / ${totalPag}</span>
+        <button onclick="_renderPacientesFiltrado(_pacCache, document.getElementById('filtro-pacientes').value.toLowerCase(), ${_pacPage + 1})" ${_pacPage >= totalPag - 1 ? 'disabled' : ''} style="background:none;border:none;cursor:pointer;color:inherit;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);opacity:${_pacPage >= totalPag - 1 ? '.35' : '1'};">Próximo ›</button>`;
+      container.appendChild(nav);
+    }
   }
 
   /* ============================================================
@@ -2216,6 +2402,7 @@
     document.getElementById('input-cpf').value = '';
     document.getElementById('input-cpf-hint').style.display = 'none';
     document.getElementById('input-cpf').style.borderColor = '';
+    document.getElementById('input-telefone').value = '';
     document.getElementById('input-endereco').value = '';
     showError('modal-paciente-error', '');
     bindCpfInput('input-cpf', 'input-cpf-hint');
@@ -2432,23 +2619,13 @@
     const btn = this;
     const nome = document.getElementById('input-nome').value.trim();
     const cpfRaw = document.getElementById('input-cpf').value.replaceAll(/\D/g, '');
+    const telefone = document.getElementById('input-telefone').value.trim();
     const endereco = document.getElementById('input-endereco').value.trim();
-    if (!nome) {
-      showError('modal-paciente-error', 'O nome do paciente é obrigatório.');
-      return;
-    }
-    if (!cpfRaw) {
-      showError('modal-paciente-error', 'O CPF é obrigatório.');
-      return;
-    }
-    if (!cpfValido(cpfRaw)) {
-      showError('modal-paciente-error', 'CPF inválido. Verifique o número digitado.');
-      return;
-    }
-    if (!endereco) {
-      showError('modal-paciente-error', 'O endereço é obrigatório.');
-      return;
-    }
+    if (!nome) { showError('modal-paciente-error', 'O nome do paciente é obrigatório.'); return; }
+    if (!document.getElementById('input-dob').value) { showError('modal-paciente-error', 'A data de nascimento é obrigatória.'); return; }
+    if (!cpfRaw) { showError('modal-paciente-error', 'O CPF é obrigatório.'); return; }
+    if (!cpfValido(cpfRaw)) { showError('modal-paciente-error', 'CPF inválido. Verifique o número digitado.'); return; }
+    if (!telefone) { showError('modal-paciente-error', 'O celular é obrigatório.'); return; }
     btn.disabled = true;
     btn.textContent = 'Salvando...';
     showError('modal-paciente-error', '');
@@ -2461,6 +2638,7 @@
           data_nascimento: document.getElementById('input-dob').value || null,
           data_atendimento: new Date().toISOString().slice(0, 10),
           cpf: cpfRaw || null,
+          telefone: telefone || null,
           endereco: endereco || null,
         }),
       });
@@ -3736,7 +3914,9 @@
     if (msg.includes('failed to fetch') || msg.includes('network error') ||
         msg.includes('conectar ao servidor') || msg.includes('sem internet')) return true;
     const status = e?.status || 0;
-    // 502/503/504 = servidor temporariamente indisponível (pode valer retry)
+    // 502 de IA (Gemini/etc.) não é erro de rede do usuário — mostrar mensagem direta sem retry
+    if (status === 502 && msg.includes('processamento com ia')) return false;
+    // 502/503/504 genérico = servidor/proxy temporariamente indisponível (vale retry automático)
     return status === 502 || status === 503 || status === 504;
   }
 
@@ -4139,6 +4319,59 @@
   let _sessCache = [];
   let _sessPage = 0;
   const _SESS_PAGE_SIZE = 10;
+  let _pacPage = 0;
+  const _PAC_PAGE_SIZE = 20;
+  let _kpiFisioAtivos = new Set();
+
+  function _kpiFisioStatus(p) {
+    const vs = visitaStatusFisio(p.ultima_consulta);
+    if (!vs) return 'sem';
+    if (vs.cor === '#2D6A4F') return 'verde';
+    if (vs.cor === '#1E3A5F') return 'azul';
+    if (vs.cor === '#92600A') return 'amarelo';
+    return 'vermelho';
+  }
+
+  function renderKpisFisio(lista) {
+    const contagem = { verde: 0, azul: 0, amarelo: 0, vermelho: 0, sem: 0 };
+    lista.forEach(p => contagem[_kpiFisioStatus(p)]++);
+    const total = lista.length;
+    const totalDiv = total || 1;
+    ['verde','azul','amarelo','vermelho','sem'].forEach(k => {
+      const pct = (contagem[k] / totalDiv * 100).toFixed(1);
+      const bar = document.getElementById(`kfi-bar-${k}`);
+      if (bar) bar.style.width = pct + '%';
+      const num = document.getElementById(`kfi-num-${k}`);
+      if (num) num.textContent = contagem[k];
+    });
+    const lbl = document.getElementById('kpi-fisio-total');
+    if (lbl) lbl.textContent = `${total} paciente${total !== 1 ? 's' : ''}`;
+    const area = document.getElementById('pac-kpi-fisio');
+    if (area) area.style.display = total ? '' : 'none';
+  }
+
+  function toggleKpiFisio(status) {
+    if (_kpiFisioAtivos.has(status)) _kpiFisioAtivos.delete(status);
+    else _kpiFisioAtivos.add(status);
+    document.querySelectorAll('.kpi-chip-fisio').forEach(chip => {
+      chip.classList.toggle('active', _kpiFisioAtivos.has(chip.dataset.kpi));
+    });
+    const limpar = document.getElementById('kpi-fisio-limpar');
+    if (limpar) limpar.style.display = _kpiFisioAtivos.size ? '' : 'none';
+    _pacPage = 0;
+    const q = document.getElementById('filtro-pacientes').value.toLowerCase();
+    _renderPacientesFiltrado(_pacCache, q);
+  }
+
+  function limparKpiFisio() {
+    _kpiFisioAtivos.clear();
+    document.querySelectorAll('.kpi-chip-fisio').forEach(c => c.classList.remove('active'));
+    const limpar = document.getElementById('kpi-fisio-limpar');
+    if (limpar) limpar.style.display = 'none';
+    _pacPage = 0;
+    const q = document.getElementById('filtro-pacientes').value.toLowerCase();
+    _renderPacientesFiltrado(_pacCache, q);
+  }
   let _relatorioData = null;
 
   document.querySelectorAll('.pac-tab').forEach(tab => {
@@ -4160,12 +4393,14 @@
   document.getElementById('filtro-pacientes').addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
     document.getElementById('btn-limpar-filtro-pac').style.display = q ? 'flex' : 'none';
+    _pacPage = 0;
     _renderPacientesFiltrado(_pacCache, q);
   });
   document.getElementById('btn-limpar-filtro-pac').addEventListener('click', () => {
     const inp = document.getElementById('filtro-pacientes');
     inp.value = '';
     document.getElementById('btn-limpar-filtro-pac').style.display = 'none';
+    _pacPage = 0;
     _renderPacientesFiltrado(_pacCache, '');
     inp.focus();
   });
@@ -6205,11 +6440,48 @@
   /* ============================================================
      EDITAR PACIENTE
   ============================================================ */
+  function _fmtCepFisio(v) {
+    const d = v.replace(/\D/g, '').slice(0, 8);
+    return d.length > 5 ? `${d.slice(0,5)}-${d.slice(5)}` : d;
+  }
+
+  async function _buscarCepFisio(cep) {
+    const d = cep.replace(/\D/g, '');
+    if (d.length !== 8) return;
+    const hint = document.getElementById('edit-cep-hint');
+    hint.textContent = 'Buscando...'; hint.style.color = '#A09D97'; hint.style.display = 'block';
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${d}/json/`);
+      const data = await r.json();
+      if (data.erro) { hint.textContent = 'CEP não encontrado.'; hint.style.color = '#9B1C1C'; return; }
+      document.getElementById('edit-logradouro').value = data.logradouro || '';
+      document.getElementById('edit-bairro').value     = data.bairro     || '';
+      document.getElementById('edit-cidade').value     = data.localidade || '';
+      document.getElementById('edit-estado').value     = data.uf         || '';
+      hint.textContent = ''; hint.style.display = 'none';
+      document.getElementById('edit-numero').focus();
+    } catch(e) {
+      hint.textContent = 'Erro ao buscar CEP.'; hint.style.color = '#9B1C1C'; hint.style.display = 'block';
+    }
+  }
+
+  document.getElementById('edit-cep').addEventListener('input', function() {
+    this.value = _fmtCepFisio(this.value);
+    if (this.value.replace(/\D/g,'').length === 8) _buscarCepFisio(this.value);
+  });
+
   function abrirModalEdicao(paciente) {
-    document.getElementById('edit-nome').value = paciente.nome || '';
-    document.getElementById('edit-dob').value = paciente.data_nascimento || '';
-    document.getElementById('edit-cpf').value = paciente.cpf ? cpfMascara(paciente.cpf) : '';
-    document.getElementById('edit-endereco').value = paciente.endereco || '';
+    document.getElementById('edit-nome').value      = paciente.nome || '';
+    document.getElementById('edit-dob').value       = paciente.data_nascimento || '';
+    document.getElementById('edit-cpf').value       = paciente.cpf ? cpfMascara(paciente.cpf) : '';
+    document.getElementById('edit-telefone').value  = paciente.telefone || '';
+    document.getElementById('edit-cep').value       = _fmtCepFisio(paciente.cep || '');
+    document.getElementById('edit-numero').value    = paciente.numero || '';
+    document.getElementById('edit-logradouro').value = paciente.logradouro || '';
+    document.getElementById('edit-bairro').value    = paciente.bairro || '';
+    document.getElementById('edit-cidade').value    = paciente.cidade || '';
+    document.getElementById('edit-estado').value    = paciente.estado || '';
+    document.getElementById('edit-cep-hint').style.display = 'none';
     document.getElementById('edit-cpf-hint').style.display = 'none';
     document.getElementById('edit-cpf').style.borderColor = '';
     showError('edit-paciente-error', '');
@@ -6240,8 +6512,14 @@
         body: JSON.stringify({
           nome,
           data_nascimento: document.getElementById('edit-dob').value || null,
-          cpf: document.getElementById('edit-cpf').value.replaceAll(/\D/g, '') || null,
-          endereco: document.getElementById('edit-endereco').value.trim() || null,
+          cpf:        document.getElementById('edit-cpf').value.replace(/\D/g,'') || null,
+          telefone:   document.getElementById('edit-telefone').value.trim()  || null,
+          cep:        document.getElementById('edit-cep').value.replace(/\D/g,'') || null,
+          numero:     document.getElementById('edit-numero').value.trim()    || null,
+          logradouro: document.getElementById('edit-logradouro').value.trim() || null,
+          bairro:     document.getElementById('edit-bairro').value.trim()    || null,
+          cidade:     document.getElementById('edit-cidade').value.trim()    || null,
+          estado:     document.getElementById('edit-estado').value.trim()    || null,
         }),
       });
       document.getElementById('modal-editar-paciente').classList.remove('open');
@@ -7268,10 +7546,16 @@
           if (txt) {
             document.getElementById('ag-texto').value = txt;
             _agSheetAnalisar();
+          } else {
+            document.getElementById('ag-mic-label').textContent = 'Nada gravado — tente novamente';
           }
         } catch (e) {
-          document.getElementById('ag-mic-label').textContent = 'Toque para falar';
-          console.warn('transcrição falhou', e);
+          document.getElementById('ag-mic-label').textContent = 'Erro — tente gravar novamente';
+          const resultArea = document.getElementById('ag-sheet-result');
+          if (resultArea) {
+            resultArea.style.display = 'block';
+            resultArea.innerHTML = `<div class="ag-result-card ag-result-card-busy" style="margin-bottom:0;"><div class="ag-result-label ag-result-label-busy">Não foi possível processar o áudio</div><div class="ag-result-when">${friendlyError(e)}</div></div>`;
+          }
         }
       };
       _agSheetRec.start();
@@ -8874,12 +9158,12 @@
           } catch (e3) {
             resetMic('Erro ao interpretar — tente novamente');
             document.getElementById('at-rec-feedback').innerHTML +=
-              `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${escHtml(e3.message)}</div>`;
+              `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${friendlyError(e3)}</div>`;
           }
         } catch (e2) {
           resetMic('Erro — tente novamente');
           document.getElementById('at-rec-feedback').innerHTML =
-            `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${escHtml(e2.message)}</div>`;
+            `<div style="font-size:var(--text-sm);color:var(--color-danger);margin-top:var(--space-2);">${friendlyError(e2)}</div>`;
         }
       };
       _atRec.start();
