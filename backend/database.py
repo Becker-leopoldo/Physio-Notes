@@ -2070,14 +2070,18 @@ def get_pendencias_evolucao(owner_email: str) -> dict:
     """Retorna sessões sem evolução diária registrada, agrupadas em 3 categorias.
 
     - atrasadas_anteriores: data < hoje, status != cancelada, sem evolucao
-    - atrasadas_hoje:       data = hoje, sem evolucao, e (encerrada OU hora_inicio já passou)
-    - pendentes_hoje:       data = hoje, status = aberta, e hora_inicio ainda não passou (ou sem hora)
+    - atrasadas_hoje:       data = hoje, sem evolucao, e (encerrada OU hora_inicio já passou
+                            OU aberta sem hora_inicio criada há mais de 2h)
+    - pendentes_hoje:       data = hoje, status = aberta, hora_inicio no futuro OU sem hora
+                            e criada há menos de 2h (sessão em andamento)
     """
     from datetime import date as _date, datetime as _datetime, timezone as _tz, timedelta as _td
     BRT = _tz(_td(hours=-3))
     agora_brt = _datetime.now(BRT)
     hoje = agora_brt.date().isoformat()
-    agora_hora = agora_brt.strftime('%H:%M')  # hora local Brasília HH:MM
+    agora_hora = agora_brt.strftime('%H:%M')
+    # Threshold ISO para "criada há mais de 2h" — comparado com s.criado_em (UTC)
+    limiar_criado_em = (_datetime.now(_tz.utc) - _td(hours=2)).isoformat()
 
     _base_select = """
         SELECT s.id, s.paciente_id, s.data, s.status, s.criado_em, s.hora_inicio,
@@ -2103,7 +2107,10 @@ def get_pendencias_evolucao(owner_email: str) -> dict:
             ).fetchall()
         ]
 
-        # Atrasadas hoje: encerradas sem EV  OU  abertas com hora_inicio já passada
+        # Atrasadas hoje:
+        #   (a) encerradas sem EV
+        #   (b) abertas com hora_inicio agendada já passada
+        #   (c) abertas sem hora_inicio criadas há mais de 2h (sessão manual em aberto)
         atrasadas_hoje = [
             _row_to_dict(r) for r in conn.execute(
                 _base_select + """
@@ -2113,23 +2120,30 @@ def get_pendencias_evolucao(owner_email: str) -> dict:
                   AND (
                         s.status = ?
                         OR (s.status = ? AND s.hora_inicio IS NOT NULL AND s.hora_inicio <= ?)
+                        OR (s.status = ? AND s.hora_inicio IS NULL AND s.criado_em <= ?)
                   )
                 ORDER BY s.hora_inicio ASC, s.criado_em DESC
                 """,
-                (owner_email, hoje, STATUS_CANCELADA, STATUS_ENCERRADA, STATUS_ABERTA, agora_hora),
+                (owner_email, hoje, STATUS_CANCELADA,
+                 STATUS_ENCERRADA,
+                 STATUS_ABERTA, agora_hora,
+                 STATUS_ABERTA, limiar_criado_em),
             ).fetchall()
         ]
 
-        # Pendentes hoje: abertas com hora ainda por vir (ou sem hora definida e encerradas são tratadas acima)
+        # Pendentes hoje: abertas com hora no futuro OU sem hora e criadas há menos de 2h
         pendentes_hoje = [
             _row_to_dict(r) for r in conn.execute(
                 _base_select + """
                   AND date(s.data) = date(?)
                   AND s.status = ?
-                  AND (s.hora_inicio IS NULL OR s.hora_inicio > ?)
+                  AND (
+                        (s.hora_inicio IS NOT NULL AND s.hora_inicio > ?)
+                        OR (s.hora_inicio IS NULL AND s.criado_em > ?)
+                  )
                 ORDER BY s.hora_inicio ASC, s.criado_em DESC
                 """,
-                (owner_email, hoje, STATUS_ABERTA, agora_hora),
+                (owner_email, hoje, STATUS_ABERTA, agora_hora, limiar_criado_em),
             ).fetchall()
         ]
 
