@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.351 — 2026-04-14
+
+### Melhorias
+- **Agenda secretaria — "Em breve":** seção abaixo do calendário agora inclui eventos Google Calendar (não só sessões physio); hoje destacado com borda + badge "Hoje"; contagem exibida como pill
+
+---
+
 ## Beta-0.350 — 2026-04-14
 
 ### Funcionalidades
