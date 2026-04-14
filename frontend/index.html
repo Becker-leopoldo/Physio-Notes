@@ -1083,9 +1083,191 @@
     .relatorio-sessao-card { border:var(--border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-3); }
     .relatorio-sintese-box { background:var(--color-bg);border-radius:var(--radius-lg);padding:var(--space-4); }
     .relatorio-doc-footer-bar { padding:var(--space-4) var(--space-5);font-size:var(--text-xs);color:var(--color-text-muted);text-align:center;border-top:var(--border);background:var(--color-bg); }
+
+    /* ---- LGPD Overlay ---- */
+    #lgpd-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(26,26,26,0.7);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-4);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    #lgpd-overlay.hidden { display: none; }
+    #lgpd-modal {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 680px;
+      max-height: 90dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #lgpd-modal-header {
+      padding: var(--space-6) var(--space-8) var(--space-4);
+      border-bottom: var(--border);
+      flex-shrink: 0;
+    }
+    #lgpd-modal-header h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+    }
+    #lgpd-modal-header p {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+    }
+    #lgpd-scroll-area {
+      overflow-y: auto;
+      padding: var(--space-6) var(--space-8);
+      flex: 1;
+      -webkit-overflow-scrolling: touch;
+    }
+    #lgpd-scroll-area h3 {
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-text);
+      margin-top: var(--space-5);
+      margin-bottom: var(--space-2);
+    }
+    #lgpd-scroll-area p, #lgpd-scroll-area li {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: 1.65;
+    }
+    #lgpd-scroll-area ul { padding-left: var(--space-5); margin-bottom: var(--space-3); }
+    #lgpd-scroll-area li { margin-bottom: var(--space-1); }
+    #lgpd-scroll-area strong { color: var(--color-text); }
+    #lgpd-scroll-area .lgpd-section { margin-bottom: var(--space-4); }
+    #lgpd-scroll-sentinel { height: 1px; }
+    #lgpd-modal-footer {
+      padding: var(--space-5) var(--space-8);
+      border-top: var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--space-4);
+      flex-shrink: 0;
+    }
+    #lgpd-scroll-hint {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      display: flex; align-items: center; gap: var(--space-2);
+      transition: opacity 0.3s;
+    }
+    #lgpd-scroll-hint.hidden { opacity: 0; pointer-events: none; }
+    #lgpd-accept-btn {
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      padding: var(--space-3) var(--space-6);
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      background: var(--color-accent);
+      color: #fff;
+      transition: opacity 0.2s, background 0.2s;
+    }
+    #lgpd-accept-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    #lgpd-accept-btn:not(:disabled):hover { background: var(--color-accent-hover); }
   </style>
 </head>
 <body>
+
+<!-- ======================== LGPD OVERLAY ======================== -->
+<div id="lgpd-overlay" class="hidden">
+  <div id="lgpd-modal">
+    <div id="lgpd-modal-header">
+      <h2>Termo de Aceite — LGPD</h2>
+      <p>Lei nº 13.709/2018 — Proteção de Dados Pessoais. Leia até o final para continuar.</p>
+    </div>
+    <div id="lgpd-scroll-area">
+
+      <div class="lgpd-section">
+        <h3>1. Identificação das Partes</h3>
+        <p>O presente Termo é firmado entre a plataforma <strong>Physio Notes</strong> (desenvolvida por <strong>Up It</strong>), doravante denominada <strong>Plataforma</strong>, e você, fisioterapeuta usuário(a) cadastrado(a), doravante denominado(a) <strong>Controlador(a)</strong>.</p>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>2. Natureza dos Dados Processados</h3>
+        <p>Ao utilizar o Physio Notes, você registrará, armazenará e processará <strong>dados pessoais sensíveis</strong> de seus pacientes, incluindo:</p>
+        <ul>
+          <li>Dados de identificação: nome completo, CPF, data de nascimento, endereço;</li>
+          <li>Dados de contato: telefone;</li>
+          <li>Dados de saúde: histórico clínico, evolução diária, anamnese, queixas, condutas terapêuticas, diagnósticos e procedimentos realizados;</li>
+          <li>Documentos clínicos: laudos, imagens e arquivos enviados.</li>
+        </ul>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>3. Seu Papel como Controlador de Dados</h3>
+        <p>Nos termos do art. 5º, VI, da LGPD, você atua como <strong>Controlador</strong> dos dados de seus pacientes — responsável pelas decisões referentes ao tratamento dos dados pessoais. A Plataforma atua como <strong>Operadora</strong>, processando os dados sob suas instruções.</p>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>4. Suas Obrigações como Controlador</h3>
+        <p>Ao aceitar este Termo, você se compromete a:</p>
+        <ul>
+          <li>Obter o consentimento expresso de seus pacientes antes de registrar seus dados na plataforma (art. 7º, I e art. 11, I da LGPD);</li>
+          <li>Utilizar os dados exclusivamente para finalidades legítimas do atendimento fisioterapêutico;</li>
+          <li><strong>Manter em sigilo absoluto</strong> todas as informações de saúde e dados pessoais, vedada qualquer divulgação não autorizada a terceiros;</li>
+          <li>Não compartilhar credenciais de acesso com pessoas não autorizadas;</li>
+          <li>Notificar imediatamente a Plataforma e os pacientes afetados em caso de incidente de segurança;</li>
+          <li>Respeitar o direito dos titulares (pacientes) de acessar, corrigir, portar e solicitar a exclusão de seus dados;</li>
+          <li>Manter os dados atualizados e necessários, evitando coleta excessiva (princípio da minimização);</li>
+          <li>Utilizar a plataforma em conformidade com o Código de Ética do COFFITO e a legislação vigente.</li>
+        </ul>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>5. Medidas de Segurança</h3>
+        <p>A Plataforma adota criptografia de dados em repouso e em trânsito. A segurança depende também do uso responsável de suas credenciais. Em caso de suspeita de comprometimento da conta, altere sua senha imediatamente.</p>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>6. Retenção e Exclusão de Dados</h3>
+        <p>Os dados serão retidos enquanto a conta estiver ativa. Você poderá solicitar a exclusão de seus dados e dos dados de seus pacientes a qualquer momento pelo suporte da plataforma.</p>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>7. Base Legal</h3>
+        <p>O tratamento de dados de saúde é fundamentado no art. 11, II, "f" da LGPD (tutela da saúde, exclusivamente por profissional habilitado) e no exercício regular da prestação de serviços de fisioterapia.</p>
+      </div>
+
+      <div class="lgpd-section">
+        <h3>8. Sanções pelo Descumprimento</h3>
+        <p>O descumprimento das obrigações previstas neste Termo pode acarretar sanções administrativas pela Autoridade Nacional de Proteção de Dados (ANPD), bem como responsabilização civil e as penalidades previstas no Código de Ética do COFFITO.</p>
+      </div>
+
+      <div class="lgpd-section" style="background:var(--color-warning-bg);border-radius:var(--radius-md);padding:var(--space-4);margin-top:var(--space-6);">
+        <h3 style="color:var(--color-warning);margin-top:0;">9. Declaração de Ciência e Compromisso</h3>
+        <p>Ao clicar em <strong>"Eu li e concordo"</strong>, você declara que:</p>
+        <ul>
+          <li>Leu e compreendeu integralmente este Termo;</li>
+          <li>Está ciente de que processa <strong>dados sensíveis de saúde</strong> de seus pacientes nesta plataforma;</li>
+          <li>Compromete-se a cumprir todas as obrigações descritas acima;</li>
+          <li>Tem ciência das sanções previstas na LGPD e no COFFITO em caso de descumprimento.</li>
+        </ul>
+      </div>
+
+      <div id="lgpd-scroll-sentinel"></div>
+    </div>
+    <div id="lgpd-modal-footer">
+      <!-- modo aceite -->
+      <span id="lgpd-scroll-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Role até o final para habilitar
+      </span>
+      <button id="lgpd-accept-btn" disabled>Eu li e concordo</button>
+      <!-- modo visualização -->
+      <span id="lgpd-aceito-em" style="display:none;font-size:var(--text-xs);color:var(--color-text-muted);"></span>
+      <button id="lgpd-close-btn" style="display:none;font-family:var(--font-body);font-size:var(--text-sm);font-weight:500;padding:var(--space-3) var(--space-6);border-radius:var(--radius-md);border:var(--border-strong);background:var(--color-surface);color:var(--color-text);cursor:pointer;">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ======================== UPDATE BANNER ======================== -->
 <div id="update-banner" style="display:none;position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);z-index:9998;background:var(--color-text);color:#fff;font-family:var(--font-body);font-size:var(--text-sm);padding:var(--space-3) var(--space-5);border-radius:var(--radius-full);box-shadow:var(--shadow-lg);align-items:center;gap:var(--space-4);white-space:nowrap;">
@@ -1118,6 +1300,13 @@
     <button class="drawer-item" id="drawer-agenda">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14M5 1v2M11 1v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="4" y="8" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="7" y="8" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="10" y="8" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="4" y="11" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="7" y="11" width="2" height="2" rx="0.5" fill="currentColor"/></svg>
       Agenda
+    </button>
+    <button class="drawer-item" id="drawer-pendencias" style="justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:var(--space-2);">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Pend. Evolução Diária
+      </span>
+      <span id="pendencias-badge" style="display:none;min-width:18px;height:18px;border-radius:9px;background:#f87171;color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px;"></span>
     </button>
     <div class="drawer-nav-label" style="margin-top:var(--space-2);">Financeiro</div>
     <button class="drawer-item" id="drawer-faturamento">
@@ -1202,6 +1391,10 @@
         <div id="drawer-user-email" style="font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
     </div>
+    <button id="drawer-lgpd-btn" class="drawer-item">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Termo LGPD
+    </button>
     <button class="drawer-item drawer-item-danger" onclick="fecharDrawer(); fazerLogout();">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Sair
@@ -1486,6 +1679,41 @@
       <span class="top-bar-title">Faturamento</span>
     </div>
     <div class="section-body" id="faturamento-body" style="padding:var(--space-5);width:100%;max-width:760px;margin:0 auto;align-self:center;">
+    </div>
+    <footer class="powered-bar">powered by <strong>up it</strong></footer>
+  </section>
+
+  <!-- ======================== SECTION: PENDÊNCIAS EV ======================== -->
+  <section id="sec-pendencias" class="section">
+    <div class="top-bar">
+      <button class="top-bar-back" id="back-home-from-pendencias" title="Voltar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="top-bar-title">Pendências de EV</span>
+      <button class="top-bar-action" id="btn-pendencias-refresh" title="Atualizar" style="padding:6px 12px;display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 2.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Atualizar
+      </button>
+    </div>
+    <div class="section-body" id="pendencias-body" style="padding:var(--space-5);max-width:640px;margin:0 auto;width:100%;align-self:center;">
+      <!-- KPIs -->
+      <div id="pendencias-kpis" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-6);">
+        <div class="card card-metric" style="padding:var(--space-4);text-align:center;">
+          <span class="metric-label" style="font-size:var(--text-xs);margin-bottom:var(--space-2);display:block;">Atrasadas<br><span style="font-size:10px;color:var(--color-text-muted);">&gt; 1 dia</span></span>
+          <span class="metric-value" id="kpi-atrasadas-anteriores" style="font-size:var(--text-2xl);color:var(--color-danger);">—</span>
+        </div>
+        <div class="card card-metric" style="padding:var(--space-4);text-align:center;">
+          <span class="metric-label" style="font-size:var(--text-xs);margin-bottom:var(--space-2);display:block;">Atrasadas<br><span style="font-size:10px;color:var(--color-text-muted);">hoje</span></span>
+          <span class="metric-value" id="kpi-atrasadas-hoje" style="font-size:var(--text-2xl);color:var(--color-warning);">—</span>
+        </div>
+        <div class="card card-metric" style="padding:var(--space-4);text-align:center;">
+          <span class="metric-label" style="font-size:var(--text-xs);margin-bottom:var(--space-2);display:block;">Pendentes<br><span style="font-size:10px;color:var(--color-text-muted);">hoje</span></span>
+          <span class="metric-value" id="kpi-pendentes-hoje" style="font-size:var(--text-2xl);color:var(--color-info);">—</span>
+        </div>
+      </div>
+
+      <!-- Listas -->
+      <div id="pendencias-listas"></div>
     </div>
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
@@ -1821,7 +2049,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.344'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.346'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -6668,9 +6896,108 @@
   };
 
   /* ============================================================
+     LGPD — Verificação de aceite obrigatório e visualização do termo
+  ============================================================ */
+  (function _initLGPD() {
+    const overlay   = document.getElementById('lgpd-overlay');
+    const scrollArea = document.getElementById('lgpd-scroll-area');
+    const sentinel  = document.getElementById('lgpd-scroll-sentinel');
+    const acceptBtn = document.getElementById('lgpd-accept-btn');
+    const hint      = document.getElementById('lgpd-scroll-hint');
+    const closeBtn  = document.getElementById('lgpd-close-btn');
+    const aceitoEm  = document.getElementById('lgpd-aceito-em');
+
+    // Scroll-gate via IntersectionObserver
+    let _scrollReached = false;
+    let _observer = null;
+    function _ativarScrollGate() {
+      _scrollReached = false;
+      acceptBtn.disabled = true;
+      hint.classList.remove('hidden');
+      _observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !_scrollReached) {
+            _scrollReached = true;
+            acceptBtn.disabled = false;
+            hint.classList.add('hidden');
+            _observer.disconnect();
+          }
+        },
+        { root: scrollArea, threshold: 0.8 }
+      );
+      _observer.observe(sentinel);
+    }
+
+    function _modoAceite() {
+      hint.style.display = '';
+      acceptBtn.style.display = '';
+      aceitoEm.style.display = 'none';
+      closeBtn.style.display = 'none';
+      scrollArea.scrollTop = 0;
+      _ativarScrollGate();
+    }
+
+    function _modoVisualizacao(dataAceite) {
+      hint.style.display = 'none';
+      acceptBtn.style.display = 'none';
+      if (dataAceite) {
+        const d = new Date(dataAceite);
+        const fmt = d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        aceitoEm.textContent = `Aceito em ${fmt}`;
+        aceitoEm.style.display = '';
+      }
+      closeBtn.style.display = '';
+      scrollArea.scrollTop = 0;
+    }
+
+    // Aceite: envia ao backend e libera o app
+    acceptBtn.addEventListener('click', async () => {
+      acceptBtn.disabled = true;
+      acceptBtn.textContent = 'Registrando…';
+      try {
+        await apiFetch('/lgpd/aceitar', { method: 'POST' });
+        overlay.classList.add('hidden');
+      } catch (e) {
+        acceptBtn.disabled = false;
+        acceptBtn.textContent = 'Eu li e concordo';
+        alert('Erro ao registrar aceite. Verifique sua conexão e tente novamente.');
+      }
+    });
+
+    // Fechar (modo visualização)
+    closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+
+    // Botão do drawer — abre em modo visualização
+    document.getElementById('drawer-lgpd-btn').addEventListener('click', () => {
+      fecharDrawer();
+      apiFetch('/lgpd/status').then(data => {
+        _modoVisualizacao(data.aceito_em);
+        overlay.classList.remove('hidden');
+      }).catch(() => {
+        _modoVisualizacao(null);
+        overlay.classList.remove('hidden');
+      });
+    });
+
+    // Verificação inicial: mostra aceite obrigatório se necessário
+    apiFetch('/lgpd/status')
+      .then(data => {
+        if (!data.aceito) {
+          _modoAceite();
+          overlay.classList.remove('hidden');
+        }
+      })
+      .catch(() => {
+        _modoAceite();
+        overlay.classList.remove('hidden');
+      });
+  })();
+
+  /* ============================================================
      INIT
   ============================================================ */
   loadPacientes();
+  _pendenciasCarregarBadge();
 
   /* ============================================================
      CRÉDITOS
@@ -7033,6 +7360,154 @@
      AGENDA / CALENDÁRIO
   ============================================================ */
 
+  /* ============================================================
+     PENDÊNCIAS DE EVOLUÇÃO DIÁRIA
+  ============================================================ */
+
+  document.getElementById('drawer-pendencias').addEventListener('click', () => {
+    fecharDrawer();
+    setDrawerActive('drawer-pendencias');
+    abrirPendencias();
+  });
+
+  document.getElementById('back-home-from-pendencias').addEventListener('click', () => {
+    setDrawerActive('drawer-pacientes');
+    showSection('sec-home');
+    loadPacientes();
+  });
+
+  document.getElementById('btn-pendencias-refresh').addEventListener('click', () => {
+    abrirPendencias();
+  });
+
+  async function abrirPendencias() {
+    showSection('sec-pendencias');
+    document.getElementById('kpi-atrasadas-anteriores').textContent = '…';
+    document.getElementById('kpi-atrasadas-hoje').textContent = '…';
+    document.getElementById('kpi-pendentes-hoje').textContent = '…';
+    document.getElementById('pendencias-listas').innerHTML = '';
+
+    let dados;
+    try {
+      dados = await apiFetch('/pendencias-evolucao');
+    } catch (e) {
+      document.getElementById('pendencias-listas').innerHTML =
+        `<div style="color:var(--color-danger);text-align:center;padding:var(--space-8);">Erro ao carregar pendências.</div>`;
+      return;
+    }
+
+    const { atrasadas_anteriores, atrasadas_hoje, pendentes_hoje } = dados;
+
+    // KPIs
+    document.getElementById('kpi-atrasadas-anteriores').textContent = atrasadas_anteriores.length;
+    document.getElementById('kpi-atrasadas-hoje').textContent       = atrasadas_hoje.length;
+    document.getElementById('kpi-pendentes-hoje').textContent       = pendentes_hoje.length;
+
+    // Badge no menu
+    const totalUrgente = atrasadas_anteriores.length + atrasadas_hoje.length;
+    _pendenciasAtualizarBadge(totalUrgente);
+
+    // Listas
+    const container = document.getElementById('pendencias-listas');
+    container.innerHTML = '';
+
+    function _renderLista(titulo, cor, bg, borda, sessoes, emptyMsg) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-bottom:var(--space-6);';
+
+      const header = document.createElement('div');
+      header.style.cssText = `display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);`;
+      header.innerHTML = `
+        <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;"></span>
+        <span style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);">${titulo}</span>
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted);">(${sessoes.length})</span>
+      `;
+      wrap.appendChild(header);
+
+      if (sessoes.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = `font-size:var(--text-sm);color:var(--color-text-muted);padding:var(--space-4) var(--space-5);background:var(--color-surface);border:var(--border);border-radius:var(--radius-md);text-align:center;`;
+        empty.textContent = emptyMsg;
+        wrap.appendChild(empty);
+      } else {
+        sessoes.forEach(s => {
+          const item = document.createElement('div');
+          item.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:${bg};border:1px solid ${borda};border-radius:var(--radius-md);margin-bottom:var(--space-2);gap:var(--space-3);cursor:pointer;transition:opacity 0.15s;`;
+          item.onmouseenter = () => { item.style.opacity = '0.8'; };
+          item.onmouseleave = () => { item.style.opacity = '1'; };
+
+          // Dias de atraso (para atrasadas anteriores)
+          const dataSessao = new Date(s.data + 'T00:00:00');
+          const hoje2 = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
+          const diffDias = Math.round((hoje2 - dataSessao) / 86400000);
+          const atraso = diffDias > 0 ? `<span style="font-size:10px;color:${cor};font-weight:600;">+${diffDias}d</span>` : '';
+
+          item.innerHTML = `
+            <div style="min-width:0;flex:1;">
+              <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.paciente_nome}</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${formatDate(s.data)} &middot; <span style="text-transform:capitalize;">${s.status}</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-2);flex-shrink:0;">
+              ${atraso}
+              <span style="font-size:var(--text-xs);color:var(--color-text-muted);">Ver</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          `;
+          item.addEventListener('click', () => {
+            openPaciente(s.paciente_id);
+          });
+          wrap.appendChild(item);
+        });
+      }
+      container.appendChild(wrap);
+    }
+
+    _renderLista(
+      'Atrasadas — outros dias',
+      'var(--color-danger)',
+      'var(--color-danger-bg)',
+      '#fca5a5',
+      atrasadas_anteriores,
+      'Nenhuma EV atrasada de dias anteriores'
+    );
+    _renderLista(
+      'Atrasadas — hoje',
+      'var(--color-warning)',
+      'var(--color-warning-bg)',
+      '#fcd34d',
+      atrasadas_hoje,
+      'Nenhuma EV atrasada de hoje'
+    );
+    _renderLista(
+      'Pendentes — hoje',
+      'var(--color-info)',
+      'var(--color-info-bg)',
+      '#93c5fd',
+      pendentes_hoje,
+      'Nenhuma sessão aberta hoje'
+    );
+  }
+
+  function _pendenciasAtualizarBadge(total) {
+    const badge = document.getElementById('pendencias-badge');
+    if (total > 0) {
+      badge.textContent = total > 99 ? '99+' : String(total);
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Carrega badge ao iniciar o app
+  async function _pendenciasCarregarBadge() {
+    try {
+      const dados = await apiFetch('/pendencias-evolucao');
+      _pendenciasAtualizarBadge(
+        dados.atrasadas_anteriores.length + dados.atrasadas_hoje.length
+      );
+    } catch (_) { /* silencioso */ }
+  }
+
   document.getElementById('drawer-agenda').addEventListener('click', () => {
     fecharDrawer();
     setDrawerActive('drawer-agenda');
@@ -7217,6 +7692,8 @@
         #ag-mes-header { display:flex; align-items:center; justify-content:space-between; padding:12px 8px 10px; background:var(--color-surface); }
         .ag-nav-btn { width:40px; height:40px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); transition:background .15s; }
         .ag-nav-btn:hover { background:var(--color-accent-light); }
+        #ag-hoje-btn:hover { background:var(--color-accent-light); color:var(--color-text); }
+        #ag-mes-header { padding-bottom: 20px; }
         .ag-mes-titulo { font-size:15px; font-weight:600; color:var(--color-text); text-transform:capitalize; }
         .ag-gcal-badge { font-size:10px; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:4px; }
         /* ── Grid ── */
@@ -7369,6 +7846,7 @@
         <button id="ag-search-open-btn" class="ag-nav-btn" title="Buscar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
+        <button id="ag-hoje-btn" style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-family:var(--font-body);font-weight:600;color:var(--color-text-secondary);background:none;border:none;cursor:pointer;padding:2px 8px;border-radius:var(--radius-full);transition:background .15s;" title="Ir para hoje">Hoje</button>
       </div>
 
       <!-- Grid -->
@@ -7395,6 +7873,14 @@
     const selCell = body.querySelector(`.cal-cell[data-data="${_agendaDiaSelecionado}"]`);
     if (selCell) selCell.classList.add('cal-cell-selecionado');
 
+    // Scroll automático para o painel do dia selecionado ao carregar
+    setTimeout(() => {
+      const painel = document.getElementById('ag-painel-dia');
+      if (painel && painel.innerHTML.trim()) {
+        painel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 120);
+
     // Clicks no grid
     body.querySelectorAll('.cal-cell:not(.cal-cell-empty)').forEach(el => {
       el.addEventListener('click', () => {
@@ -7415,6 +7901,13 @@
       _agendaCarregar();
     });
     document.getElementById('ag-search-open-btn').addEventListener('click', _agSearchOpen);
+    document.getElementById('ag-hoje-btn').addEventListener('click', () => {
+      const now = new Date();
+      _agendaAno = now.getFullYear();
+      _agendaMes = now.getMonth();
+      _agendaDiaSelecionado = now.toISOString().slice(0, 10);
+      _agendaCarregar();
+    });
   }
 
   function _agendaRenderizarLista(porDia, totalDias) {

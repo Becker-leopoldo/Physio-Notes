@@ -589,9 +589,125 @@
 
     /* ── Sidebar fisio nome ── */
     .sidebar.collapsed .sidebar-fisio-nome { display: none; }
+
+    /* ── LGPD Overlay ── */
+    #lgpd-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(26,26,26,0.7);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-4);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    #lgpd-overlay.hidden { display: none; }
+    #lgpd-modal {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      width: 100%; max-width: 680px;
+      max-height: 90dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #lgpd-modal-header { padding: var(--space-6) var(--space-8) var(--space-4); border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
+    #lgpd-modal-header h2 { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.5rem; color: var(--color-text); margin-bottom: var(--space-1); }
+    #lgpd-modal-header p { font-size: var(--text-sm); color: var(--color-text-secondary); }
+    #lgpd-scroll-area { overflow-y: auto; padding: var(--space-6) var(--space-8); flex: 1; -webkit-overflow-scrolling: touch; }
+    #lgpd-scroll-area h3 { font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600; color: var(--color-text); margin-top: var(--space-5); margin-bottom: var(--space-2); }
+    #lgpd-scroll-area p, #lgpd-scroll-area li { font-size: var(--text-sm); color: var(--color-text-secondary); line-height: 1.65; }
+    #lgpd-scroll-area ul { padding-left: var(--space-5); margin-bottom: var(--space-3); }
+    #lgpd-scroll-area li { margin-bottom: var(--space-1); }
+    #lgpd-scroll-area strong { color: var(--color-text); }
+    #lgpd-scroll-area .lgpd-section { margin-bottom: var(--space-4); }
+    #lgpd-scroll-sentinel { height: 1px; }
+    #lgpd-modal-footer { padding: var(--space-5) var(--space-8); border-top: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-shrink: 0; }
+    #lgpd-scroll-hint { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; align-items: center; gap: var(--space-2); transition: opacity 0.3s; }
+    #lgpd-scroll-hint.hidden { opacity: 0; pointer-events: none; }
+    #lgpd-accept-btn { font-family: var(--font-body); font-size: var(--text-sm); font-weight: 500; padding: var(--space-3) var(--space-6); border-radius: var(--radius-md); border: none; cursor: pointer; background: var(--color-text); color: #fff; transition: opacity 0.2s; }
+    #lgpd-accept-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    #lgpd-accept-btn:not(:disabled):hover { background: #333; }
+    #lgpd-close-btn { font-family: var(--font-body); font-size: var(--text-sm); font-weight: 500; padding: var(--space-3) var(--space-6); border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text); cursor: pointer; }
   </style>
 </head>
 <body>
+
+<!-- LGPD Overlay -->
+<div id="lgpd-overlay" class="hidden">
+  <div id="lgpd-modal">
+    <div id="lgpd-modal-header">
+      <h2>Termo de Aceite — LGPD</h2>
+      <p>Lei nº 13.709/2018 — Proteção de Dados Pessoais. Leia até o final para continuar.</p>
+    </div>
+    <div id="lgpd-scroll-area">
+      <div class="lgpd-section">
+        <h3>1. Identificação das Partes</h3>
+        <p>O presente Termo é firmado entre a plataforma <strong>Physio Notes</strong> (desenvolvida por <strong>Up It</strong>), doravante denominada <strong>Plataforma</strong>, e você, secretária(o) vinculada(o) ao consultório, doravante denominada(o) <strong>Operadora(or) Autorizada(o)</strong>.</p>
+      </div>
+      <div class="lgpd-section">
+        <h3>2. Natureza dos Dados Acessados</h3>
+        <p>No exercício de suas funções, você terá acesso a <strong>dados pessoais sensíveis</strong> de pacientes, incluindo:</p>
+        <ul>
+          <li>Dados de identificação: nome completo, CPF, data de nascimento, endereço;</li>
+          <li>Dados de contato: telefone;</li>
+          <li>Dados de saúde: histórico de agendamentos, pacotes de sessões e informações clínicas;</li>
+          <li>Dados financeiros: valores pagos, pacotes contratados.</li>
+        </ul>
+      </div>
+      <div class="lgpd-section">
+        <h3>3. Seu Papel no Tratamento de Dados</h3>
+        <p>Você atua como <strong>agente operacional autorizado</strong> pelo(a) fisioterapeuta responsável, processando dados exclusivamente sob suas instruções e para as finalidades da gestão do consultório. Qualquer uso fora desse escopo é vedado.</p>
+      </div>
+      <div class="lgpd-section">
+        <h3>4. Suas Obrigações</h3>
+        <p>Ao aceitar este Termo, você se compromete a:</p>
+        <ul>
+          <li><strong>Manter sigilo absoluto</strong> sobre todos os dados de pacientes acessados na plataforma;</li>
+          <li>Não compartilhar informações de pacientes com terceiros não autorizados pelo(a) fisioterapeuta;</li>
+          <li>Não compartilhar suas credenciais de acesso com outras pessoas;</li>
+          <li>Utilizar os dados exclusivamente para as atividades administrativas e de agendamento do consultório;</li>
+          <li>Notificar imediatamente o(a) fisioterapeuta em caso de suspeita de acesso indevido ou vazamento de dados;</li>
+          <li>Respeitar o direito dos pacientes à privacidade e ao sigilo das informações de saúde;</li>
+          <li>Cumprir as instruções do(a) fisioterapeuta sobre o tratamento de dados a qualquer momento.</li>
+        </ul>
+      </div>
+      <div class="lgpd-section">
+        <h3>5. Vedações Expressas</h3>
+        <p>É <strong>expressamente proibido</strong>:</p>
+        <ul>
+          <li>Acessar dados de pacientes fora do horário ou escopo de trabalho;</li>
+          <li>Copiar, exportar ou transmitir dados de pacientes para sistemas externos sem autorização;</li>
+          <li>Divulgar informações de saúde ou financeiras dos pacientes, mesmo anonimizadas;</li>
+          <li>Utilizar os dados para fins pessoais ou comerciais.</li>
+        </ul>
+      </div>
+      <div class="lgpd-section">
+        <h3>6. Responsabilidades e Sanções</h3>
+        <p>O descumprimento deste Termo pode acarretar encerramento imediato do acesso à plataforma, responsabilização civil perante os pacientes afetados e sanções administrativas pela ANPD (Autoridade Nacional de Proteção de Dados), além de possíveis consequências trabalhistas e penais.</p>
+      </div>
+      <div class="lgpd-section" style="background:#FEF7EC;border-radius:8px;padding:16px;margin-top:24px;">
+        <h3 style="color:#92600A;margin-top:0;">7. Declaração de Ciência e Compromisso</h3>
+        <p>Ao clicar em <strong>"Eu li e concordo"</strong>, você declara que:</p>
+        <ul>
+          <li>Leu e compreendeu integralmente este Termo;</li>
+          <li>Está ciente de que acessa <strong>dados sensíveis de saúde e financeiros</strong> de pacientes;</li>
+          <li>Compromete-se a manter sigilo absoluto sobre todas as informações acessadas;</li>
+          <li>Tem ciência das sanções previstas em caso de descumprimento.</li>
+        </ul>
+      </div>
+      <div id="lgpd-scroll-sentinel"></div>
+    </div>
+    <div id="lgpd-modal-footer">
+      <span id="lgpd-scroll-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Role até o final para habilitar
+      </span>
+      <button id="lgpd-accept-btn" disabled>Eu li e concordo</button>
+      <span id="lgpd-aceito-em" style="display:none;font-size:0.75rem;color:#A09D97;"></span>
+      <button id="lgpd-close-btn" style="display:none;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="app-layout">
 
   <!-- Sidebar -->
@@ -630,6 +746,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Manual
       </a>
+      <button id="nav-lgpd-btn" class="nav-item" style="text-decoration:none;" title="Termo LGPD">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Termo LGPD
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -2911,8 +3031,90 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
   }
 });
 
+/* ── LGPD ── */
+(function _initLGPD() {
+  const overlay    = document.getElementById('lgpd-overlay');
+  const scrollArea = document.getElementById('lgpd-scroll-area');
+  const sentinel   = document.getElementById('lgpd-scroll-sentinel');
+  const acceptBtn  = document.getElementById('lgpd-accept-btn');
+  const hint       = document.getElementById('lgpd-scroll-hint');
+  const closeBtn   = document.getElementById('lgpd-close-btn');
+  const aceitoEmEl = document.getElementById('lgpd-aceito-em');
+
+  let _observer = null;
+  function _ativarScrollGate() {
+    acceptBtn.disabled = true;
+    hint.classList.remove('hidden');
+    _observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          acceptBtn.disabled = false;
+          hint.classList.add('hidden');
+          if (_observer) { _observer.disconnect(); _observer = null; }
+        }
+      },
+      { root: scrollArea, threshold: 0.8 }
+    );
+    _observer.observe(sentinel);
+  }
+
+  function _modoAceite() {
+    hint.style.display = '';
+    acceptBtn.style.display = '';
+    aceitoEmEl.style.display = 'none';
+    closeBtn.style.display = 'none';
+    scrollArea.scrollTop = 0;
+    _ativarScrollGate();
+  }
+
+  function _modoVisualizacao(dataAceite) {
+    hint.style.display = 'none';
+    acceptBtn.style.display = 'none';
+    if (dataAceite) {
+      const d = new Date(dataAceite);
+      const fmt = d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      aceitoEmEl.textContent = `Aceito em ${fmt}`;
+      aceitoEmEl.style.display = '';
+    }
+    closeBtn.style.display = '';
+    scrollArea.scrollTop = 0;
+  }
+
+  acceptBtn.addEventListener('click', async () => {
+    acceptBtn.disabled = true;
+    acceptBtn.textContent = 'Registrando…';
+    try {
+      await apiFetch('/lgpd/aceitar', { method: 'POST' });
+      overlay.classList.add('hidden');
+    } catch (e) {
+      acceptBtn.disabled = false;
+      acceptBtn.textContent = 'Eu li e concordo';
+      alert('Erro ao registrar aceite. Verifique sua conexão e tente novamente.');
+    }
+  });
+
+  closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+
+  document.getElementById('nav-lgpd-btn').addEventListener('click', () => {
+    apiFetch('/lgpd/status').then(data => {
+      _modoVisualizacao(data.aceito_em);
+      overlay.classList.remove('hidden');
+    }).catch(() => {
+      _modoVisualizacao(null);
+      overlay.classList.remove('hidden');
+    });
+  });
+
+  // Verificação inicial
+  apiFetch('/lgpd/status')
+    .then(data => {
+      if (!data.aceito) { _modoAceite(); overlay.classList.remove('hidden'); }
+    })
+    .catch(() => { _modoAceite(); overlay.classList.remove('hidden'); });
+})();
+
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.344';
+const APP_VERSION = 'Beta-0.346';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

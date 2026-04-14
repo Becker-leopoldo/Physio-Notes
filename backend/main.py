@@ -350,6 +350,49 @@ def _verificar_dono_documento(doc: dict, owner: str | None):
         _verificar_dono(paciente, owner)
 
 
+# ---------- LGPD ----------
+
+@app.get("/lgpd/status")
+def lgpd_status(request: Request):
+    """Verifica se o usuário já aceitou o Termo LGPD."""
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+    aceite = db.get_lgpd_aceite(owner)
+    return {"aceito": aceite is not None, "aceito_em": aceite["aceito_em"] if aceite else None}
+
+
+@app.post("/lgpd/aceitar")
+async def lgpd_aceitar(request: Request):
+    """Registra o aceite do Termo LGPD com IP e geolocalização aproximada."""
+    import httpx
+    owner = _owner_email(request)
+    if not owner:
+        raise HTTPException(status_code=401, detail=ERR_NOT_AUTHENTICATED)
+
+    ip = _client_ip(request)
+    user_agent = request.headers.get("user-agent", "")
+    pais: str | None = None
+    cidade: str | None = None
+
+    # Geolocalização por IP (best-effort, sem chave, timeout curto)
+    if ip and ip not in ("127.0.0.1", "::1"):
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as hc:
+                geo = await hc.get(f"http://ip-api.com/json/{ip}?fields=country,city,status")
+            if geo.status_code == 200:
+                data = geo.json()
+                if data.get("status") == "success":
+                    pais = data.get("country")
+                    cidade = data.get("city")
+        except Exception:
+            pass  # geo é best-effort
+
+    db.registrar_lgpd_aceite(owner, ip, user_agent, pais, cidade)
+    db.registrar_audit(owner, "lgpd_aceite", f"ip={ip} pais={pais} cidade={cidade}", ip)
+    return {"ok": True}
+
+
 # ---------- Pacientes ----------
 
 @app.post("/pacientes", status_code=201, responses={409: {"description": "Conflict"}})
@@ -959,18 +1002,6 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
 
     db.registrar_audit(owner, "sessao_encerrar", f"id={sessao_id} cobrar={body.cobrar} valor={valor_override}", _client_ip(request))
 
-    # Cria evento no Google Calendar do fisio (fire-and-forget)
-    if owner and background_tasks:
-        paciente_info = db.get_paciente(sessao["paciente_id"])
-        resumo_notas = dados_consolidados.get("nota") or dados_consolidados.get("conduta") or ""
-        background_tasks.add_task(
-            calendar_service.criar_evento_sessao,
-            owner,
-            paciente_info["nome"] if paciente_info else "Paciente",
-            sessao.get("criado_em") or "",
-            resumo_notas[:500] if resumo_notas else None,
-        )
-
     return {
         "consolidado": consolidado,
         "sessao_id": sessao_id,
@@ -1275,6 +1306,12 @@ def billing_log(mes: str | None = None, limit: int = 100, offset: int = 0, cotac
     return data
 
 
+@app.get("/pendencias-evolucao")
+def get_pendencias_evolucao(request: Request = None):
+    owner = _owner_email(request)
+    return db.get_pendencias_evolucao(owner)
+
+
 @app.get("/agenda")
 def get_agenda(mes: str | None = None, request: Request = None):
     owner = _owner_email(request)
@@ -1523,6 +1560,8 @@ async def agenda_cancelar_evento(event_id: str, request: Request = None):
         )
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
+    db.cancelar_sessao_por_gcal_event_id(event_id, owner)
+    db.registrar_audit(owner, "agendamento_gcal_cancelar_fisio", f"event_id={event_id}", _client_ip(request))
     return {"ok": True}
 
 
@@ -1660,7 +1699,7 @@ class AgendaConfirmarBody(BaseModel):
 
 @app.post("/agenda/confirmar", responses={400: {"description": "Bad Request"}, 502: {"description": "Bad Gateway"}})
 async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
-    """Cria evento no Google Calendar do fisio."""
+    """Cria evento no Google Calendar do fisio e, se houver paciente_id, registra sessão no banco."""
     import httpx
     owner = _owner_email(request)
     refresh_token = db.get_google_refresh_token(owner)
@@ -1672,8 +1711,16 @@ async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Falha ao autenticar: {e}")
 
+    # Resolve nome do evento e valida paciente
+    nome_evento = body.nome
+    if body.paciente_id:
+        pac = db.get_paciente(body.paciente_id)
+        if pac:
+            _verificar_dono(pac, owner)
+            nome_evento = pac["nome"]
+
     event_body = {
-        "summary": body.nome,
+        "summary": f"Physio — {nome_evento}",
         "start": {"dateTime": _dt_br_iso(body.data, body.hora_inicio), "timeZone": TZ_SAO_PAULO},
         "end":   {"dateTime": _dt_br_iso(body.data, body.hora_fim),    "timeZone": TZ_SAO_PAULO},
         "colorId": "2",
@@ -1689,7 +1736,16 @@ async def agenda_confirmar(body: AgendaConfirmarBody, request: Request = None):
         raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
 
     ev = resp.json()
-    return {"ok": True, "event_id": ev.get("id")}
+    event_id = ev.get("id")
+
+    # Registra sessão no banco se paciente identificado
+    sessao_id = None
+    if body.paciente_id:
+        sessao = db.criar_sessao(body.paciente_id, body.data, gcal_event_id=event_id, hora_inicio=body.hora_inicio)
+        sessao_id = sessao["id"]
+        db.registrar_audit(owner, "agendamento_gcal_fisio", f"event_id={event_id} paciente_id={body.paciente_id} data={body.data} sessao_id={sessao_id}", None)
+
+    return {"ok": True, "event_id": event_id, "sessao_id": sessao_id}
 
 
 @app.get("/pacientes/{paciente_id}/resumo", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
@@ -2724,6 +2780,8 @@ async def sec_agendamento_confirmar(body: SecAgendamentoConfirmarBody, request: 
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
     event_id_gcal = resp.json().get("id")
+    if body.paciente_id:
+        db.criar_sessao(body.paciente_id, body.data, gcal_event_id=event_id_gcal, hora_inicio=body.hora_inicio)
     db.registrar_audit(fisio_email, "agendamento_gcal_sec", f"event_id={event_id_gcal} paciente_id={body.paciente_id} data={body.data} hora={body.hora_inicio}", _client_ip(request))
     return {"ok": True, "event_id": event_id_gcal}
 
@@ -2752,6 +2810,7 @@ async def sec_agendamento_cancelar(event_id: str, request: Request = None):
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=502, detail=f"Google Calendar: {resp.status_code}")
     sec_email, _ = _sec_context(request)
+    db.cancelar_sessao_por_gcal_event_id(event_id, fisio_email)
     db.registrar_audit(fisio_email, "agendamento_gcal_cancelar_sec", f"event_id={event_id} por={sec_email}", _client_ip(request))
     return {"ok": True}
 

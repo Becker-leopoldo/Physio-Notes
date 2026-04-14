@@ -4,6 +4,37 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.346 — 2026-04-14
+
+### Funcionalidades — Aceite obrigatório do Termo LGPD (fisioterapeuta + secretaria)
+- **Overlay bloqueante:** no primeiro login, antes de qualquer dado de paciente ser exibido, o usuário vê um modal com o Termo de Aceite LGPD completo cobrindo toda a tela
+- **Scroll-gate:** o botão "Eu li e concordo" fica desabilitado até o usuário rolar até o final do texto (via `IntersectionObserver` no sentinela)
+- **Aceite único:** após aceitar, o modal nunca mais aparece — verificado via `GET /lgpd/status` a cada abertura do app
+- **Consulta posterior:** item "Termo LGPD" no drawer/sidebar permite ler o termo novamente a qualquer momento, exibindo data e hora de aceite
+- **Termo diferenciado:** fisioterapeuta recebe termo de Controlador de dados; secretaria recebe termo de Operadora Autorizada com foco em sigilo e vedações específicas
+- **Registro auditável:** aceite salvo no banco com `owner_email`, timestamp ISO UTC, IP remoto, user-agent do navegador, país e cidade (geolocalização por IP via ip-api.com, best-effort com timeout 3 s)
+- **Backend:** nova tabela `lgpd_aceite`, funções `get_lgpd_aceite()` e `registrar_lgpd_aceite()` em `database.py`, endpoints `GET /lgpd/status` (retorna `aceito_em`) e `POST /lgpd/aceitar` em `main.py`
+- **Audit log:** cada aceite registrado em `audit_log` com `acao=lgpd_aceite`
+
+### Correções
+- Label do menu lateral de pendências renomeado de "Pend. EV" para "Pend. Evolução Diária"
+
+---
+
+## Beta-0.345 — 2026-04-14
+
+### Funcionalidades — Pendências de Evolução Diária (EV)
+- **Menu lateral:** novo item "Pend. EV" (ícone de relógio) com badge vermelho mostrando total de EVs urgentes (atrasadas de outros dias + atrasadas de hoje)
+- **Seção dedicada:** tela `sec-pendencias` com 3 KPIs e listas detalhadas
+  - **KPI 1 — Atrasadas > 1 dia:** sessões de dias anteriores sem `sessao_consolidada` (danger/vermelho)
+  - **KPI 2 — Atrasadas hoje:** sessões de hoje encerradas sem EV registrada (warning/amarelo)
+  - **KPI 3 — Pendentes hoje:** sessões de hoje ainda em aberto (info/azul)
+- **Navegação:** clicar em qualquer item das listas abre o perfil do paciente diretamente
+- **Badge automático:** carregado ao iniciar o app, atualizado a cada abertura da tela
+- **Backend:** nova função `get_pendencias_evolucao()` no `database.py` e endpoint `GET /pendencias-evolucao`
+
+---
+
 ## Beta-0.344 — 2026-04-14
 
 ### Melhorias — Acesso ao manual do usuário

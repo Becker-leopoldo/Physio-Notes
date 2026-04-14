@@ -63,10 +63,10 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 
 | Arquivo                    | Descrição |
 |----------------------------|-----------|
-| `index.html`               | SPA completo da fisioterapeuta. Seções: lista de pacientes, perfil, gravação de sessão, billing, faturamento, agenda, NFS-e. Inclui drawer com painel de convite de secretaria e configurações. |
+| `index.html`               | SPA completo da fisioterapeuta. Seções: lista de pacientes, perfil, gravação de sessão, billing, faturamento, agenda, NFS-e, pendências de EV. Inclui drawer com painel de convite de secretaria e configurações. |
 | `login.html`               | Login unificado fisio + secretaria via Google SSO. Redireciona para `/` (fisio) ou `/secretaria/` (secretaria) conforme o `role` retornado pelo backend. |
 | `admin.html`               | Painel de administração: aprovar/revogar usuários fisio, aprovar/rejeitar convites de secretaria pendentes. |
-| `secretaria/index.html`    | SPA da secretaria. Abas: Agenda, Atestado, Pacientes, Pacotes. Toda operação é escopada ao fisio vinculado. |
+| `secretaria/index.html`    | SPA da secretaria. Abas: Agenda, Atestado, Pacientes, Pacotes. Toda operação é escopada ao fisio vinculado. Inclui importação em lote de pacientes via JSON (botão "Importar" na aba Pacientes). |
 | `secretaria/login.html`    | Redirect simples para `/login.html` (login unificado). |
 | `sw.js`                    | Service Worker para registrar o app como PWA instalável com suporte a atualização automática. |
 | `manifest.json`            | Manifesto PWA: nome, ícones PNG (192×512), cor de tema, modo standalone. |
@@ -201,6 +201,13 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 | `POST` | `/relatorio/crefito` | Gera relatório CREFITO para múltiplos pacientes |
 | `GET` | `/billing?mes=YYYY-MM` | Retorna uso e custo de IA do mês |
 | `GET` | `/faturamento/pacientes?mes=YYYY-MM&paciente_id=X` | Retorna pacotes com valor pago, filtrado por mês de competência e/ou paciente |
+| `GET` | `/pendencias-evolucao` | Retorna sessões sem evolução diária registrada em 3 grupos: `atrasadas_anteriores`, `atrasadas_hoje`, `pendentes_hoje` |
+
+### LGPD
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/lgpd/status` | Verifica se o usuário já aceitou o Termo LGPD (`{"aceito": true/false}`) |
+| `POST` | `/lgpd/aceitar` | Registra aceite com timestamp, IP, user-agent e geolocalização aproximada por IP |
 
 ### Secretaria
 | Método | Rota | Descrição |
@@ -240,6 +247,7 @@ procedimento_extra → procedimentos extras cobrados por sessão (detecção aut
 nota_fiscal        → NFS-e demo emitida pelo sistema (número sequencial, código verificação, dados_json)
 secretaria_link    → vínculo fisio↔secretaria com status (pendente/ativa) e data de criação
 usuario_google     → config por usuário (valor_sessao_avulsa, cobrar_avulsa, google_refresh_token)
+lgpd_aceite        → registro de aceite do Termo LGPD por usuário (email, timestamp, IP, user-agent, país, cidade)
 ```
 
 ### Regras de negócio do pacote

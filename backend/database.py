@@ -233,6 +233,10 @@ def _migrate():
         cols_sessao = [r[1] for r in conn.execute("PRAGMA table_info(sessao)").fetchall()]
         if "deletado_em" not in cols_sessao:
             conn.execute("ALTER TABLE sessao ADD COLUMN deletado_em TEXT")
+        if "gcal_event_id" not in cols_sessao:
+            conn.execute("ALTER TABLE sessao ADD COLUMN gcal_event_id TEXT")
+        if "hora_inicio" not in cols_sessao:
+            conn.execute("ALTER TABLE sessao ADD COLUMN hora_inicio TEXT")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS documento (
@@ -342,6 +346,19 @@ def _migrate():
                 acao        TEXT    NOT NULL,
                 detalhe     TEXT,
                 ip          TEXT
+            )
+        """)
+
+        # Aceite do Termo LGPD
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS lgpd_aceite (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_email TEXT    NOT NULL UNIQUE,
+                aceito_em   TEXT    NOT NULL,
+                ip_address  TEXT,
+                user_agent  TEXT,
+                pais        TEXT,
+                cidade      TEXT
             )
         """)
 
@@ -499,17 +516,55 @@ def salvar_sugestao_ia(paciente_id: int, sugestao_json: str) -> None:
 
 # ---------- Sessao ----------
 
-def criar_sessao(paciente_id: int, data: str | None = None) -> dict:
+def criar_sessao(paciente_id: int, data: str | None = None, gcal_event_id: str | None = None, hora_inicio: str | None = None) -> dict:
     from datetime import date
     data = data or date.today().isoformat()
     now = _now()
     with get_conn() as conn:
+        # Evita duplicata: reutiliza qualquer sessão não-cancelada do mesmo paciente/data
+        existente = conn.execute(
+            "SELECT * FROM sessao WHERE paciente_id = ? AND date(data) = date(?) AND status != 'cancelada' AND deletado_em IS NULL ORDER BY criado_em DESC LIMIT 1",
+            (paciente_id, data),
+        ).fetchone()
+        if existente:
+            updates = []
+            params = []
+            if gcal_event_id and not existente["gcal_event_id"]:
+                updates.append("gcal_event_id = ?"); params.append(gcal_event_id)
+            if hora_inicio and not existente["hora_inicio"]:
+                updates.append("hora_inicio = ?"); params.append(hora_inicio)
+            if updates:
+                params.append(existente["id"])
+                conn.execute(f"UPDATE sessao SET {', '.join(updates)} WHERE id = ?", params)
+                conn.commit()
+            return _row_to_dict(conn.execute("SELECT * FROM sessao WHERE id = ?", (existente["id"],)).fetchone())
         cur = conn.execute(
-            "INSERT INTO sessao (paciente_id, data, status, criado_em) VALUES (?, ?, 'aberta', ?)",
-            (paciente_id, data, now),
+            "INSERT INTO sessao (paciente_id, data, status, criado_em, gcal_event_id, hora_inicio) VALUES (?, ?, 'aberta', ?, ?, ?)",
+            (paciente_id, data, now, gcal_event_id, hora_inicio),
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM sessao WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def cancelar_sessao_por_gcal_event_id(gcal_event_id: str, owner_email: str) -> bool:
+    """Soft-delete da sessão vinculada ao evento GCal. Retorna True se encontrou e cancelou."""
+    now = _now()
+    with get_conn() as conn:
+        row = conn.execute("""
+            SELECT s.id FROM sessao s
+            JOIN paciente p ON p.id = s.paciente_id
+            WHERE s.gcal_event_id = ?
+              AND p.owner_email = ?
+              AND s.deletado_em IS NULL
+        """, (gcal_event_id, owner_email)).fetchone()
+        if not row:
+            return False
+        conn.execute(
+            "UPDATE sessao SET deletado_em = ?, status = ? WHERE id = ?",
+            (now, STATUS_CANCELADA, row["id"]),
+        )
+        conn.commit()
+        return True
 
 
 def get_sessao(sessao_id: int) -> dict | None:
@@ -528,7 +583,7 @@ def deletar_sessao(sessao_id: int):
 def get_agenda_owner(owner_email: str | None, ano_mes: str | None = None) -> list[dict]:
     """Retorna todas as sessões do owner com nome do paciente, opcionalmente filtradas por mês."""
     with get_conn() as conn:
-        where = ["s.deletado_em IS NULL"]
+        where = ["s.deletado_em IS NULL", "s.status != 'cancelada'"]
         params: list = []
         if owner_email:
             where.append(_SQL_OWNER_EMAIL_FILTER)
@@ -2009,3 +2064,109 @@ def get_custo_medio_mensal_usd() -> dict:
         "meses_analisados": len(por_mes),
         "tem_dados": True,
     }
+
+
+def get_pendencias_evolucao(owner_email: str) -> dict:
+    """Retorna sessões sem evolução diária registrada, agrupadas em 3 categorias.
+
+    - atrasadas_anteriores: data < hoje, status != cancelada, sem evolucao
+    - atrasadas_hoje:       data = hoje, sem evolucao, e (encerrada OU hora_inicio já passou)
+    - pendentes_hoje:       data = hoje, status = aberta, e hora_inicio ainda não passou (ou sem hora)
+    """
+    from datetime import date as _date, datetime as _datetime, timezone as _tz, timedelta as _td
+    BRT = _tz(_td(hours=-3))
+    agora_brt = _datetime.now(BRT)
+    hoje = agora_brt.date().isoformat()
+    agora_hora = agora_brt.strftime('%H:%M')  # hora local Brasília HH:MM
+
+    _base_select = """
+        SELECT s.id, s.paciente_id, s.data, s.status, s.criado_em, s.hora_inicio,
+               p.nome AS paciente_nome
+        FROM sessao s
+        JOIN paciente p ON p.id = s.paciente_id
+        LEFT JOIN sessao_consolidada sc ON sc.sessao_id = s.id
+        WHERE s.deletado_em IS NULL
+          AND p.owner_email = ?
+          AND p.deletado_em IS NULL
+    """
+
+    with get_conn() as conn:
+        atrasadas_anteriores = [
+            _row_to_dict(r) for r in conn.execute(
+                _base_select + """
+                  AND date(s.data) < date(?)
+                  AND s.status != ?
+                  AND (sc.id IS NULL OR sc.evolucao IS NULL)
+                ORDER BY s.data DESC, s.criado_em DESC
+                """,
+                (owner_email, hoje, STATUS_CANCELADA),
+            ).fetchall()
+        ]
+
+        # Atrasadas hoje: encerradas sem EV  OU  abertas com hora_inicio já passada
+        atrasadas_hoje = [
+            _row_to_dict(r) for r in conn.execute(
+                _base_select + """
+                  AND date(s.data) = date(?)
+                  AND (sc.id IS NULL OR sc.evolucao IS NULL)
+                  AND s.status != ?
+                  AND (
+                        s.status = ?
+                        OR (s.status = ? AND s.hora_inicio IS NOT NULL AND s.hora_inicio <= ?)
+                  )
+                ORDER BY s.hora_inicio ASC, s.criado_em DESC
+                """,
+                (owner_email, hoje, STATUS_CANCELADA, STATUS_ENCERRADA, STATUS_ABERTA, agora_hora),
+            ).fetchall()
+        ]
+
+        # Pendentes hoje: abertas com hora ainda por vir (ou sem hora definida e encerradas são tratadas acima)
+        pendentes_hoje = [
+            _row_to_dict(r) for r in conn.execute(
+                _base_select + """
+                  AND date(s.data) = date(?)
+                  AND s.status = ?
+                  AND (s.hora_inicio IS NULL OR s.hora_inicio > ?)
+                ORDER BY s.hora_inicio ASC, s.criado_em DESC
+                """,
+                (owner_email, hoje, STATUS_ABERTA, agora_hora),
+            ).fetchall()
+        ]
+
+    return {
+        "atrasadas_anteriores": atrasadas_anteriores,
+        "atrasadas_hoje": atrasadas_hoje,
+        "pendentes_hoje": pendentes_hoje,
+    }
+
+
+# ---------- LGPD ----------
+
+def get_lgpd_aceite(owner_email: str) -> dict | None:
+    """Retorna o registro de aceite LGPD do usuário, ou None se não houver."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM lgpd_aceite WHERE owner_email = ?",
+            (owner_email,),
+        ).fetchone()
+        return _row_to_dict(row)
+
+
+def registrar_lgpd_aceite(
+    owner_email: str,
+    ip_address: str | None,
+    user_agent: str | None,
+    pais: str | None,
+    cidade: str | None,
+) -> None:
+    """Registra o aceite do termo LGPD. Idempotente: segundo aceite é ignorado."""
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO lgpd_aceite (owner_email, aceito_em, ip_address, user_agent, pais, cidade)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(owner_email) DO NOTHING
+            """,
+            (owner_email, _now(), ip_address, user_agent, pais, cidade),
+        )
+        conn.commit()
