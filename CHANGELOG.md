@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.349 — 2026-04-14
+
+### Melhorias
+- **Botão Atualizar (Pendências):** substituído por ícone circular sem texto — título da tela não trunca mais no mobile
+
+---
+
 ## Beta-0.348 — 2026-04-14
 
 ### Melhorias — Pendências Evolução Diária (UX)

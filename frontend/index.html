@@ -1690,9 +1690,8 @@
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <span class="top-bar-title">Pendências Evolução Diária</span>
-      <button class="top-bar-action" id="btn-pendencias-refresh" title="Atualizar" style="padding:6px 12px;display:flex;align-items:center;gap:6px;">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 2.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Atualizar
+      <button class="top-bar-action" id="btn-pendencias-refresh" title="Atualizar" aria-label="Atualizar" style="padding:6px;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--radius-full);">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 2.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
     <div class="section-body" id="pendencias-body" style="padding:var(--space-5);max-width:640px;margin:0 auto;width:100%;align-self:center;">
@@ -2049,7 +2048,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.348'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.349'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
