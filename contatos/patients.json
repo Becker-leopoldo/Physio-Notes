@@ -1,0 +1,928 @@
+{
+  "meta": {
+    "total_raw_records": 104,
+    "total_unique_patients": 103,
+    "duplicate_ids_removed": 1,
+    "homonym_groups": 0
+  },
+  "patients": [
+    {
+      "id": "83969210",
+      "name": "ADRIANA BATISTA PEREIRA DA SILVA",
+      "phone": "+5511954972429",
+      "record_number": "965774",
+      "last_visit": "2025-10-23",
+      "birth_date": "1983-03-27",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77657716",
+      "name": "ADRIANE OLIVEIRA DO MONTE ARAUJO",
+      "phone": "+5511997113007",
+      "record_number": "761382",
+      "last_visit": null,
+      "birth_date": "1974-07-11",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78940417",
+      "name": "AFONSO SOARES TOMAZ",
+      "phone": "+5512982542819",
+      "record_number": "995896",
+      "last_visit": null,
+      "birth_date": "1985-07-30",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78694802",
+      "name": "ALEX SANDRO LAGUNA",
+      "phone": "+5511963631400",
+      "record_number": "013231",
+      "last_visit": "2025-06-11",
+      "birth_date": "1975-01-24",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "90994991",
+      "name": "ALLAN AVEIRO DIB",
+      "phone": "+5511956711791",
+      "record_number": "253724",
+      "last_visit": "2026-03-18",
+      "birth_date": "2005-11-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78334692",
+      "name": "AMANDA MOSCONI",
+      "phone": "+5511976929016",
+      "record_number": "458903",
+      "last_visit": "2025-06-30",
+      "birth_date": "1990-01-23",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77673116",
+      "name": "ANA LUCIA ALEGRE",
+      "phone": "+5511995432362",
+      "record_number": "541775",
+      "last_visit": null,
+      "birth_date": "1983-03-29",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77953259",
+      "name": "ANNA CAROLINA RUDER",
+      "phone": "+5511984882490",
+      "record_number": "374190",
+      "last_visit": null,
+      "birth_date": "1992-10-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77760088",
+      "name": "BARBARA FARIELLO GIACHINI",
+      "phone": "+5511995170910",
+      "record_number": "457919",
+      "last_visit": "2026-04-09",
+      "birth_date": "1988-11-28",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78402229",
+      "name": "BARTIRA DOMINGOS",
+      "phone": "+5511993024427",
+      "record_number": "663680",
+      "last_visit": null,
+      "birth_date": "1982-10-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79089304",
+      "name": "BETTINA ARAUJO",
+      "phone": "+5511960921998",
+      "record_number": "866735",
+      "last_visit": null,
+      "birth_date": "1993-03-14",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79854696",
+      "name": "BRUNA MARQUES SARAIVA PAGLIA",
+      "phone": "+5511939287789",
+      "record_number": "001740",
+      "last_visit": null,
+      "birth_date": "1997-01-20",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78880921",
+      "name": "CAETANO PELEGRINA VIOTO",
+      "phone": "+5511973371808",
+      "record_number": "696146",
+      "last_visit": "2025-05-21",
+      "birth_date": "2008-03-26",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78878405",
+      "name": "CARINE RODRIGUES ARAGÃO COSTA",
+      "phone": "+5511963701511",
+      "record_number": "818113",
+      "last_visit": "2025-08-05",
+      "birth_date": "1981-11-15",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79087826",
+      "name": "CAROLINY SANTANA DA SILVA",
+      "phone": "+5511981129578",
+      "record_number": "904743",
+      "last_visit": "2025-07-24",
+      "birth_date": "1990-06-21",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79611050",
+      "name": "CLAUDIA KASSAB",
+      "phone": "+5511914501382",
+      "record_number": "876574",
+      "last_visit": "2026-03-05",
+      "birth_date": "1975-05-07",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "83962899",
+      "name": "CRISTIANE LEITE DA SILVA",
+      "phone": "+5511957797178",
+      "record_number": "183672",
+      "last_visit": "2025-10-30",
+      "birth_date": "1978-03-06",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78027323",
+      "name": "DANIELA LONGO",
+      "phone": "+5511960810777",
+      "record_number": "211689",
+      "last_visit": "2025-06-06",
+      "birth_date": "1978-04-29",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79656656",
+      "name": "DANIELLE SCHUMAKER EMILIO",
+      "phone": "+5511972532311",
+      "record_number": "338298",
+      "last_visit": null,
+      "birth_date": "1981-11-23",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "80059310",
+      "name": "DANIELLY PAULA MANTOVANI",
+      "phone": "+5511996179691",
+      "record_number": "795140",
+      "last_visit": "2026-03-26",
+      "birth_date": "1986-09-18",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78335443",
+      "name": "DAVERSON FRANZOI",
+      "phone": "+5511965757979",
+      "record_number": "548832",
+      "last_visit": null,
+      "birth_date": "1975-04-03",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78794742",
+      "name": "DENIS BERTOLUCI",
+      "phone": "+5511947578322",
+      "record_number": "941143",
+      "last_visit": null,
+      "birth_date": "1978-07-20",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78647936",
+      "name": "DENISE DI STEFANO DOS SANTOS",
+      "phone": "+5511975155860",
+      "record_number": "185592",
+      "last_visit": null,
+      "birth_date": "1956-03-01",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79435328",
+      "name": "DERCIO MORATO GOMES",
+      "phone": "+5511985512000",
+      "record_number": "257333",
+      "last_visit": null,
+      "birth_date": "1964-10-25",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "80115180",
+      "name": "ELIZABETH NUNES DE DEMO",
+      "phone": "+5511972049406",
+      "record_number": "025034",
+      "last_visit": "2025-09-04",
+      "birth_date": "1948-10-29",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79623924",
+      "name": "EUNICE ARAUJO DA SILVA",
+      "phone": "+5511974003694",
+      "record_number": "238409",
+      "last_visit": "2026-03-05",
+      "birth_date": "1972-06-18",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "83859068",
+      "name": "FABIA SALVALAIO VAZ",
+      "phone": "+5511982353711",
+      "record_number": "641303",
+      "last_visit": null,
+      "birth_date": "1989-01-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77769464",
+      "name": "FABIANA MAGALHAES BOTELHO",
+      "phone": "+5511955997030",
+      "record_number": "609535",
+      "last_visit": "2026-04-01",
+      "birth_date": "1988-09-14",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78796981",
+      "name": "FERNANDA MANTOVANI MAGALHÃES",
+      "phone": "+5511971468362",
+      "record_number": "881376",
+      "last_visit": null,
+      "birth_date": "2002-09-18",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78403299",
+      "name": "FERNANDA ROSSETO PUERTA",
+      "phone": "+5511983804039",
+      "record_number": "738462",
+      "last_visit": "2026-04-09",
+      "birth_date": "1985-01-22",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77727658",
+      "name": "FRANCISMEIRE DO NASCIMENTO PETRINI",
+      "phone": "+5511992252630",
+      "record_number": "126913",
+      "last_visit": "2025-12-12",
+      "birth_date": "1967-03-30",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79624649",
+      "name": "GABRIEL PICOLOMINI",
+      "phone": "+5511972575282",
+      "record_number": "530657",
+      "last_visit": null,
+      "birth_date": "1995-01-31",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77841581",
+      "name": "GIOVANNA STRUZANI RODRIGUES",
+      "phone": "+5511964181946",
+      "record_number": "951130",
+      "last_visit": null,
+      "birth_date": "1993-04-30",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78091509",
+      "name": "GISLAINE DOS SANTOS CORREIA",
+      "phone": "+5511985473773",
+      "record_number": "998007",
+      "last_visit": null,
+      "birth_date": "1985-11-20",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77843838",
+      "name": "GLORIA LINARES",
+      "phone": "+5511999183438",
+      "record_number": "865369",
+      "last_visit": null,
+      "birth_date": "1961-11-25",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "83174923",
+      "name": "GUILHERME MARTINS DOS SANTOS JUNIOR",
+      "phone": "+5511974631951",
+      "record_number": "137499",
+      "last_visit": "2025-10-24",
+      "birth_date": "1951-10-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77768954",
+      "name": "HENRIQUE BARROS",
+      "phone": "+5511986780993",
+      "record_number": "773934",
+      "last_visit": null,
+      "birth_date": "1990-05-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77774185",
+      "name": "HERICA PEREIRA DE CASTRO",
+      "phone": "+5511978244688",
+      "record_number": "592936",
+      "last_visit": null,
+      "birth_date": "1983-03-22",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "88433488",
+      "name": "IARA VAZ DO AMARAL PEREIRA",
+      "phone": "+5511975153072",
+      "record_number": "540190",
+      "last_visit": "2026-03-26",
+      "birth_date": "1952-12-20",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "82595882",
+      "name": "JACIARA SANTOS",
+      "phone": "+5511939489393",
+      "record_number": "454222",
+      "last_visit": "2025-09-26",
+      "birth_date": "1985-06-13",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78029076",
+      "name": "JANAINA DOS SANTOS ROCHA FERRARIA",
+      "phone": "+5511980497003",
+      "record_number": "418173",
+      "last_visit": null,
+      "birth_date": "1976-05-26",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79180604",
+      "name": "JANE MALUF LOPES BRAGA",
+      "phone": "+5511940728734",
+      "record_number": "558281",
+      "last_visit": "2025-11-28",
+      "birth_date": "1978-12-14",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78029207",
+      "name": "JAQUELINE LIMA",
+      "phone": "+5511991598124",
+      "record_number": "518981",
+      "last_visit": "2026-03-18",
+      "birth_date": "1980-11-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78318599",
+      "name": "JOSÉ CARLOS FERREIRA ROCHA",
+      "phone": "+5511999273075",
+      "record_number": "476134",
+      "last_visit": null,
+      "birth_date": "1971-02-23",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78329720",
+      "name": "JOSÉ RODRIGUES",
+      "phone": "+5511945447992",
+      "record_number": "833187",
+      "last_visit": null,
+      "birth_date": "1992-04-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78797466",
+      "name": "JULIA DE MARCHI",
+      "phone": "+5511996595927",
+      "record_number": "137695",
+      "last_visit": "2025-11-11",
+      "birth_date": "2007-01-09",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78052356",
+      "name": "JULIA ROSSETO FARKAS",
+      "phone": "+5511973976958",
+      "record_number": "824002",
+      "last_visit": null,
+      "birth_date": "1999-12-12",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77868553",
+      "name": "JULIANA BRAGA DE MORAES",
+      "phone": "+5511998330157",
+      "record_number": "438170",
+      "last_visit": "2026-01-21",
+      "birth_date": "1986-03-13",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79364107",
+      "name": "JULIANA RUFFO ALVES DE ANDRADE",
+      "phone": "+5511947451907",
+      "record_number": "627181",
+      "last_visit": "2026-01-28",
+      "birth_date": "1982-05-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78331219",
+      "name": "KARINA CAETANO",
+      "phone": "+5511991869298",
+      "record_number": "810059",
+      "last_visit": "2025-12-18",
+      "birth_date": "1978-02-08",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77693887",
+      "name": "LEONARDO VITTI FELICE DE OLIVEIRA",
+      "phone": "+5511998827082",
+      "record_number": "462094",
+      "last_visit": null,
+      "birth_date": "1991-12-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79656327",
+      "name": "LUCIANA APARECIDA DE OLIVEIRA ESCUSSEL",
+      "phone": "+5511976717726",
+      "record_number": "879545",
+      "last_visit": "2026-01-19",
+      "birth_date": "1965-02-18",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79300919",
+      "name": "LUCIANE DE SOUZA MARTINS",
+      "phone": "+5513996519740",
+      "record_number": "889839",
+      "last_visit": "2025-12-12",
+      "birth_date": "1983-09-03",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77699245",
+      "name": "LUISA MARTINS PEREIRA",
+      "phone": "+5511974479383",
+      "record_number": "342734",
+      "last_visit": null,
+      "birth_date": "1998-10-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "89961553",
+      "name": "LUIZ GUSTAVO MORAES DA SILVA",
+      "phone": "+5511985491068",
+      "record_number": "380131",
+      "last_visit": null,
+      "birth_date": "1988-02-12",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78572140",
+      "name": "MAIRA RODRIGUES OLIVEIRA PIMENTA",
+      "phone": "+5511975880108",
+      "record_number": "296310",
+      "last_visit": null,
+      "birth_date": "1991-11-08",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79673613",
+      "name": "MARA CRISTINA P LANGONE",
+      "phone": "+5511964895738",
+      "record_number": "975949",
+      "last_visit": "2025-07-08",
+      "birth_date": "1957-02-25",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79371970",
+      "name": "MARCELO RIBEIRO",
+      "phone": "+5511947633858",
+      "record_number": "119158",
+      "last_visit": null,
+      "birth_date": "1981-03-25",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79681197",
+      "name": "MARCIO SANCHES GARBINO",
+      "phone": "+5511976960100",
+      "record_number": "186515",
+      "last_visit": null,
+      "birth_date": "1978-09-15",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78800552",
+      "name": "MARCO ANTONIO BOMBANA",
+      "phone": "+5511974003694",
+      "record_number": "293427",
+      "last_visit": null,
+      "birth_date": "1954-09-07",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78796319",
+      "name": "MARIA EDUARDA DOS SANTOS OLIVO",
+      "phone": "+5511993338851",
+      "record_number": "850665",
+      "last_visit": null,
+      "birth_date": "1987-11-29",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77859680",
+      "name": "MARIA HELENA SACCUSI MARINS",
+      "phone": "+5511963731333",
+      "record_number": "674128",
+      "last_visit": null,
+      "birth_date": "1955-03-26",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78325107",
+      "name": "MARIANA GUIMARÃES COSTA",
+      "phone": "+5511965572024",
+      "record_number": "270729",
+      "last_visit": null,
+      "birth_date": "1995-06-16",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78337342",
+      "name": "MARILENE DE OLIVEIRA ROSSE",
+      "phone": "+5511991624547",
+      "record_number": "589243",
+      "last_visit": "2026-02-06",
+      "birth_date": "1953-01-29",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78840447",
+      "name": "MARINA BITENCOURT GONÇALVES HASAN",
+      "phone": "+5511947669475",
+      "record_number": "319710",
+      "last_visit": null,
+      "birth_date": "1992-05-21",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77529918",
+      "name": "MARIO GODOY",
+      "phone": "+5511963933720",
+      "record_number": "430728",
+      "last_visit": "2026-04-06",
+      "birth_date": "1990-11-11",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77738541",
+      "name": "MARLI RODA COELHO",
+      "phone": "+5511972123045",
+      "record_number": "002822",
+      "last_visit": null,
+      "birth_date": "1945-10-26",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "83523462",
+      "name": "MARY KAWAUCHI",
+      "phone": "+5511996271591",
+      "record_number": "190632",
+      "last_visit": "2025-10-01",
+      "birth_date": "1963-07-23",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77760982",
+      "name": "MAURICIO DI STEFANO DOS SANTOS",
+      "phone": "+5511982076320",
+      "record_number": "791217",
+      "last_visit": null,
+      "birth_date": "1988-02-24",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77534526",
+      "name": "MICHELLE FIDELIS DO NASCIMENTO",
+      "phone": "+5511989024504",
+      "record_number": "236913",
+      "last_visit": "2026-03-18",
+      "birth_date": "1987-03-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79364582",
+      "name": "MILENA DE FRANÇA",
+      "phone": "+5511947131111",
+      "record_number": "917729",
+      "last_visit": "2025-07-10",
+      "birth_date": "1992-08-20",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "85284438",
+      "name": "MIRIAM SCHIVEL ALMEIDA",
+      "phone": "+5511997500043",
+      "record_number": "547850",
+      "last_visit": "2025-12-12",
+      "birth_date": "1986-02-12",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77934227",
+      "name": "MIRIAN CRISTINA BERGAMINI DE AVO",
+      "phone": "+5511991767116",
+      "record_number": "797093",
+      "last_visit": null,
+      "birth_date": "1987-09-08",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78529835",
+      "name": "OLÁ ABDOUNI",
+      "phone": "+5511951950736",
+      "record_number": "928626",
+      "last_visit": "2025-11-12",
+      "birth_date": "1990-12-17",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78631380",
+      "name": "PAOLA ARLIANI LEMOS",
+      "phone": "+5511947171333",
+      "record_number": "176864",
+      "last_visit": null,
+      "birth_date": "1976-05-21",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77887920",
+      "name": "PATRICIA BRAGA LIMA VINAGREIRO",
+      "phone": "+5511930806753",
+      "record_number": "427939",
+      "last_visit": null,
+      "birth_date": "1979-01-21",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79142824",
+      "name": "PATRICIA ROBERTI MARTINS LIMA CAPARROZ",
+      "phone": "+5511981464323",
+      "record_number": "677148",
+      "last_visit": null,
+      "birth_date": "1973-08-12",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77832691",
+      "name": "PAULA CARVALHO ALVES DE MELLO",
+      "phone": "+5511910088015",
+      "record_number": "134598",
+      "last_visit": "2025-12-01",
+      "birth_date": "1977-01-24",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78390041",
+      "name": "PRISCILLA BASSO",
+      "phone": "+5511942446647",
+      "record_number": "996324",
+      "last_visit": "2025-12-23",
+      "birth_date": "1983-11-15",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77338258",
+      "name": "Paciente Teste",
+      "phone": "+551699999999",
+      "record_number": "525273",
+      "last_visit": "2025-04-01",
+      "birth_date": "1990-03-26",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77824626",
+      "name": "RAQUEL REGINA DE SOUZA",
+      "phone": "+5511993891610",
+      "record_number": "985657",
+      "last_visit": "2026-02-20",
+      "birth_date": "1973-02-17",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79648532",
+      "name": "REGINA PUNARO",
+      "phone": "+5511945427300",
+      "record_number": "055508",
+      "last_visit": "2025-12-22",
+      "birth_date": "1975-01-25",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77755805",
+      "name": "RENATA APARECIDA LAGUNA",
+      "phone": "+5511941398438",
+      "record_number": "724629",
+      "last_visit": "2026-03-23",
+      "birth_date": "1978-08-03",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77534247",
+      "name": "RENATA CAMARGO",
+      "phone": "+5511981116609",
+      "record_number": "593988",
+      "last_visit": null,
+      "birth_date": "1975-09-24",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77658574",
+      "name": "RENATA MARINS",
+      "phone": "+5511989675721",
+      "record_number": "433606",
+      "last_visit": "2025-09-26",
+      "birth_date": "1980-03-30",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78366371",
+      "name": "RENATA PELEGRINA NUNES",
+      "phone": "+5511973371808",
+      "record_number": "020537",
+      "last_visit": "2025-12-11",
+      "birth_date": "1983-11-03",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78829408",
+      "name": "RENATA TORRES BLANCA ROSSI",
+      "phone": "+5511999945001",
+      "record_number": "859931",
+      "last_visit": "2025-05-20",
+      "birth_date": "1971-02-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79618863",
+      "name": "ROBERTA NATALIA SANTOS DA COSTA",
+      "phone": "+5511987905528",
+      "record_number": "337774",
+      "last_visit": "2025-10-16",
+      "birth_date": "1981-09-19",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77679065",
+      "name": "RODRIGO BEGA",
+      "phone": "+5511947907610",
+      "record_number": "912769",
+      "last_visit": null,
+      "birth_date": "1980-06-21",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78095098",
+      "name": "RODRIGO GIMENEZ",
+      "phone": "+5511957939993",
+      "record_number": "449578",
+      "last_visit": null,
+      "birth_date": "1988-05-10",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79360546",
+      "name": "RODRIGO TONZANO ROSA",
+      "phone": "+5511975500499",
+      "record_number": "564824",
+      "last_visit": null,
+      "birth_date": "1978-09-03",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79852974",
+      "name": "SILMARA VIEIRA DE MATOS",
+      "phone": "+5511999768695",
+      "record_number": "280980",
+      "last_visit": "2026-01-06",
+      "birth_date": "1978-04-13",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79218250",
+      "name": "SONIA FERREIRA FERNANDES",
+      "phone": "+5511970901030",
+      "record_number": "340435",
+      "last_visit": null,
+      "birth_date": "1953-01-14",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "81876945",
+      "name": "STEFANY VIANA",
+      "phone": "+5511940124937",
+      "record_number": "378496",
+      "last_visit": "2025-09-19",
+      "birth_date": "1997-09-18",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "83560359",
+      "name": "SUELI ISABEL BIONDI",
+      "phone": "+5511974070400",
+      "record_number": "689733",
+      "last_visit": "2025-09-26",
+      "birth_date": "1963-07-04",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77896574",
+      "name": "THABATA PAGANOTTI DOS SANTOS",
+      "phone": "+5511971679252",
+      "record_number": "543942",
+      "last_visit": null,
+      "birth_date": "1989-09-21",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77807746",
+      "name": "THAYSE FERNANDEZ",
+      "phone": "+5511996044664",
+      "record_number": "803386",
+      "last_visit": "2025-05-05",
+      "birth_date": "1985-03-12",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79089405",
+      "name": "THIAGO PAULO DE ARAUJO",
+      "phone": "+5511950503099",
+      "record_number": "702468",
+      "last_visit": null,
+      "birth_date": "1993-08-14",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "79152007",
+      "name": "VANESSA APARECIDA BENTO DOS SANTOS",
+      "phone": "+5511979916586",
+      "record_number": "562247",
+      "last_visit": "2025-06-02",
+      "birth_date": "1984-03-05",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "77738761",
+      "name": "VERA LUCIA BERTOLICI",
+      "phone": "+551199829255",
+      "record_number": "170393",
+      "last_visit": null,
+      "birth_date": "1955-02-07",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78318759",
+      "name": "WAGNER BERTOLUCI",
+      "phone": "+5511999829257",
+      "record_number": "326440",
+      "last_visit": null,
+      "birth_date": "1951-07-14",
+      "payment_type": "Particular"
+    },
+    {
+      "id": "78940620",
+      "name": "WILLIAN ZUKERAN ALEXANDRE",
+      "phone": "+5511999130759",
+      "record_number": "767224",
+      "last_visit": null,
+      "birth_date": "1980-05-06",
+      "payment_type": "Particular"
+    }
+  ]
+}

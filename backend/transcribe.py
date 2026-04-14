@@ -5,9 +5,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Timeout explícito: evita que proxies (nginx/Render/Railway) abortem antes do Groq responder.
+# Groq Whisper normalmente responde em < 10s para áudios de até 5 min.
+_GROQ_TIMEOUT = float(os.getenv("GROQ_TIMEOUT_SECONDS", "55"))
+
 client = AsyncOpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1",
+    timeout=_GROQ_TIMEOUT,
+    max_retries=0,  # não retentar — o frontend tem sua própria lógica de retry
 )
 
 
