@@ -210,6 +210,7 @@ class PacienteCreate(BaseModel):
     bairro: str | None = None
     cidade: str | None = None
     estado: str | None = None
+    force: bool = False  # True = ignora aviso de homônimo e cadastra mesmo assim
 
 
 class PacienteImportItem(BaseModel):
@@ -398,6 +399,14 @@ async def lgpd_aceitar(request: Request):
 @app.post("/pacientes", status_code=201, responses={409: {"description": "Conflict"}})
 def criar_paciente(body: PacienteCreate, request: Request):
     owner = _owner_email(request)
+    if not body.force:
+        similares = db.buscar_similares_paciente(body.nome, body.data_nascimento, owner)
+        if similares:
+            raise HTTPException(status_code=409, detail={
+                "tipo": "homonimo",
+                "mensagem": "Já existe um paciente com nome similar cadastrado.",
+                "candidatos": [{"id": p["id"], "nome": p["nome"], "data_nascimento": p.get("data_nascimento"), "motivo": p["motivo"]} for p in similares],
+            })
     try:
         paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
     except (sqlite3.IntegrityError, ValueError):
@@ -958,8 +967,10 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
     if not sessao:
         raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
+    if sessao["status"] == "cancelada":
+        raise HTTPException(status_code=400, detail="Sessão cancelada não pode ser encerrada.")
     if sessao["status"] != "aberta":
-        raise HTTPException(status_code=400, detail="Sessão já está encerrada")
+        raise HTTPException(status_code=409, detail="Sessão já está encerrada.")
 
     chunks = db.get_chunks_sessao(sessao_id)
     if not chunks:
@@ -2860,13 +2871,24 @@ async def sec_atestado_interpretar(body: SecAtestadoInterpretarBody, request: Re
 
 @app.post("/sec/pacientes/importar")
 def sec_importar_pacientes(body: PacienteImportBody, request: Request = None):
-    """Importação em lote de pacientes. Ignora pacientes cujo nome já existe para o fisio."""
+    """Importação em lote de pacientes. Ignora pacientes cujo nome+nascimento já existem."""
     _, fisio_email = _sec_context(request)
-    existentes = {p["nome"].strip().upper() for p in db.listar_pacientes(fisio_email)}
-    criados, ignorados, erros = 0, 0, []
+    pac_existentes = db.listar_pacientes(fisio_email)
+    # índice por nome (case-insensitive)
+    existentes_nome = {p["nome"].strip().upper() for p in pac_existentes}
+    # índice por (nome, data_nascimento) para dedup mais preciso
+    existentes_nome_dob = {(p["nome"].strip().upper(), p.get("data_nascimento") or "") for p in pac_existentes}
+    criados, ignorados, duplicatas, erros = 0, 0, [], []
     for item in body.pacientes:
         nome_norm = item.nome.strip().upper()
-        if nome_norm in existentes:
+        dob = item.data_nascimento or ""
+        # Se nome exato já existe, ignora
+        if nome_norm in existentes_nome:
+            ignorados += 1
+            continue
+        # Se nome+nascimento já existe (pode ter leve variação no nome), marca como duplicata suspeita
+        if dob and (nome_norm, dob) in existentes_nome_dob:
+            duplicatas.append({"nome": item.nome, "data_nascimento": item.data_nascimento, "motivo": "nome_e_nascimento"})
             ignorados += 1
             continue
         obs = f"Código: {item.codigo}" if item.codigo else None
@@ -2876,12 +2898,13 @@ def sec_importar_pacientes(body: PacienteImportBody, request: Request = None):
                 None, None, None, fisio_email, None,
                 item.telefone, item.convenio, item.ultima_consulta,
             )
-            existentes.add(nome_norm)
+            existentes_nome.add(nome_norm)
+            existentes_nome_dob.add((nome_norm, dob))
             criados += 1
         except Exception as exc:
             erros.append({"nome": item.nome, "motivo": str(exc)})
-    db.registrar_audit(fisio_email, "sec_importar_pacientes", f"criados={criados} ignorados={ignorados} erros={len(erros)}", None)
-    return {"criados": criados, "ignorados": ignorados, "erros": erros}
+    db.registrar_audit(fisio_email, "sec_importar_pacientes", f"criados={criados} ignorados={ignorados} duplicatas={len(duplicatas)} erros={len(erros)}", None)
+    return {"criados": criados, "ignorados": ignorados, "duplicatas": duplicatas, "erros": erros}
 
 
 @app.get("/sec/pacientes")
@@ -2895,6 +2918,14 @@ def sec_listar_pacientes(request: Request = None):
 def sec_criar_paciente(body: PacienteCreate, request: Request = None):
     """Secretaria cadastra novo paciente no nome do fisio vinculado."""
     _, fisio_email = _sec_context(request)
+    if not body.force:
+        similares = db.buscar_similares_paciente(body.nome, body.data_nascimento, fisio_email)
+        if similares:
+            raise HTTPException(status_code=409, detail={
+                "tipo": "homonimo",
+                "mensagem": "Já existe um paciente com nome similar cadastrado.",
+                "candidatos": [{"id": p["id"], "nome": p["nome"], "data_nascimento": p.get("data_nascimento"), "motivo": p["motivo"]} for p in similares],
+            })
     try:
         paciente = db.criar_paciente(
             body.nome, body.data_nascimento, body.observacoes,
@@ -2952,6 +2983,18 @@ def sec_atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Requ
     
     db.registrar_audit(fisio_email, "sec_paciente_atualizar", f"id={paciente_id} por={sec_email}", _client_ip(request))
     return resultado
+
+
+@app.delete("/sec/pacientes/{paciente_id}", status_code=204, responses={404: {"description": "Not Found"}})
+def sec_deletar_paciente(paciente_id: int, request: Request = None):
+    """Secretaria remove um paciente do fisio vinculado (soft delete)."""
+    sec_email, fisio_email = _sec_context(request)
+    paciente = db.get_paciente(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail=ERR_PACIENTE_NOT_FOUND)
+    _verificar_dono(paciente, fisio_email)
+    db.deletar_paciente(paciente_id)
+    db.registrar_audit(fisio_email, "sec_paciente_deletar", f"id={paciente_id} nome={paciente['nome']} por={sec_email}", _client_ip(request))
 
 
 # ---------- Secretaria — Pacotes ----------

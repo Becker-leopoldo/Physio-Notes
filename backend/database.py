@@ -445,6 +445,49 @@ def criar_paciente(
         return _decrypt_paciente(_row_to_dict(conn.execute(_SQL_GET_PACIENTE_BY_ID, (cur.lastrowid,)).fetchone()))
 
 
+def buscar_similares_paciente(nome: str, data_nascimento: str | None, owner_email: str) -> list[dict]:
+    """Retorna pacientes com mesmo nome exato OU mesmo primeiro nome + mesma data de nascimento."""
+    nome_norm = nome.strip()
+    primeiro_nome = nome_norm.split()[0] if nome_norm else nome_norm
+
+    with get_conn() as conn:
+        params: list = [nome_norm, owner_email]
+        dob_clause = ""
+        if data_nascimento and primeiro_nome:
+            # SQLite: SUBSTR(nome, 1, INSTR(nome||' ',' ')-1) extrai o primeiro token
+            dob_clause = """
+               OR (UPPER(SUBSTR(nome, 1, INSTR(nome || ' ', ' ') - 1)) = UPPER(?)
+                   AND data_nascimento = ?
+                   AND owner_email = ?
+                   AND deletado_em IS NULL)"""
+            params += [primeiro_nome, data_nascimento, owner_email]
+
+        rows = conn.execute(
+            f"""SELECT id, nome, data_nascimento FROM paciente
+               WHERE (UPPER(nome) = UPPER(?) AND owner_email = ? AND deletado_em IS NULL)
+               {dob_clause}""",
+            params,
+        ).fetchall()
+
+        seen = set()
+        result = []
+        for r in rows:
+            p = _row_to_dict(r)
+            if p["id"] in seen:
+                continue
+            seen.add(p["id"])
+            nome_existente = (p.get("nome") or "").strip()
+            dob_existente = p.get("data_nascimento")
+            if nome_existente.upper() == nome_norm.upper():
+                # nome exato
+                p["motivo"] = "nome_e_nascimento" if (data_nascimento and dob_existente == data_nascimento) else "nome"
+            else:
+                # só primeiro nome + nascimento
+                p["motivo"] = "primeiro_nome_e_nascimento"
+            result.append(p)
+        return result
+
+
 def atualizar_paciente(
     paciente_id: int, nome: str, data_nascimento: str | None, anamnese: str | None,
     cpf: str | None = None, endereco: str | None = None, conduta_tratamento: str | None = None,
@@ -2100,7 +2143,7 @@ def get_pendencias_evolucao(owner_email: str) -> dict:
                 _base_select + """
                   AND date(s.data) < date(?)
                   AND s.status != ?
-                  AND (sc.id IS NULL OR sc.evolucao IS NULL)
+                  AND (sc.id IS NULL OR (sc.evolucao IS NULL AND sc.nota IS NULL))
                 ORDER BY s.data DESC, s.criado_em DESC
                 """,
                 (owner_email, hoje, STATUS_CANCELADA),
@@ -2115,7 +2158,7 @@ def get_pendencias_evolucao(owner_email: str) -> dict:
             _row_to_dict(r) for r in conn.execute(
                 _base_select + """
                   AND date(s.data) = date(?)
-                  AND (sc.id IS NULL OR sc.evolucao IS NULL)
+                  AND (sc.id IS NULL OR (sc.evolucao IS NULL AND sc.nota IS NULL))
                   AND s.status != ?
                   AND (
                         s.status = ?

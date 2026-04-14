@@ -594,22 +594,29 @@
 
     /* ---- KPI chips (lista de pacientes) ---- */
     .kpi-chip-fisio {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 10px;
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
       background: var(--color-surface);
       border: var(--border-strong);
-      border-radius: var(--radius-full);
-      cursor: pointer; font-size: var(--text-xs);
+      border-radius: var(--radius-lg);
+      cursor: pointer; text-align: left;
       font-family: var(--font-body);
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
     }
-    .kpi-chip-fisio:hover { background: var(--color-accent-light); }
+    .kpi-chip-fisio:hover { background: var(--color-accent-light); box-shadow: var(--shadow-sm); }
+    .kpi-chip-fisio:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
     .kpi-chip-fisio.active { border-color: transparent; }
     .kpi-chip-fisio[data-kpi="amarelo"].active { background: #FEF7EC; border-color: #92600A; }
     .kpi-chip-fisio[data-kpi="vermelho"].active { background: #FEF2F2; border-color: #9B1C1C; }
     .kpi-chip-fisio[data-kpi="azul"].active    { background: #EFF6FF; border-color: #1E3A5F; }
     .kpi-chip-fisio[data-kpi="verde"].active   { background: #EDF7F2; border-color: #2D6A4F; }
     .kpi-chip-fisio[data-kpi="sem"].active     { background: var(--color-accent-light); border-color: var(--color-border-strong); }
+    .kpi-chip-fisio[data-kpi="sem"] { border-style: dashed; background: transparent; }
+    .kfi-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .kfi-content { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .kfi-num { font-size: var(--text-xl); font-weight: 700; line-height: 1; color: var(--color-text); }
+    .kfi-label { font-size: var(--text-xs); font-weight: 500; color: var(--color-text); line-height: 1.3; }
+    .kfi-crit { font-size: 10px; color: var(--color-text-muted); line-height: 1.2; }
 
     /* ---- Session History List ---- */
     .session-card {
@@ -1445,38 +1452,52 @@
         <button id="kpi-fisio-limpar" onclick="limparKpiFisio()" style="display:none;font-size:var(--text-xs);color:var(--color-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Limpar filtro</button>
       </div>
       <div style="display:flex;height:6px;border-radius:9999px;overflow:hidden;margin-bottom:var(--space-3);background:var(--color-border);">
-        <div id="kfi-bar-amarelo" style="background:#92600A;width:0%;transition:width .4s ease;"></div>
         <div id="kfi-bar-vermelho" style="background:#9B1C1C;width:0%;transition:width .4s ease;"></div>
+        <div id="kfi-bar-amarelo" style="background:#92600A;width:0%;transition:width .4s ease;"></div>
         <div id="kfi-bar-azul"    style="background:#1E3A5F;width:0%;transition:width .4s ease;"></div>
         <div id="kfi-bar-verde"   style="background:#2D6A4F;width:0%;transition:width .4s ease;"></div>
         <div id="kfi-bar-sem"     style="background:var(--color-border-strong);width:0%;transition:width .4s ease;"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-        <button class="kpi-chip-fisio" data-kpi="amarelo" onclick="toggleKpiFisio('amarelo')">
-          <span style="width:8px;height:8px;border-radius:50%;background:#92600A;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #FEF7EC;"></span>
-          <strong id="kfi-num-amarelo" style="font-size:var(--text-sm);min-width:16px;">0</strong>
-          <span style="color:var(--color-text-secondary);">Atenção <span style="opacity:.7;">61–90d</span></span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <button class="kpi-chip-fisio" data-kpi="vermelho" onclick="toggleKpiFisio('vermelho')" aria-label="Filtrar inativos há mais de 90 dias">
+          <span class="kfi-dot" style="background:#9B1C1C;box-shadow:0 0 0 2px #FEF2F2;"></span>
+          <span class="kfi-content">
+            <strong id="kfi-num-vermelho" class="kfi-num">0</strong>
+            <span class="kfi-label">Inativos</span>
+            <span class="kfi-crit">&gt; 90 dias</span>
+          </span>
         </button>
-        <button class="kpi-chip-fisio" data-kpi="vermelho" onclick="toggleKpiFisio('vermelho')">
-          <span style="width:8px;height:8px;border-radius:50%;background:#9B1C1C;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #FEF2F2;"></span>
-          <strong id="kfi-num-vermelho" style="font-size:var(--text-sm);min-width:16px;">0</strong>
-          <span style="color:var(--color-text-secondary);">Inativos <span style="opacity:.7;">>90d</span></span>
+        <button class="kpi-chip-fisio" data-kpi="amarelo" onclick="toggleKpiFisio('amarelo')" aria-label="Filtrar pacientes que precisam de atenção, 61 a 90 dias">
+          <span class="kfi-dot" style="background:#92600A;box-shadow:0 0 0 2px #FEF7EC;"></span>
+          <span class="kfi-content">
+            <strong id="kfi-num-amarelo" class="kfi-num">0</strong>
+            <span class="kfi-label">Atenção</span>
+            <span class="kfi-crit">61–90 dias</span>
+          </span>
         </button>
-        <button class="kpi-chip-fisio" data-kpi="azul" onclick="toggleKpiFisio('azul')">
-          <span style="width:8px;height:8px;border-radius:50%;background:#1E3A5F;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #EFF6FF;"></span>
-          <strong id="kfi-num-azul" style="font-size:var(--text-sm);min-width:16px;">0</strong>
-          <span style="color:var(--color-text-secondary);">Regulares <span style="opacity:.7;">31–60d</span></span>
+        <button class="kpi-chip-fisio" data-kpi="azul" onclick="toggleKpiFisio('azul')" aria-label="Filtrar pacientes regulares, 31 a 60 dias">
+          <span class="kfi-dot" style="background:#1E3A5F;box-shadow:0 0 0 2px #EFF6FF;"></span>
+          <span class="kfi-content">
+            <strong id="kfi-num-azul" class="kfi-num">0</strong>
+            <span class="kfi-label">Regulares</span>
+            <span class="kfi-crit">31–60 dias</span>
+          </span>
         </button>
-        <button class="kpi-chip-fisio" data-kpi="verde" onclick="toggleKpiFisio('verde')">
-          <span style="width:8px;height:8px;border-radius:50%;background:#2D6A4F;flex-shrink:0;display:inline-block;box-shadow:0 0 0 2px #EDF7F2;"></span>
-          <strong id="kfi-num-verde" style="font-size:var(--text-sm);min-width:16px;">0</strong>
-          <span style="color:var(--color-text-secondary);">Ativos <span style="opacity:.7;">≤30d</span></span>
+        <button class="kpi-chip-fisio" data-kpi="verde" onclick="toggleKpiFisio('verde')" aria-label="Filtrar pacientes ativos nos últimos 30 dias">
+          <span class="kfi-dot" style="background:#2D6A4F;box-shadow:0 0 0 2px #EDF7F2;"></span>
+          <span class="kfi-content">
+            <strong id="kfi-num-verde" class="kfi-num">0</strong>
+            <span class="kfi-label">Ativos</span>
+            <span class="kfi-crit">≤ 30 dias</span>
+          </span>
         </button>
       </div>
-      <button class="kpi-chip-fisio" data-kpi="sem" onclick="toggleKpiFisio('sem')" style="width:100%;justify-content:flex-start;">
-        <span style="width:8px;height:8px;border-radius:50%;background:var(--color-border-strong);flex-shrink:0;display:inline-block;"></span>
-        <strong id="kfi-num-sem" style="font-size:var(--text-sm);min-width:16px;">0</strong>
-        <span style="color:var(--color-text-secondary);">Sem registro</span>
+      <button class="kpi-chip-fisio" data-kpi="sem" onclick="toggleKpiFisio('sem')" style="width:100%;" aria-label="Filtrar pacientes sem visita registrada">
+        <span class="kfi-dot" style="background:var(--color-border-strong);"></span>
+        <span class="kfi-content" style="flex-direction:row;align-items:center;gap:var(--space-2);">
+          <strong id="kfi-num-sem" class="kfi-num" style="font-size:var(--text-lg);">0</strong>
+          <span class="kfi-label" style="color:var(--color-text-muted);font-weight:400;">Sem visita registrada</span>
+        </span>
       </button>
     </div>
 
@@ -1974,7 +1995,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="input-telefone">Celular <span style="color:var(--color-danger);">*</span></label>
+          <label class="form-label" for="input-telefone">Celular</label>
           <input class="form-input" type="tel" id="input-telefone" placeholder="(11) 99999-9999">
         </div>
         <div class="form-group">
@@ -2048,7 +2069,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.349'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.350'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2467,8 +2488,10 @@
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(data.detail || `Erro ${res.status}`);
+      const msg = typeof data.detail === 'string' ? data.detail : (data.detail?.mensagem || `Erro ${res.status}`);
+      const err = new Error(msg);
       err.status = res.status;
+      err.data = data;
       throw err;
     }
     return data;
@@ -2621,7 +2644,7 @@
     document.getElementById('btn-salvar-paciente-voz').style.display = 'none';
     // Resetar conversa para mensagem inicial
     document.getElementById('modal-conversa').innerHTML =
-      '<div class="ai-bubble">Grave um áudio com o <strong>nome</strong>, <strong>data de nascimento</strong>, <strong>CPF</strong> e <strong>endereço</strong> do paciente.</div>';
+      '<div class="ai-bubble">Grave um áudio com o <strong>nome completo</strong>, <strong>data de nascimento</strong> e <strong>CPF</strong> do paciente.</div>';
     resetModalRecorder();
     // Limpar campos da etapa 2
     document.getElementById('input-nome').value = '';
@@ -2664,8 +2687,8 @@
     const { nome, data_nascimento, cpf, endereco } = capturedData;
     const faltando = [];
     if (!nome) faltando.push('nome completo');
+    if (!data_nascimento) faltando.push('data de nascimento');
     if (!cpf) faltando.push('CPF');
-    if (!endereco) faltando.push('endereço');
 
     const conversa = document.getElementById('modal-conversa');
     const bubble = document.createElement('div');
@@ -2813,11 +2836,44 @@
     }
   });
 
-  document.getElementById('btn-salvar-paciente-voz').addEventListener('click', async function() {
-    const btn = this;
+  // Exibe aviso de homônimo num elemento de erro e retorna Promise que resolve com true (forçar) ou false (cancelar)
+  function _alertaHomonimo(errEl, candidatos) {
+    return new Promise((resolve) => {
+      const fmt = (d) => d ? d.split('-').reverse().join('/') : '—';
+      const _motivoTag = (m) => {
+        if (m === 'nome_e_nascimento')          return ' <span style="color:var(--color-danger);font-size:var(--text-xs);font-weight:600;">mesmo nome e nascimento</span>';
+        if (m === 'primeiro_nome_e_nascimento') return ' <span style="color:var(--color-warning);font-size:var(--text-xs);">mesmo primeiro nome e nascimento</span>';
+        return '';
+      };
+      const lista = candidatos.map(c =>
+        `<li style="padding:var(--space-2) 0;border-bottom:var(--border);font-size:var(--text-sm);">
+          <strong>${escHtml(c.nome)}</strong>
+          ${c.data_nascimento ? ` · Nasc. ${fmt(c.data_nascimento)}` : ''}
+          ${_motivoTag(c.motivo)}
+        </li>`
+      ).join('');
+      errEl.innerHTML = `
+        <div style="background:var(--color-warning-bg);border:1px solid #e6c97a;border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-3);">
+          <div style="font-weight:600;color:var(--color-warning);margin-bottom:var(--space-2);">⚠ Possível duplicata encontrada</div>
+          <ul style="margin:0 0 var(--space-3);padding-left:var(--space-4);">${lista}</ul>
+          <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-3);">Este paciente pode já estar cadastrado. Deseja cadastrar mesmo assim?</div>
+          <div style="display:flex;gap:var(--space-2);">
+            <button id="_btn-homonimo-cancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+            <button id="_btn-homonimo-forcar" class="btn btn-danger btn-sm">Cadastrar mesmo assim</button>
+          </div>
+        </div>`;
+      errEl.style.display = 'block';
+      document.getElementById('_btn-homonimo-cancelar').onclick = () => { errEl.innerHTML = ''; errEl.style.display = 'none'; resolve(false); };
+      document.getElementById('_btn-homonimo-forcar').onclick  = () => { errEl.innerHTML = ''; errEl.style.display = 'none'; resolve(true); };
+    });
+  }
+
+  document.getElementById('btn-salvar-paciente-voz').addEventListener('click', async function _salvarVoz(force = false) {
+    const btn = document.getElementById('btn-salvar-paciente-voz');
     btn.disabled = true;
     btn.textContent = 'Salvando...';
-    document.getElementById('modal-paciente-error-voz').innerHTML = '';
+    const errEl = document.getElementById('modal-paciente-error-voz');
+    errEl.innerHTML = '';
     const hoje = new Date().toISOString().slice(0, 10);
     try {
       await apiFetch('/pacientes', {
@@ -2829,21 +2885,28 @@
           data_atendimento: hoje,
           cpf: capturedData.cpf || null,
           endereco: capturedData.endereco || null,
+          force,
         }),
       });
       fecharModalNovoPaciente();
       await loadPacientes();
     } catch (err) {
-      document.getElementById('modal-paciente-error-voz').innerHTML =
-        `<div class="alert alert-error">${err.message}</div>`;
+      if (err.status === 409 && err.data?.detail?.tipo === 'homonimo') {
+        btn.disabled = false;
+        btn.textContent = 'Salvar paciente';
+        const ok = await _alertaHomonimo(errEl, err.data.detail.candidatos);
+        if (ok) _salvarVoz(true);
+        return;
+      }
+      errEl.innerHTML = `<div class="alert alert-error">${escHtml(err.message)}</div>`;
     } finally {
       btn.disabled = false;
       btn.textContent = 'Salvar paciente';
     }
   });
 
-  document.getElementById('btn-salvar-paciente').addEventListener('click', async function() {
-    const btn = this;
+  document.getElementById('btn-salvar-paciente').addEventListener('click', async function _salvarForm(force = false) {
+    const btn = document.getElementById('btn-salvar-paciente');
     const nome = document.getElementById('input-nome').value.trim();
     const cpfRaw = document.getElementById('input-cpf').value.replaceAll(/\D/g, '');
     const telefone = document.getElementById('input-telefone').value.trim();
@@ -2852,7 +2915,6 @@
     if (!document.getElementById('input-dob').value) { showError('modal-paciente-error', 'A data de nascimento é obrigatória.'); return; }
     if (!cpfRaw) { showError('modal-paciente-error', 'O CPF é obrigatório.'); return; }
     if (!cpfValido(cpfRaw)) { showError('modal-paciente-error', 'CPF inválido. Verifique o número digitado.'); return; }
-    if (!telefone) { showError('modal-paciente-error', 'O celular é obrigatório.'); return; }
     btn.disabled = true;
     btn.textContent = 'Salvando...';
     showError('modal-paciente-error', '');
@@ -2867,11 +2929,20 @@
           cpf: cpfRaw || null,
           telefone: telefone || null,
           endereco: endereco || null,
+          force,
         }),
       });
       fecharModalNovoPaciente();
       await loadPacientes();
     } catch (err) {
+      if (err.status === 409 && err.data?.detail?.tipo === 'homonimo') {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar e salvar';
+        const errEl = document.getElementById('modal-paciente-error');
+        const ok = await _alertaHomonimo(errEl, err.data.detail.candidatos);
+        if (ok) _salvarForm(true);
+        return;
+      }
       showError('modal-paciente-error', err.message);
     } finally {
       btn.disabled = false;
@@ -3848,8 +3919,13 @@
       avulsaValor = res.sessao_avulsa_valor || null;
       sucesso = true;
     } catch (e) {
-      const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
-      if (fb) fb.innerHTML = `<div class="alert alert-error" style="margin-top:var(--space-3);">${friendlyError(e)}</div>`;
+      // Sessão já encerrada por outra ação (ex: auto-close): navegar normalmente
+      if (e.status === 409 || (e.message || '').includes('já está encerrada')) {
+        sucesso = true;
+      } else {
+        const fb = document.getElementById('banner-feedback') || document.getElementById('rec-feedback');
+        if (fb) fb.innerHTML = `<div class="alert alert-error" style="margin-top:var(--space-3);">${friendlyError(e)}</div>`;
+      }
     } finally {
       if (sucesso) {
         await openPaciente(currentPacienteId);

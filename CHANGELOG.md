@@ -4,6 +4,25 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.350 — 2026-04-14
+
+### Funcionalidades
+- **Anti-duplicata de pacientes:** ao cadastrar novo paciente (fisio ou secretaria), o sistema detecta homônimos antes de salvar — 3 níveis: nome exato, nome+data de nascimento, primeiro nome+data de nascimento. Soft warning com opção "Cadastrar mesmo assim"
+- **Importação com deduplicação:** importação CSV da secretaria agora detecta e reporta duplicatas por nome+nascimento, separando criados / ignorados / duplicatas / erros
+
+### Melhorias
+- **Criação de paciente via voz:** texto de instrução corrigido para refletir campos obrigatórios reais (nome completo, data de nascimento, CPF); lógica de "faltando" corrigida (não pedia mais endereço)
+- **Celular opcional:** campo celular deixou de ser obrigatório nos dois apps (fisio + secretaria), tanto no cadastro quanto na edição
+- **KPI cards de status de pacientes (fisio + secretaria):** hierarquia número-primeiro, reordenados por urgência (vermelho→amarelo→azul→verde), estilo dashed para "Sem registro", aria-labels
+- **Agenda secretaria — layout:** calendário migrado de card flutuante central para coluna fixa de 300px com altura total; coluna off-white distingue do painel de eventos; células do calendário mais altas (44px); seção "Em breve" abaixo do calendário lista próximas sessões como atalho; capitalização corrigida ("Quarta-feira, 15 de abril" em vez de "Quarta-Feira, 15 De Abril")
+
+### Correções
+- **Excluir paciente (secretaria):** novo botão lixeira + modal de confirmação por digitação "EXCLUIR"; endpoint `DELETE /sec/pacientes/{id}` adicionado ao backend
+- **Encerrar sessão já encerrada:** se sessão foi fechada por auto-close enquanto o usuário estava na tela de gravação, o botão "Encerrar sessão" agora navega normalmente em vez de exibir erro 400
+- **Pendências Evolução Diária:** nota manual ("+Nota") agora conta como evolução registrada — sessão com nota manual sai da lista de pendências
+
+---
+
 ## Beta-0.349 — 2026-04-14
 
 ### Melhorias
