@@ -4,6 +4,18 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.348 — 2026-04-14
+
+### Melhorias — Pendências Evolução Diária (UX)
+- **Estado "Tudo em dia":** quando não há nenhuma pendência, exibe card de sucesso com checkmark em vez de três seções vazias
+- **Cabeçalhos de seção limpos:** removida contagem redundante `(N)` dos títulos das seções (já presente nos KPI cards)
+- **Mensagens de vazio mais curtas:** "Nenhuma atrasada de dias anteriores", "Nenhuma atrasada hoje", "Nenhuma sessão pendente hoje"
+- **Itens mais informativos:** horário da sessão exibido no subtítulo quando disponível (`hora_inicio`)
+- **Hover melhorado:** `filter: brightness(0.96)` em vez de `opacity: 0.8`; badge `+Nd` de atraso com formato pill
+- **Labels renomeados:** "Pendências de EV" → "Pendências Evolução Diária"; mensagens de vazio "Nenhuma EV atrasada" → "Nenhuma Evolução Diária atrasada"
+
+---
+
 ## Beta-0.347 — 2026-04-14
 
 ### Correções

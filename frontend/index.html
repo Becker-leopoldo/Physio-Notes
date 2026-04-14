@@ -1689,7 +1689,7 @@
       <button class="top-bar-back" id="back-home-from-pendencias" title="Voltar">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <span class="top-bar-title">Pendências de EV</span>
+      <span class="top-bar-title">Pendências Evolução Diária</span>
       <button class="top-bar-action" id="btn-pendencias-refresh" title="Atualizar" style="padding:6px 12px;display:flex;align-items:center;gap:6px;">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 2.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Atualizar
@@ -2049,7 +2049,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.347'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.348'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -7411,51 +7411,65 @@
     const container = document.getElementById('pendencias-listas');
     container.innerHTML = '';
 
+    const totalGeral = atrasadas_anteriores.length + atrasadas_hoje.length + pendentes_hoje.length;
+
+    // Estado "tudo em dia" — substitui as 3 seções quando não há nada pendente
+    if (totalGeral === 0) {
+      container.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-10) var(--space-6);gap:var(--space-4);text-align:center;">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--color-success-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div style="font-size:var(--text-base);font-weight:600;color:var(--color-text);margin-bottom:var(--space-1);">Tudo em dia!</div>
+            <div style="font-size:var(--text-sm);color:var(--color-text-muted);">Nenhuma evolução diária pendente.</div>
+          </div>
+        </div>`;
+      return;
+    }
+
     function _renderLista(titulo, cor, bg, borda, sessoes, emptyMsg) {
       const wrap = document.createElement('div');
       wrap.style.cssText = 'margin-bottom:var(--space-6);';
 
+      // Cabeçalho sem contador duplicado — o número já está no KPI card
       const header = document.createElement('div');
       header.style.cssText = `display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);`;
       header.innerHTML = `
-        <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex-shrink:0;"></span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${cor};flex-shrink:0;"></span>
         <span style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);">${titulo}</span>
-        <span style="font-size:var(--text-xs);color:var(--color-text-muted);">(${sessoes.length})</span>
       `;
       wrap.appendChild(header);
 
       if (sessoes.length === 0) {
         const empty = document.createElement('div');
-        empty.style.cssText = `font-size:var(--text-sm);color:var(--color-text-muted);padding:var(--space-4) var(--space-5);background:var(--color-surface);border:var(--border);border-radius:var(--radius-md);text-align:center;`;
+        empty.style.cssText = `font-size:var(--text-sm);color:var(--color-text-muted);padding:var(--space-3) var(--space-4);text-align:center;`;
         empty.textContent = emptyMsg;
         wrap.appendChild(empty);
       } else {
         sessoes.forEach(s => {
           const item = document.createElement('div');
-          item.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:${bg};border:1px solid ${borda};border-radius:var(--radius-md);margin-bottom:var(--space-2);gap:var(--space-3);cursor:pointer;transition:opacity 0.15s;`;
-          item.onmouseenter = () => { item.style.opacity = '0.8'; };
-          item.onmouseleave = () => { item.style.opacity = '1'; };
+          item.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-4);background:${bg};border:1px solid ${borda};border-radius:var(--radius-md);margin-bottom:var(--space-2);gap:var(--space-3);cursor:pointer;transition:filter 0.15s;`;
+          item.onmouseenter = () => { item.style.filter = 'brightness(0.96)'; };
+          item.onmouseleave = () => { item.style.filter = ''; };
 
-          // Dias de atraso (para atrasadas anteriores)
           const dataSessao = new Date(s.data + 'T00:00:00');
           const hoje2 = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
           const diffDias = Math.round((hoje2 - dataSessao) / 86400000);
-          const atraso = diffDias > 0 ? `<span style="font-size:10px;color:${cor};font-weight:600;">+${diffDias}d</span>` : '';
+          const atraso = diffDias > 0 ? `<span style="font-size:10px;color:${cor};font-weight:700;background:${bg};border:1px solid ${borda};border-radius:4px;padding:1px 5px;">+${diffDias}d</span>` : '';
+          const horaLabel = s.hora_inicio ? `${s.hora_inicio} · ` : '';
 
           item.innerHTML = `
             <div style="min-width:0;flex:1;">
               <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.paciente_nome}</div>
-              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${formatDate(s.data)} &middot; <span style="text-transform:capitalize;">${s.status}</span></div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;">${horaLabel}${formatDate(s.data)} · <span style="text-transform:capitalize;">${s.status}</span></div>
             </div>
             <div style="display:flex;align-items:center;gap:var(--space-2);flex-shrink:0;">
               ${atraso}
-              <span style="font-size:var(--text-xs);color:var(--color-text-muted);">Ver</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5l4.5 4.5L5 11.5" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
           `;
-          item.addEventListener('click', () => {
-            openPaciente(s.paciente_id);
-          });
+          item.addEventListener('click', () => openPaciente(s.paciente_id));
           wrap.appendChild(item);
         });
       }
@@ -7468,7 +7482,7 @@
       'var(--color-danger-bg)',
       '#fca5a5',
       atrasadas_anteriores,
-      'Nenhuma EV atrasada de dias anteriores'
+      'Nenhuma atrasada de dias anteriores'
     );
     _renderLista(
       'Atrasadas — hoje',
@@ -7476,7 +7490,7 @@
       'var(--color-warning-bg)',
       '#fcd34d',
       atrasadas_hoje,
-      'Nenhuma EV atrasada de hoje'
+      'Nenhuma atrasada hoje'
     );
     _renderLista(
       'Pendentes — hoje',
@@ -7484,7 +7498,7 @@
       'var(--color-info-bg)',
       '#93c5fd',
       pendentes_hoje,
-      'Nenhuma sessão aberta hoje'
+      'Nenhuma sessão pendente hoje'
     );
   }
 
