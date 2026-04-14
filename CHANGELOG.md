@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.347 — 2026-04-14
+
+### Correções
+- **Cancelar sessão com cobrança:** agora aceita sessões já encerradas (erro 400 corrigido); rejeita apenas se já cancelada
+- **Gravar áudio:** sessão encerrada pelo auto-close no mesmo dia aceita novo áudio e re-consolida a nota clínica automaticamente
+- **Pendências — sessões manuais:** sessões abertas sem `hora_inicio` (criadas sem agenda) migram para "Atrasadas hoje" após 2h; não ficam presas em "Pendentes hoje" o dia todo
+
+---
+
 ## Beta-0.346 — 2026-04-14
 
 ### Funcionalidades — Aceite obrigatório do Termo LGPD (fisioterapeuta + secretaria)
