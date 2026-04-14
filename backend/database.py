@@ -720,7 +720,7 @@ def registrar_cancelamento(
         if not sessao:
             return
         conn.execute(
-            "UPDATE sessao SET status = 'cancelada' WHERE id = ? AND status = 'aberta'",
+            "UPDATE sessao SET status = 'cancelada' WHERE id = ? AND status != 'cancelada'",
             (sessao_id,),
         )
         # Nota automática de cancelamento

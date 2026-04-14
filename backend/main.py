@@ -834,8 +834,14 @@ async def upload_audio(sessao_id: int, audio: Annotated[UploadFile, File()], req
     if not sessao:
         raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, _owner_email(request))
-    if sessao["status"] != "aberta":
-        raise HTTPException(status_code=400, detail="Sessão já encerrada")
+    if sessao["status"] == "cancelada":
+        raise HTTPException(status_code=400, detail="Sessão cancelada")
+    if sessao["status"] == "encerrada":
+        # Sessão encerrada no mesmo dia (auto-close enquanto usuário gravava) → aceita como nota adicional
+        from datetime import date as _date
+        data_sessao = str(sessao["data"] or "")[:10]
+        if data_sessao != _date.today().isoformat():
+            raise HTTPException(status_code=400, detail="Sessão encerrada — só é possível adicionar notas no mesmo dia")
 
     audio_bytes = await audio.read()
     if not audio_bytes:
@@ -847,6 +853,19 @@ async def upload_audio(sessao_id: int, audio: Annotated[UploadFile, File()], req
         raise HTTPException(status_code=502, detail=f"Erro na transcrição: {str(e)}")
 
     chunk = db.add_audio_chunk(sessao_id, transcricao)
+
+    # Se encerrada, re-consolida a nota com o novo chunk (mesmo comportamento do /adicionar-audio)
+    if sessao["status"] == "encerrada":
+        try:
+            todos_chunks = db.get_chunks_sessao(sessao_id)
+            transcricao_completa = " ".join(c["transcricao"] for c in todos_chunks if c.get("transcricao"))
+            if transcricao_completa:
+                import ai as _ai
+                consolidado = await _ai.consolidar_sessao(transcricao_completa, owner=_owner_email(request))
+                db.consolidar_sessao(sessao_id, consolidado)
+        except Exception:
+            pass  # re-consolidação é best-effort
+
     return {"chunk": chunk, "transcricao": transcricao}
 
 
@@ -863,8 +882,8 @@ def cancelar_com_cobranca(sessao_id: int, body: CancelamentoBody, request: Reque
     if not sessao:
         raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
     _verificar_dono_sessao(sessao, owner)
-    if sessao["status"] != "aberta":
-        raise HTTPException(status_code=400, detail="Sessão não está aberta")
+    if sessao["status"] == "cancelada":
+        raise HTTPException(status_code=400, detail="Sessão já cancelada")
     db.registrar_cancelamento(sessao_id, body.cobrar, body.valor, body.complemento, owner)
     db.registrar_audit(owner, "sessao_cancelar", f"id={sessao_id} cobrar={body.cobrar}", _client_ip(request))
     return {"status": "cancelada", "sessao_id": sessao_id}
