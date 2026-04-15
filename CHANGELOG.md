@@ -4,6 +4,14 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.353 — 2026-04-15
+
+### Correções técnicas (Sonar)
+- **S2486:** `console.error` adicionado em 7 catch blocks silenciosos (CEP, LGPD, pendências) em index.html e secretaria/index.html
+- **css:S7924:** contraste WCAG corrigido — badge SECRETARIA `rgba(0.45)` → `rgba(0.75)`; hover/active sidebar rgba → cores sólidas equivalentes; avatar rgba → `#3a3a3a`; badge pendências `#f87171` → `#9B1C1C`
+
+---
+
 ## Beta-0.352 — 2026-04-15
 
 ### Correções técnicas (Sonar)
