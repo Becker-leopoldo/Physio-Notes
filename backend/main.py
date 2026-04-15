@@ -353,7 +353,7 @@ def _verificar_dono_documento(doc: dict, owner: str | None):
 
 # ---------- LGPD ----------
 
-@app.get("/lgpd/status")
+@app.get("/lgpd/status", responses={401: {"description": "Not Authenticated"}})
 def lgpd_status(request: Request):
     """Verifica se o usuário já aceitou o Termo LGPD."""
     owner = _owner_email(request)
@@ -363,7 +363,7 @@ def lgpd_status(request: Request):
     return {"aceito": aceite is not None, "aceito_em": aceite["aceito_em"] if aceite else None}
 
 
-@app.post("/lgpd/aceitar")
+@app.post("/lgpd/aceitar", responses={401: {"description": "Not Authenticated"}})
 async def lgpd_aceitar(request: Request):
     """Registra o aceite do Termo LGPD com IP e geolocalização aproximada."""
     import httpx
@@ -377,7 +377,15 @@ async def lgpd_aceitar(request: Request):
     cidade: str | None = None
 
     # Geolocalização por IP (best-effort, sem chave, timeout curto)
-    if ip and ip not in ("127.0.0.1", "::1"):
+    # Valida formato do IP antes de interpolá-lo na URL (evita SSRF)
+    import ipaddress as _ipaddress
+    _ip_valido = False
+    try:
+        _ipaddress.ip_address(ip)
+        _ip_valido = True
+    except (ValueError, TypeError):
+        pass
+    if ip and ip not in ("127.0.0.1", "::1") and _ip_valido:
         try:
             async with httpx.AsyncClient(timeout=3.0) as hc:
                 geo = await hc.get(f"http://ip-api.com/json/{ip}?fields=country,city,status")
@@ -495,7 +503,7 @@ async def _disparar_ia_pos_anamnese(paciente_id: int, anamnese: str, conduta_atu
         logger.warning("_disparar_ia_pos_anamnese: paciente_id=%s: %s", paciente_id, exc)
 
 
-@app.post("/pacientes/{paciente_id}/complementar-anamnese", responses={404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/complementar-anamnese", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def complementar_anamnese(paciente_id: int, body: ComplementarAnamneseBody, background_tasks: BackgroundTasks, request: Request):
     paciente = db.get_paciente(paciente_id)
@@ -532,7 +540,7 @@ class ComplementarCondutaBody(BaseModel):
     transcricao: str
 
 
-@app.post("/pacientes/{paciente_id}/complementar-conduta", responses={404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/complementar-conduta", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 @limiter.limit("20/minute")
 async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
     paciente = db.get_paciente(paciente_id)
@@ -551,7 +559,7 @@ async def complementar_conduta(paciente_id: int, body: ComplementarCondutaBody, 
     return {"conduta_tratamento": paciente_atualizado["conduta_tratamento"]}
 
 
-@app.post("/pacientes/{paciente_id}/sugerir-conduta", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/sugerir-conduta", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def sugerir_conduta(paciente_id: int, request: Request):
     paciente = db.get_paciente(paciente_id)
     if not paciente:
@@ -566,7 +574,7 @@ async def sugerir_conduta(paciente_id: int, request: Request):
     return {"sugestao": sugestao}
 
 
-@app.post("/pacientes/{paciente_id}/gerar-sugestao", responses={404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/gerar-sugestao", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def gerar_sugestao(paciente_id: int, request: Request):
     """Atualiza a sugestão da IA para o paciente (botão 'Atualizar' no card)."""
     import json as _json
@@ -588,7 +596,7 @@ async def gerar_sugestao(paciente_id: int, request: Request):
 class SalvarAnamneseManualBody(BaseModel):
     texto: str
 
-@app.post("/pacientes/{paciente_id}/salvar-anamnese-manual", responses={404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/salvar-anamnese-manual", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBody, background_tasks: BackgroundTasks, request: Request):
     """
     Formata anamnese com IA, salva.
@@ -629,7 +637,7 @@ async def salvar_anamnese_manual(paciente_id: int, body: SalvarAnamneseManualBod
     return {"anamnese": anamnese_formatada, "conduta_tratamento": conduta_final, "conduta_gerada": conduta_gerada is not None}
 
 
-@app.post("/pacientes/{paciente_id}/formatar-conduta", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/formatar-conduta", responses={400: {"description": "Bad Request"}, 404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, request: Request):
     """Formata texto livre de conduta com tópicos via IA, sem alterar conteúdo."""
     paciente = db.get_paciente(paciente_id)
@@ -645,7 +653,7 @@ async def formatar_conduta(paciente_id: int, body: ComplementarCondutaBody, requ
     return {"conduta_formatada": formatado}
 
 
-@app.post("/pacientes/{paciente_id}/sugestao-dia", responses={404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/sugestao-dia", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def sugestao_do_dia(paciente_id: int, request: Request):
     """Gera sugestão prática do que fazer na sessão de hoje."""
     paciente = db.get_paciente(paciente_id)
@@ -667,7 +675,7 @@ async def sugestao_do_dia(paciente_id: int, request: Request):
     return {"sugestao": sugestao}
 
 
-@app.post("/pacientes/{paciente_id}/feedback-clinico", responses={404: {"description": "Not Found"}})
+@app.post("/pacientes/{paciente_id}/feedback-clinico", responses={404: {"description": "Not Found"}, 502: {"description": "Bad Gateway"}})
 async def feedback_clinico(paciente_id: int, request: Request):
     """Gera feedback clínico sutil ao fisio sobre pendências e itens não abordados."""
     paciente = db.get_paciente(paciente_id)
@@ -870,7 +878,7 @@ async def upload_audio(sessao_id: int, audio: Annotated[UploadFile, File()], req
             transcricao_completa = " ".join(c["transcricao"] for c in todos_chunks if c.get("transcricao"))
             if transcricao_completa:
                 import ai as _ai
-                consolidado = await _ai.consolidar_sessao(transcricao_completa, owner=_owner_email(request))
+                consolidado = await _ai.consolidar_sessao([transcricao_completa], owner_email=_owner_email(request))
                 db.consolidar_sessao(sessao_id, consolidado)
         except Exception:
             pass  # re-consolidação é best-effort

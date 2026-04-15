@@ -611,7 +611,7 @@
         return text
           .toLowerCase()
           .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '');
+          .replaceAll(/[\u0300-\u036f]/g, '');
       }
 
       function getAnswer(question){
@@ -650,7 +650,7 @@
         botBody.scrollTop = botBody.scrollHeight;
       }
 
-      window.sendQuestion = function(){
+      globalThis.sendQuestion = function(){
         const question = botQuestion.value.trim();
         if(!question) return;
         appendMessage(question, 'user');
@@ -658,9 +658,9 @@
         botQuestion.value = '';
       }
 
-      window.askSuggestion = function(text){
+      globalThis.askSuggestion = function(text){
         botQuestion.value = text;
-        window.sendQuestion();
+        globalThis.sendQuestion();
       }
     })();
   </script>

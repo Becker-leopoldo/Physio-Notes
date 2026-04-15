@@ -2069,7 +2069,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.351'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.352'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2078,14 +2078,14 @@
 
   function titleCase(str) {
     if (!str) return str;
-    return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    return str.replaceAll(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
   }
 
   function calcIdade(dataNasc) {
     if (!dataNasc) return null;
     const hoje = new Date();
     const nasc = new Date(dataNasc + 'T00:00:00');
-    if (isNaN(nasc.getTime())) return null;
+    if (Number.isNaN(nasc.getTime())) return null;
     let idade = hoje.getFullYear() - nasc.getFullYear();
     const m = hoje.getMonth() - nasc.getMonth();
     if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
@@ -2094,7 +2094,7 @@
 
   function fmtTelefone(t) {
     if (!t) return '';
-    const d = t.replace(/\D/g, '');
+    const d = t.replaceAll(/\D/g, '');
     if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
     if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
     return t;
@@ -2110,7 +2110,7 @@
     if (!iso) return null;
     const hoje = new Date();
     const visita = new Date(iso + 'T00:00:00');
-    if (isNaN(visita.getTime())) return null;
+    if (Number.isNaN(visita.getTime())) return null;
     const dias = Math.floor((hoje - visita) / 86400000);
     if (dias <= 30)  return { cor: '#2D6A4F', bg: '#EDF7F2' };
     if (dias <= 60)  return { cor: '#1E3A5F', bg: '#EFF6FF' };
@@ -6165,7 +6165,7 @@
       const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
       const j = await r.json();
       const v = Number.parseFloat(j?.USDBRL?.bid);
-      if (isFinite(v) && v >= 1 && v <= 20) {
+      if (Number.isFinite(v) && v >= 1 && v <= 20) {
         _usdBrl = v;
         _usdBrlTs = agora;
       } else {
@@ -6596,7 +6596,7 @@
         const calcPreco = () => {
           const mPct = Number.parseFloat(document.getElementById('prec-margem')?.value ?? p.margem_pct);
           const iPct = Number.parseFloat(document.getElementById('prec-imposto')?.value ?? p.imposto_pct);
-          if (isNaN(mPct) || isNaN(iPct)) return;
+          if (Number.isNaN(mPct) || Number.isNaN(iPct)) return;
           const m = mPct / 100;
           const i = iPct / 100;
           const novo = p.custo_medio_brl * (1 + m) * (1 + i);
@@ -6609,7 +6609,7 @@
         document.getElementById('prec-salvar-btn')?.addEventListener('click', async () => {
           const margem  = Number.parseFloat(document.getElementById('prec-margem').value);
           const imposto = Number.parseFloat(document.getElementById('prec-imposto').value);
-          if (isNaN(margem) || isNaN(imposto)) return;
+          if (Number.isNaN(margem) || Number.isNaN(imposto)) return;
           try {
             const novo = await apiFetch('/admin/precificacao', {
               method: 'POST',
@@ -6744,12 +6744,12 @@
      EDITAR PACIENTE
   ============================================================ */
   function _fmtCepFisio(v) {
-    const d = v.replace(/\D/g, '').slice(0, 8);
+    const d = v.replaceAll(/\D/g, '').slice(0, 8);
     return d.length > 5 ? `${d.slice(0,5)}-${d.slice(5)}` : d;
   }
 
   async function _buscarCepFisio(cep) {
-    const d = cep.replace(/\D/g, '');
+    const d = cep.replaceAll(/\D/g, '');
     if (d.length !== 8) return;
     const hint = document.getElementById('edit-cep-hint');
     hint.textContent = 'Buscando...'; hint.style.color = '#A09D97'; hint.style.display = 'block';
@@ -6770,7 +6770,7 @@
 
   document.getElementById('edit-cep').addEventListener('input', function() {
     this.value = _fmtCepFisio(this.value);
-    if (this.value.replace(/\D/g,'').length === 8) _buscarCepFisio(this.value);
+    if (this.value.replaceAll(/\D/g,'').length === 8) _buscarCepFisio(this.value);
   });
 
   function abrirModalEdicao(paciente) {
@@ -6815,9 +6815,9 @@
         body: JSON.stringify({
           nome,
           data_nascimento: document.getElementById('edit-dob').value || null,
-          cpf:        document.getElementById('edit-cpf').value.replace(/\D/g,'') || null,
+          cpf:        document.getElementById('edit-cpf').value.replaceAll(/\D/g,'') || null,
           telefone:   document.getElementById('edit-telefone').value.trim()  || null,
-          cep:        document.getElementById('edit-cep').value.replace(/\D/g,'') || null,
+          cep:        document.getElementById('edit-cep').value.replaceAll(/\D/g,'') || null,
           numero:     document.getElementById('edit-numero').value.trim()    || null,
           logradouro: document.getElementById('edit-logradouro').value.trim() || null,
           bairro:     document.getElementById('edit-bairro').value.trim()    || null,
@@ -7158,7 +7158,7 @@
     const _fmtDataRecarga = iso => {
       if (!iso) return '—';
       const d = new Date(iso.replaceAll(' ', 'T'));
-      if (isNaN(d)) return iso.slice(0,10);
+      if (Number.isNaN(d)) return iso.slice(0,10);
       return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }).replaceAll('.','');
     };
     const _badgeRecarga = descricao => {

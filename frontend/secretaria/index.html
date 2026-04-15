@@ -1575,7 +1575,7 @@ function renderProximos() {
     const [a, m, d] = key.split('-');
     const dt = new Date(+a, +m - 1, +d);
     const nomeRaw = dt.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
-    const nomeFormatado = nomeRaw.charAt(0).toUpperCase() + nomeRaw.slice(1).replace(/\./g, '');
+    const nomeFormatado = nomeRaw.charAt(0).toUpperCase() + nomeRaw.slice(1).replaceAll(/\./g, '');
     const isHoje = key === hoje;
     const n = itens.length;
     return `<div class="cal-prox-item${isHoje ? ' hoje-row' : ''}" data-prox="${key}">
@@ -2382,14 +2382,14 @@ function limparKpiFilter() {
 
 function titleCase(str) {
   if (!str) return str;
-  return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  return str.replaceAll(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
 function calcIdade(dataNasc) {
   if (!dataNasc) return null;
   const hoje = new Date();
   const nasc = new Date(dataNasc + 'T00:00:00');
-  if (isNaN(nasc.getTime())) return null;
+  if (Number.isNaN(nasc.getTime())) return null;
   let idade = hoje.getFullYear() - nasc.getFullYear();
   const m = hoje.getMonth() - nasc.getMonth();
   if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
@@ -2398,7 +2398,7 @@ function calcIdade(dataNasc) {
 
 function fmtTelefone(tel) {
   if (!tel) return null;
-  const d = tel.replace(/\D/g, '');
+  const d = tel.replaceAll(/\D/g, '');
   if (d.length === 13) return `(${d.slice(2,4)}) ${d.slice(4,9)}-${d.slice(9)}`;
   if (d.length === 12) return `(${d.slice(2,4)}) ${d.slice(4,8)}-${d.slice(8)}`;
   if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
@@ -2410,7 +2410,7 @@ function visitaStatus(iso) {
   if (!iso) return null;
   const hoje = new Date();
   const visita = new Date(iso + 'T00:00:00');
-  if (isNaN(visita.getTime())) return null;
+  if (Number.isNaN(visita.getTime())) return null;
   const dias = Math.floor((hoje - visita) / 86400000);
   if (dias <= 30)  return { cor: '#2D6A4F', bg: '#EDF7F2', label: 'Última visita' };
   if (dias <= 60)  return { cor: '#1E3A5F', bg: '#EFF6FF', label: 'Última visita' };
@@ -2600,22 +2600,22 @@ document.getElementById('novo-pac-cancelar').addEventListener('click', novoPacCl
 
 /* CPF: máscara, dígito verificador e bind */
 function cpfMascara(v) {
-  return v.replace(/\D/g, '').slice(0, 11)
+  return v.replaceAll(/\D/g, '').slice(0, 11)
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 }
 
 function cpfValido(cpf) {
-  const n = cpf.replace(/\D/g, '');
+  const n = cpf.replaceAll(/\D/g, '');
   if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
   let soma = 0;
-  for (let i = 0; i < 9; i++) soma += parseInt(n[i]) * (10 - i);
+  for (let i = 0; i < 9; i++) soma += Number.parseInt(n[i]) * (10 - i);
   let r = (soma * 10) % 11;
   if (r === 10 || r === 11) r = 0;
   if (r !== parseInt(n[9])) return false;
   soma = 0;
-  for (let i = 0; i < 10; i++) soma += parseInt(n[i]) * (11 - i);
+  for (let i = 0; i < 10; i++) soma += Number.parseInt(n[i]) * (11 - i);
   r = (soma * 10) % 11;
   if (r === 10 || r === 11) r = 0;
   return r === parseInt(n[10]);
@@ -2627,7 +2627,7 @@ function bindCpfInput(inputId, hintId) {
   if (!el || !hint) return;
   el.addEventListener('input', () => { el.value = cpfMascara(el.value); });
   el.addEventListener('blur', () => {
-    const v = el.value.replace(/\D/g, '');
+    const v = el.value.replaceAll(/\D/g, '');
     if (!v.length) { hint.style.display = 'none'; el.style.borderColor = ''; return; }
     if (!cpfValido(el.value)) {
       hint.textContent = 'CPF inválido'; hint.style.color = 'var(--color-danger)';
@@ -2642,7 +2642,7 @@ function bindCpfInput(inputId, hintId) {
 
 /* CEP auto-fill via ViaCEP */
 async function buscarCep(cep, prefix) {
-  const d = cep.replace(/\D/g, '');
+  const d = cep.replaceAll(/\D/g, '');
   if (d.length !== 8) return;
   const hint = document.getElementById(`${prefix}-cep-hint`);
   if (hint) { hint.textContent = 'Buscando...'; hint.style.color = 'var(--color-text-muted)'; hint.style.display = 'block'; }
@@ -2665,18 +2665,18 @@ async function buscarCep(cep, prefix) {
 }
 
 function fmtCep(v) {
-  const d = v.replace(/\D/g, '').slice(0, 8);
+  const d = v.replaceAll(/\D/g, '').slice(0, 8);
   return d.length > 5 ? `${d.slice(0,5)}-${d.slice(5)}` : d;
 }
 
 document.getElementById('edit-pac-cep').addEventListener('input', function() {
   this.value = fmtCep(this.value);
-  if (this.value.replace(/\D/g,'').length === 8) buscarCep(this.value, 'edit-pac');
+  if (this.value.replaceAll(/\D/g,'').length === 8) buscarCep(this.value, 'edit-pac');
 });
 
 document.getElementById('novo-pac-cep').addEventListener('input', function() {
   this.value = fmtCep(this.value);
-  if (this.value.replace(/\D/g,'').length === 8) buscarCep(this.value, 'novo-pac');
+  if (this.value.replaceAll(/\D/g,'').length === 8) buscarCep(this.value, 'novo-pac');
 });
 
 /* Sheet editar paciente */
@@ -2726,7 +2726,7 @@ document.getElementById('edit-pac-salvar').addEventListener('click', async () =>
   const nome = document.getElementById('edit-pac-nome').value.trim();
   if (!nome) return erroEdit('O nome é obrigatório.', 'edit-pac-nome');
   if (!document.getElementById('edit-pac-nasc').value) return erroEdit('A data de nascimento é obrigatória.', 'edit-pac-nasc');
-  const cpfRaw = document.getElementById('edit-pac-cpf').value.replace(/\D/g, '');
+  const cpfRaw = document.getElementById('edit-pac-cpf').value.replaceAll(/\D/g, '');
   if (!cpfRaw) return erroEdit('O CPF é obrigatório.', 'edit-pac-cpf');
   if (!cpfValido(document.getElementById('edit-pac-cpf').value)) return erroEdit('CPF inválido. Verifique os dígitos.', 'edit-pac-cpf');
   const btn = document.getElementById('edit-pac-salvar');
@@ -2742,7 +2742,7 @@ document.getElementById('edit-pac-salvar').addEventListener('click', async () =>
         data_nascimento: document.getElementById('edit-pac-nasc').value            || null,
         telefone:        document.getElementById('edit-pac-telefone').value.trim() || null,
         convenio:        document.getElementById('edit-pac-convenio').value.trim() || null,
-        cep:             document.getElementById('edit-pac-cep').value.replace(/\D/g,'') || null,
+        cep:             document.getElementById('edit-pac-cep').value.replaceAll(/\D/g,'') || null,
         numero:          document.getElementById('edit-pac-numero').value.trim()   || null,
         logradouro:      document.getElementById('edit-pac-logradouro').value.trim() || null,
         bairro:          document.getElementById('edit-pac-bairro').value.trim()   || null,
@@ -2801,7 +2801,7 @@ async function _salvarNovoPaciente(force = false) {
   const nome = document.getElementById('novo-pac-nome').value.trim();
   if (!nome) return erroNovo('O nome é obrigatório.', 'novo-pac-nome');
   if (!document.getElementById('novo-pac-nasc').value) return erroNovo('A data de nascimento é obrigatória.', 'novo-pac-nasc');
-  const cpfRaw = document.getElementById('novo-pac-cpf').value.replace(/\D/g, '');
+  const cpfRaw = document.getElementById('novo-pac-cpf').value.replaceAll(/\D/g, '');
   if (!cpfRaw) return erroNovo('O CPF é obrigatório.', 'novo-pac-cpf');
   if (!cpfValido(document.getElementById('novo-pac-cpf').value)) return erroNovo('CPF inválido. Verifique os dígitos.', 'novo-pac-cpf');
   const btn = document.getElementById('novo-pac-salvar');
@@ -2813,11 +2813,11 @@ async function _salvarNovoPaciente(force = false) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nome,
-        cpf:             document.getElementById('novo-pac-cpf').value.replace(/\D/g,'')  || null,
+        cpf:             document.getElementById('novo-pac-cpf').value.replaceAll(/\D/g,'')  || null,
         data_nascimento: document.getElementById('novo-pac-nasc').value                    || null,
         telefone:        document.getElementById('novo-pac-telefone').value.trim()         || null,
         convenio:        document.getElementById('novo-pac-convenio').value.trim()         || null,
-        cep:             document.getElementById('novo-pac-cep').value.replace(/\D/g,'')  || null,
+        cep:             document.getElementById('novo-pac-cep').value.replaceAll(/\D/g,'')  || null,
         numero:          document.getElementById('novo-pac-numero').value.trim()           || null,
         logradouro:      document.getElementById('novo-pac-logradouro').value.trim()       || null,
         bairro:          document.getElementById('novo-pac-bairro').value.trim()           || null,
@@ -3313,7 +3313,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 })();
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.351';
+const APP_VERSION = 'Beta-0.352';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;

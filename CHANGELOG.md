@@ -4,6 +4,18 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.352 — 2026-04-15
+
+### Correções técnicas (Sonar)
+- **BLOCKER (main.py:873):** argumento `owner=` corrigido para `owner_email=` + transcrição passada como lista para `consolidar_sessao`
+- **VULNERABILITY (main.py:383):** IP validado com `ipaddress.ip_address()` antes de interpolação na URL de geolocalização (previne SSRF)
+- **S7781:** `.replace(/regex/g)` → `.replaceAll(/regex/g)` em index.html, secretaria/index.html e manual.html (~23 ocorrências)
+- **S7773:** `isNaN/parseInt/isFinite` globais → `Number.isNaN/Number.parseInt/Number.isFinite` em index.html e secretaria/index.html (~14 ocorrências)
+- **S7764:** `window.*` → `globalThis.*` em manual.html
+- **S8415:** documentação de status codes 401/502 adicionada nos decorators FastAPI em main.py (10 rotas)
+
+---
+
 ## Beta-0.351 — 2026-04-14
 
 ### Melhorias
