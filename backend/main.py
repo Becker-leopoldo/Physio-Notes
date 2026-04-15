@@ -961,6 +961,39 @@ async def adicionar_audio_sessao_encerrada(sessao_id: int, audio: Annotated[Uplo
     return {"chunk": chunk, "transcricao": transcricao}
 
 
+class EvolucaoManualBody(BaseModel):
+    texto: str
+
+
+@app.post(
+    "/sessoes/{sessao_id}/evolucao-manual",
+    status_code=200,
+    responses={
+        400: {"description": "Texto vazio ou sessão cancelada"},
+        401: {"description": "Not Authenticated"},
+        404: {"description": "Not Found"},
+        409: {"description": "Sessão já encerrada"},
+    },
+)
+@limiter.limit("30/minute")
+def salvar_evolucao_manual(sessao_id: int, body: EvolucaoManualBody, request: Request = None):
+    """Salva texto digitado manualmente como nota de evolução diária da sessão ativa."""
+    texto = body.texto.strip()
+    if not texto:
+        raise HTTPException(status_code=400, detail="O texto da evolução não pode ser vazio.")
+    sessao = db.get_sessao(sessao_id)
+    if not sessao:
+        raise HTTPException(status_code=404, detail=ERR_SESSAO_NOT_FOUND)
+    _verificar_dono_sessao(sessao, _owner_email(request))
+    if sessao["status"] == "cancelada":
+        raise HTTPException(status_code=400, detail="Sessão cancelada não pode receber nota.")
+    if sessao["status"] != "aberta":
+        raise HTTPException(status_code=409, detail="Sessão já encerrada. Use o botão +Nota para adicionar notas.")
+    db.salvar_nota_manual_sessao(sessao_id, texto)
+    logger.info("evolucao_manual: sessao_id=%s owner=%s", sessao_id, _owner_email(request))
+    return {"ok": True, "nota": texto}
+
+
 class EncerrarBody(BaseModel):
     cobrar: bool = True
     valor: float | None = None
@@ -981,15 +1014,48 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
         raise HTTPException(status_code=409, detail="Sessão já está encerrada.")
 
     chunks = db.get_chunks_sessao(sessao_id)
-    if not chunks:
-        raise HTTPException(
-            status_code=400,
-            detail="Nenhum áudio registrado nesta sessão. Grave pelo menos um áudio antes de encerrar.",
-        )
-
-    transcricoes = [c["transcricao"] for c in chunks]
     owner = _owner_email(request)
+
+    if not chunks:
+        # Sem áudio — verificar se há nota manual salva
+        consolidado_existente = db.get_consolidado_sessao(sessao_id)
+        nota_manual = (consolidado_existente or {}).get("nota")
+        if not nota_manual:
+            raise HTTPException(
+                status_code=400,
+                detail="Nenhum conteúdo registrado nesta sessão. Grave um áudio ou digite uma nota antes de encerrar.",
+            )
+        # Fluxo manual: processar texto com IA e encerrar
+        _pac_enc = (db.get_paciente(sessao["paciente_id"]) or {}).get("nome")
+        try:
+            dados_consolidados = await ai.consolidar_sessao([nota_manual], owner, paciente_nome=_pac_enc)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Erro ao consolidar com IA: {str(e)}")
+        # Preservar texto original caso a IA não retorne nota
+        if not dados_consolidados.get("nota"):
+            dados_consolidados["nota"] = nota_manual
+        consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
+        resultado_encerramento = db.encerrar_sessao(sessao_id, owner, cobrar=body.cobrar, valor_override=body.valor)
+        if resultado_encerramento.get("_ja_encerrada"):
+            raise HTTPException(status_code=409, detail="Sessão já foi encerrada.")
+        logger.info("encerrar_sessao (manual+IA): sessao_id=%s owner=%s", sessao_id, owner)
+        return {
+            "consolidado": consolidado,
+            "sessao_id": sessao_id,
+            "status": "encerrada",
+            "sessao_avulsa_valor": resultado_encerramento.get("sessao_avulsa_valor"),
+            "valor_ai_detectado": None,
+            "modo": "manual",
+        }
+
     _pac_enc = (db.get_paciente(sessao["paciente_id"]) or {}).get("nome")
+
+    # Incluir nota manual na transcrição se existir (modo áudio + texto)
+    consolidado_existente = db.get_consolidado_sessao(sessao_id)
+    nota_manual_extra = (consolidado_existente or {}).get("nota")
+    transcricoes = [c["transcricao"] for c in chunks]
+    if nota_manual_extra:
+        transcricoes.append(f"[Nota manual da fisioterapeuta]: {nota_manual_extra}")
 
     try:
         dados_consolidados = await ai.consolidar_sessao(transcricoes, owner, paciente_nome=_pac_enc)
@@ -999,7 +1065,7 @@ async def encerrar_sessao(sessao_id: int, body: EncerrarBody = None, request: Re
     consolidado = db.salvar_consolidado(sessao_id, dados_consolidados)
 
     # Tenta extrair valor do áudio (sempre — útil para pré-preencher prompt no frontend)
-    transcricao_completa = "\n".join(transcricoes)
+    transcricao_completa = "\n".join(c["transcricao"] for c in chunks)
     valor_override = body.valor
     valor_ai_detectado = None
     if not valor_override:

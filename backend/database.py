@@ -564,9 +564,10 @@ def criar_sessao(paciente_id: int, data: str | None = None, gcal_event_id: str |
     data = data or date.today().isoformat()
     now = _now()
     with get_conn() as conn:
-        # Evita duplicata: reutiliza qualquer sessão não-cancelada do mesmo paciente/data
+        # Evita duplicata: reutiliza sessão ABERTA do mesmo paciente/dia (ex: criada pelo calendário)
+        # Sessões encerradas NÃO são reutilizadas — nova evolução = nova sessão
         existente = conn.execute(
-            "SELECT * FROM sessao WHERE paciente_id = ? AND date(data) = date(?) AND status != 'cancelada' AND deletado_em IS NULL ORDER BY criado_em DESC LIMIT 1",
+            "SELECT * FROM sessao WHERE paciente_id = ? AND date(data) = date(?) AND status = 'aberta' AND deletado_em IS NULL ORDER BY criado_em DESC LIMIT 1",
             (paciente_id, data),
         ).fetchone()
         if existente:
@@ -850,6 +851,25 @@ def salvar_consolidado(sessao_id: int, dados: dict) -> dict:
         conn.commit()
         row = conn.execute("SELECT * FROM sessao_consolidada WHERE sessao_id = ?", (sessao_id,)).fetchone()
         return _row_to_dict(row)
+
+
+def salvar_nota_manual_sessao(sessao_id: int, texto: str) -> None:
+    """Upsert de nota manual em sessao_consolidada (campo `nota`)."""
+    with get_conn() as conn:
+        existe = conn.execute(
+            "SELECT id FROM sessao_consolidada WHERE sessao_id = ?", (sessao_id,)
+        ).fetchone()
+        if existe:
+            conn.execute(
+                "UPDATE sessao_consolidada SET nota = ? WHERE sessao_id = ?",
+                (texto, sessao_id),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO sessao_consolidada (sessao_id, nota, criado_em) VALUES (?, ?, ?)",
+                (sessao_id, texto, _now()),
+            )
+        conn.commit()
 
 
 def get_consolidado_sessao(sessao_id: int) -> dict | None:
