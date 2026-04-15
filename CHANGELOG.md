@@ -4,6 +4,15 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.354 — 2026-04-15
+
+### Correções
+- **"Agora não" na tela de gravação:** agora cancela silenciosamente a sessão recém-criada (DELETE) e retorna ao botão "+" — antes deixava a sessão aberta mostrando "Sessão em aberto"
+- **Botão voltar na tela de gravação:** sem conteúdo (sem áudio e sem nota), comporta-se igual ao "Agora não" — cancela a sessão e retorna ao "+"
+- **"Cancelar sessão" sem conteúdo:** agora abre o modal completo de cancelamento (motivo + cobrança) em vez de cancelar silenciosamente
+
+---
+
 ## Beta-0.353 — 2026-04-15
 
 ### Correções técnicas (Sonar)

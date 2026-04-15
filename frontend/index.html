@@ -1615,6 +1615,21 @@
 
       <div id="rec-feedback"></div>
 
+      <!-- Separador / toggle texto manual -->
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin:var(--space-4) 0 var(--space-2);">
+        <div style="flex:1;height:1px;background:var(--color-border);"></div>
+        <button id="rec-toggle-texto" style="font-size:var(--text-xs);color:var(--color-text-secondary);background:none;border:var(--border);border-radius:var(--radius-full);padding:6px 14px;min-height:36px;cursor:pointer;white-space:nowrap;transition:background 0.15s,color 0.15s;" title="Digitar evolução manualmente">ou digitar texto</button>
+        <div style="flex:1;height:1px;background:var(--color-border);"></div>
+      </div>
+
+      <!-- Área de texto manual (oculta por padrão) -->
+      <div id="rec-area-texto" style="display:none;padding:0 var(--space-1) var(--space-3);">
+        <label class="form-label" for="rec-textarea-ev" style="font-size:var(--text-sm);">Evolução diária</label>
+        <textarea id="rec-textarea-ev" class="form-textarea" rows="5" placeholder="Descreva a evolução do paciente nesta sessão..." style="font-size:var(--text-base);resize:vertical;min-height:120px;"></textarea>
+        <div id="rec-texto-feedback" style="font-size:var(--text-sm);min-height:20px;margin-top:var(--space-2);"></div>
+        <button id="rec-btn-salvar-texto" class="btn btn-primary btn-full" style="margin-top:var(--space-3);">Salvar texto</button>
+      </div>
+
       <div id="rec-chunks-area" style="padding-bottom:var(--space-2);">
         <div id="rec-chunks-label" style="font-size:var(--text-sm);font-weight:600;color:var(--color-text-secondary);margin-bottom:var(--space-3);display:none;">Trechos transcritos nesta sessão</div>
         <div class="chunk-list" id="rec-chunks-list"></div>
@@ -1635,6 +1650,7 @@
         </div>
       </div>
       <button class="btn btn-danger btn-full" id="btn-encerrar-rec">Encerrar sessão</button>
+      <button class="btn btn-ghost btn-full" id="btn-agora-nao-rec" style="margin-top:var(--space-2);color:var(--color-text-muted);font-size:var(--text-sm);">Agora não</button>
     </div>
     <footer class="powered-bar">powered by <strong>up it</strong></footer>
   </section>
@@ -2069,7 +2085,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.353'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.354'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2154,6 +2170,7 @@
   let autoCloseInterval    = null;
   let autoCloseSecondsLeft = 0;
   let sessaoTemAudio       = false;
+  let sessaoTemNota        = false;  // há texto manual salvo para esta sessão
 
   /* ============================================================
      SECTION NAVIGATION
@@ -3480,9 +3497,10 @@
     area.innerHTML = '';
     if (!sessao) {
       currentSessaoId = null;
+      // Estado inicial: apenas o botão "+" sem criar sessão
       const wrap = el('div', { style: 'padding: var(--space-4) var(--space-5) 0;' });
       const btn = el('button', { className: 'btn btn-primary btn-full', textContent: '+ Evolução Diária' });
-      btn.addEventListener('click', () => iniciarNovaSessao());
+      btn.addEventListener('click', () => _renderPendingEvBanner(area, temPacote));
       wrap.appendChild(btn);
       area.appendChild(wrap);
       return;
@@ -3490,9 +3508,9 @@
     currentSessaoId = sessao.id;
     const banner = el('div', { className: 'open-session-banner' });
     banner.innerHTML = `
-      <div class="open-session-label">Sessão aberta — ${formatDate(sessao.data)}</div>
+      <div class="open-session-label">Sessão em aberto — ${formatDate(sessao.data)}</div>
       <div class="open-session-actions" style="align-items:center;">
-        <button class="btn btn-primary btn-sm" id="btn-gravar">Gravar áudio</button>
+        <button class="btn btn-primary btn-sm" id="btn-iniciar-retomar">Iniciar</button>
         <button class="btn btn-danger btn-sm" id="btn-encerrar">Encerrar sessão</button>
         ${!temPacote ? `<button class="btn btn-ghost btn-sm" id="btn-cancelar" style="color:var(--color-danger);font-size:var(--text-xs);padding:var(--space-1) var(--space-2);">Cancelar sessão</button>` : ''}
         <div class="ac-indicator" style="display:none;">
@@ -3511,11 +3529,51 @@
     area.appendChild(banner);
     area.appendChild(bannerFeedback);
 
-    document.getElementById('btn-gravar').addEventListener('click', () => openGravacao(sessao.id));
+    document.getElementById('btn-iniciar-retomar').addEventListener('click', () => openGravacao(sessao.id));
     document.getElementById('btn-encerrar').addEventListener('click', () => encerrarSessao(sessao.id));
     document.getElementById('btn-cancelar')?.addEventListener('click', () => abrirModalCancelamento(sessao.id));
 
     resumeAutoCloseTimer(sessao.id);
+  }
+
+  // Banner de confirmação: sessão NÃO criada ainda — só cria ao clicar "Iniciar"
+  function _renderPendingEvBanner(area, temPacote) {
+    area.innerHTML = '';
+    const banner = el('div', { className: 'open-session-banner' });
+    banner.innerHTML = `
+      <div class="open-session-label">Nova evolução diária</div>
+      <div class="open-session-actions" style="align-items:center;">
+        <button class="btn btn-primary btn-sm" id="btn-iniciar-ev">Iniciar</button>
+        <button class="btn btn-ghost btn-sm" id="btn-cancelar-ev" style="color:var(--color-text-muted);font-size:var(--text-xs);padding:var(--space-1) var(--space-2);">Agora não</button>
+      </div>`;
+    area.appendChild(banner);
+
+    document.getElementById('btn-iniciar-ev').addEventListener('click', async () => {
+      const b = document.getElementById('btn-iniciar-ev');
+      b.disabled = true; b.textContent = 'Iniciando...';
+      try {
+        const sessao = await apiFetch('/sessoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paciente_id: currentPacienteId }),
+        });
+        currentSessaoId = sessao.id;
+        openGravacao(sessao.id); // abre tela de gravação + inicia countdown
+      } catch (e) {
+        b.disabled = false; b.textContent = 'Iniciar';
+        area.innerHTML = '';
+        const errEl = el('div', {
+          className: 'alert alert-error',
+          style: 'margin: var(--space-3) var(--space-5) 0;',
+          textContent: e.message,
+        });
+        area.appendChild(errEl);
+      }
+    });
+
+    document.getElementById('btn-cancelar-ev').addEventListener('click', () => {
+      renderOpenSessionBanner(null, temPacote); // volta ao botão "+"
+    });
   }
 
   function renderSessoesList(sessoes, fromCache) {
@@ -3816,24 +3874,6 @@
   }
 
   /* ============================================================
-     NOVA SESSÃO
-  ============================================================ */
-  async function iniciarNovaSessao() {
-    try {
-      const sessao = await apiFetch('/sessoes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paciente_id: currentPacienteId }),
-      });
-      currentSessaoId = sessao.id;
-      renderOpenSessionBanner(sessao, _temPacoteAtivo);
-      startAutoCloseTimer(); // inicia imediatamente ao criar sessão
-    } catch (e) {
-      alert(e.message);
-    }
-  }
-
-  /* ============================================================
      ENCERRAR SESSÃO
   ============================================================ */
   async function cancelarSessao(sessaoId) {
@@ -3963,8 +4003,89 @@
     currentSessaoId = sessaoId;
     showSection('sec-gravacao');
     resetRecorder();
+    resetAreaTexto();
     loadChunksIntoRecorder(sessaoId);
+    carregarNotaManualExistente(sessaoId);
     if (!autoCloseInterval) startAutoCloseTimer(); // só inicia se não estiver rodando
+
+    // Toggle "ou digitar texto"
+    const toggleBtn = document.getElementById('rec-toggle-texto');
+    const areaTexto = document.getElementById('rec-area-texto');
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        const aberto = areaTexto.style.display !== 'none';
+        areaTexto.style.display = aberto ? 'none' : 'block';
+        toggleBtn.textContent = aberto ? 'ou digitar texto' : 'ocultar texto';
+        if (!aberto) document.getElementById('rec-textarea-ev').focus();
+      };
+    }
+
+    // Salvar texto manual
+    const btnSalvar = document.getElementById('rec-btn-salvar-texto');
+    if (btnSalvar) {
+      btnSalvar.onclick = () => salvarEvolucaoManual(sessaoId);
+    }
+  }
+
+
+
+  function resetAreaTexto() {
+    const area = document.getElementById('rec-area-texto');
+    const toggle = document.getElementById('rec-toggle-texto');
+    if (area) area.style.display = 'none';
+    if (toggle) toggle.textContent = 'ou digitar texto';
+    const tf = document.getElementById('rec-texto-feedback');
+    if (tf) tf.innerHTML = '';
+  }
+
+  async function carregarNotaManualExistente(sessaoId) {
+    try {
+      const data = await apiFetch(`/sessoes/${sessaoId}`);
+      const nota = data?.consolidado?.nota;
+      if (nota) {
+        const ta = document.getElementById('rec-textarea-ev');
+        if (ta) ta.value = nota;
+        const area = document.getElementById('rec-area-texto');
+        const toggle = document.getElementById('rec-toggle-texto');
+        if (area) area.style.display = 'block';
+        if (toggle) toggle.textContent = 'ocultar texto';
+        const tf = document.getElementById('rec-texto-feedback');
+        if (tf) tf.innerHTML = `<span style="color:var(--color-success);">✓ Texto já salvo</span>`;
+        sessaoTemNota = true;
+        atualizarBotaoEncerrar();
+      }
+    } catch (e) { console.error('carregarNotaManual:', e); }
+  }
+
+  async function salvarEvolucaoManual(sessaoId) {
+    const ta = document.getElementById('rec-textarea-ev');
+    const feedback = document.getElementById('rec-texto-feedback');
+    const btn = document.getElementById('rec-btn-salvar-texto');
+    const texto = (ta?.value || '').trim();
+    if (!texto) {
+      if (feedback) feedback.innerHTML = `<span style="color:var(--color-danger);">Digite a evolução antes de salvar.</span>`;
+      ta?.focus();
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    if (feedback) feedback.innerHTML = '';
+    try {
+      await apiFetch(`/sessoes/${sessaoId}/evolucao-manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto }),
+      });
+      if (feedback) feedback.innerHTML = `<span style="color:var(--color-success);">✓ Texto salvo com sucesso.</span>`;
+      btn.textContent = 'Salvo ✓';
+      sessaoTemNota = true;
+      atualizarBotaoEncerrar();
+    } catch (e) {
+      console.error('salvarEvolucaoManual:', e);
+      if (feedback) feedback.innerHTML = `<span style="color:var(--color-danger);">${friendlyError(e)}</span>`;
+      btn.disabled = false;
+      btn.textContent = 'Salvar texto';
+    }
   }
 
   async function loadChunksIntoRecorder(sessaoId) {
@@ -3983,6 +4104,8 @@
     mediaRecorder = null;
     audioChunks = [];
     recordSeconds = 0;
+    sessaoTemAudio = false;
+    sessaoTemNota  = false;
     document.getElementById('record-btn').classList.remove('recording');
     document.getElementById('rec-icon-mic').style.display = '';
     document.getElementById('rec-icon-stop').style.display = 'none';
@@ -3992,32 +4115,33 @@
     document.getElementById('rec-feedback').innerHTML = '';
   }
 
+  function atualizarBotaoEncerrar() {
+    const btn = document.getElementById('btn-encerrar-rec');
+    const btnAgoraNao = document.getElementById('btn-agora-nao-rec');
+    if (!btn) return;
+    const temConteudo = sessaoTemAudio || sessaoTemNota;
+    btn.textContent = temConteudo ? 'Encerrar sessão' : 'Cancelar sessão';
+    btn.classList.toggle('btn-danger', temConteudo);
+    btn.classList.toggle('btn-secondary', !temConteudo);
+    // "Agora não" aparece apenas quando não há conteúdo — com conteúdo, o banner já oferece "Iniciar" para retomar
+    if (btnAgoraNao) btnAgoraNao.style.display = temConteudo ? 'none' : '';
+  }
+
   function renderRecChunks(chunks) {
     const label = document.getElementById('rec-chunks-label');
     const list  = document.getElementById('rec-chunks-list');
-    const btn   = document.getElementById('btn-encerrar-rec');
 
     list.innerHTML = '';
     sessaoTemAudio = chunks.length > 0;
-
-    if (!sessaoTemAudio) {
-      label.style.display = 'none';
-      btn.textContent = 'Cancelar sessão';
-      btn.classList.remove('btn-danger');
-      btn.classList.add('btn-secondary');
-      return;
-    }
-
-    label.style.display = '';
-    btn.textContent = 'Encerrar sessão';
-    btn.classList.remove('btn-secondary');
-    btn.classList.add('btn-danger');
+    label.style.display = sessaoTemAudio ? '' : 'none';
 
     chunks.forEach(c => {
       const item = el('div', { className: 'chunk-item' });
       item.innerHTML = `<div class="chunk-item-time">${formatDate(c.timestamp)}</div><div class="chunk-item-text">${escHtml(c.transcricao)}</div>`;
       list.appendChild(item);
     });
+
+    atualizarBotaoEncerrar();
   }
 
   function startRecordTimer() {
@@ -4085,7 +4209,7 @@
       if (autoCloseSecondsLeft <= 0) {
         clearAutoCloseTimer(tickSessaoId);
         if (tickSessaoId) {
-          if (sessaoTemAudio) await encerrarSessao(tickSessaoId);
+          if (sessaoTemAudio || sessaoTemNota) await encerrarSessao(tickSessaoId);
           else await cancelarSessao(tickSessaoId);
         }
       }
@@ -5713,16 +5837,38 @@
     loadPacientes();
   });
 
-  document.getElementById('back-paciente-from-rec').addEventListener('click', () => {
-    resetRecorder();
-    openPaciente(currentPacienteId);
-    // timer continua rodando — só para quando a sessão é encerrada ou cancelada
+  document.getElementById('back-paciente-from-rec').addEventListener('click', async () => {
+    if (currentSessaoId && !sessaoTemAudio && !sessaoTemNota) {
+      // Sem conteúdo: comportamento idêntico ao "Agora não" — cancela silenciosamente
+      const sid = currentSessaoId;
+      clearAutoCloseTimer(sid);
+      resetRecorder();
+      try { await apiFetch(`/sessoes/${sid}`, { method: 'DELETE' }); } catch (_) {}
+      openPaciente(currentPacienteId);
+    } else {
+      // Com conteúdo: apenas volta ao paciente, sessão continua aberta
+      resetRecorder();
+      openPaciente(currentPacienteId);
+    }
   });
 
   document.getElementById('btn-encerrar-rec').addEventListener('click', () => {
     if (!currentSessaoId) return;
-    if (sessaoTemAudio) encerrarSessao(currentSessaoId);
-    else cancelarSessao(currentSessaoId);
+    if (sessaoTemAudio || sessaoTemNota) encerrarSessao(currentSessaoId);
+    else abrirModalCancelamento(currentSessaoId);
+  });
+
+  // "Agora não": cancela silenciosamente a sessão recém-criada (sem conteúdo, sem modal)
+  // e retorna ao botão "+" como se nunca tivesse iniciado
+  document.getElementById('btn-agora-nao-rec').addEventListener('click', async () => {
+    if (!currentSessaoId) { openPaciente(currentPacienteId); return; }
+    const sid = currentSessaoId;
+    clearAutoCloseTimer(sid);
+    resetRecorder();
+    try {
+      await apiFetch(`/sessoes/${sid}`, { method: 'DELETE' });
+    } catch (_) { /* ignora erro — sessão será limpa pelo timer ou pelo próprio fluxo */ }
+    openPaciente(currentPacienteId);
   });
 
   document.getElementById('back-paciente-from-sessao').addEventListener('click', () => {
