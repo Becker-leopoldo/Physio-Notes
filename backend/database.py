@@ -250,6 +250,19 @@ def _migrate():
             ON paciente(cpf_hash, owner_email)
             WHERE cpf_hash IS NOT NULL AND deletado_em IS NULL
         """)
+        # Deduplicar telefones antes de criar índice único
+        now_iso = __import__('datetime').datetime.utcnow().isoformat()
+        conn.execute("""
+            UPDATE paciente SET deletado_em = ?
+            WHERE telefone IS NOT NULL
+              AND deletado_em IS NULL
+              AND id NOT IN (
+                  SELECT MIN(id)
+                  FROM paciente
+                  WHERE telefone IS NOT NULL AND deletado_em IS NULL
+                  GROUP BY telefone, owner_email
+              )
+        """, (now_iso,))
         conn.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_telefone_owner
             ON paciente(telefone, owner_email)

@@ -4,6 +4,13 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.357 — 2026-04-19
+
+### Correções
+- **502 Bad Gateway no startup:** migração agora deduplica (soft-delete) pacientes com telefone duplicado antes de criar índice único `(telefone, owner_email)`, evitando `IntegrityError` que impedia o app de iniciar
+
+---
+
 ## Beta-0.356 — 2026-04-19
 
 ### Melhorias
