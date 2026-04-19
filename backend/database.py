@@ -2315,7 +2315,7 @@ def get_sessions_para_aviso(minutos: int) -> list[dict]:
         rows = conn.execute(
             """SELECT * FROM whatsapp_session
                WHERE aviso_em IS NULL
-               AND atualizado_em <= datetime('now', ?, 'localtime')""",
+               AND datetime(atualizado_em) <= datetime('now', ?)""",
             (f"-{minutos} minutes",)
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
@@ -2326,7 +2326,7 @@ def get_sessions_para_encerrar(minutos: int) -> list[dict]:
         rows = conn.execute(
             """SELECT * FROM whatsapp_session
                WHERE aviso_em IS NOT NULL
-               AND aviso_em <= datetime('now', ?, 'localtime')""",
+               AND datetime(aviso_em) <= datetime('now', ?)""",
             (f"-{minutos} minutes",)
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
