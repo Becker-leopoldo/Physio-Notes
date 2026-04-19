@@ -2015,6 +2015,10 @@
           <input class="form-input" type="tel" id="input-telefone" placeholder="(11) 99999-9999">
         </div>
         <div class="form-group">
+          <label class="form-label" for="input-email">E-mail</label>
+          <input class="form-input" type="email" id="input-email" placeholder="paciente@email.com">
+        </div>
+        <div class="form-group">
           <label class="form-label" for="input-endereco">Endereço</label>
           <input class="form-input" type="text" id="input-endereco" placeholder="Rua, número, bairro, cidade">
         </div>
@@ -2053,6 +2057,10 @@
         <label class="form-label" for="edit-telefone">Telefone</label>
         <input class="form-input" type="tel" id="edit-telefone" placeholder="(11) 99999-9999">
       </div>
+      <div class="form-group">
+        <label class="form-label" for="edit-email">E-mail</label>
+        <input class="form-input" type="email" id="edit-email" placeholder="paciente@email.com">
+      </div>
       <div style="margin-top:var(--space-4);">
         <label class="form-label" style="margin-bottom:var(--space-2);display:block;">Endereço <span style="font-size:0.75rem;font-weight:400;color:#A09D97;">— CEP preenche automaticamente</span></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
@@ -2085,7 +2093,7 @@
      CONFIG
   ============================================================ */
   const API_BASE = globalThis.location.origin;
-  const APP_VERSION = 'Beta-0.354'; // bump a cada deploy: Beta-0.242, Beta-0.243...
+  const APP_VERSION = 'Beta-0.356'; // bump a cada deploy: Beta-0.242, Beta-0.243...
 
   function escHtml(s) {
     if (s == null) return '';
@@ -2670,6 +2678,7 @@
     document.getElementById('input-cpf-hint').style.display = 'none';
     document.getElementById('input-cpf').style.borderColor = '';
     document.getElementById('input-telefone').value = '';
+    document.getElementById('input-email').value = '';
     document.getElementById('input-endereco').value = '';
     showError('modal-paciente-error', '');
     bindCpfInput('input-cpf', 'input-cpf-hint');
@@ -2927,6 +2936,7 @@
     const nome = document.getElementById('input-nome').value.trim();
     const cpfRaw = document.getElementById('input-cpf').value.replaceAll(/\D/g, '');
     const telefone = document.getElementById('input-telefone').value.trim();
+    const email = document.getElementById('input-email').value.trim();
     const endereco = document.getElementById('input-endereco').value.trim();
     if (!nome) { showError('modal-paciente-error', 'O nome do paciente é obrigatório.'); return; }
     if (!document.getElementById('input-dob').value) { showError('modal-paciente-error', 'A data de nascimento é obrigatória.'); return; }
@@ -2945,6 +2955,7 @@
           data_atendimento: new Date().toISOString().slice(0, 10),
           cpf: cpfRaw || null,
           telefone: telefone || null,
+          email: email || null,
           endereco: endereco || null,
           force,
         }),
@@ -6925,6 +6936,7 @@
     document.getElementById('edit-dob').value       = paciente.data_nascimento || '';
     document.getElementById('edit-cpf').value       = paciente.cpf ? cpfMascara(paciente.cpf) : '';
     document.getElementById('edit-telefone').value  = paciente.telefone || '';
+    document.getElementById('edit-email').value     = paciente.email    || '';
     document.getElementById('edit-cep').value       = _fmtCepFisio(paciente.cep || '');
     document.getElementById('edit-numero').value    = paciente.numero || '';
     document.getElementById('edit-logradouro').value = paciente.logradouro || '';
@@ -6964,6 +6976,7 @@
           data_nascimento: document.getElementById('edit-dob').value || null,
           cpf:        document.getElementById('edit-cpf').value.replaceAll(/\D/g,'') || null,
           telefone:   document.getElementById('edit-telefone').value.trim()  || null,
+          email:      document.getElementById('edit-email').value.trim()     || null,
           cep:        document.getElementById('edit-cep').value.replaceAll(/\D/g,'') || null,
           numero:     document.getElementById('edit-numero').value.trim()    || null,
           logradouro: document.getElementById('edit-logradouro').value.trim() || null,

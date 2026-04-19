@@ -206,6 +206,7 @@ class PacienteCreate(BaseModel):
     cpf: str | None = None
     endereco: str | None = None
     telefone: str | None = None
+    email: str | None = None
     convenio: str | None = None
     cep: str | None = None
     logradouro: str | None = None
@@ -419,7 +420,7 @@ def criar_paciente(body: PacienteCreate, request: Request):
                 "candidatos": [{"id": p["id"], "nome": p["nome"], "data_nascimento": p.get("data_nascimento"), "motivo": p["motivo"]} for p in similares],
             })
     try:
-        paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner)
+        paciente = db.criar_paciente(body.nome, body.data_nascimento, body.observacoes, body.anamnese, body.cpf, body.endereco, owner, telefone=body.telefone, email=body.email)
     except (sqlite3.IntegrityError, ValueError):
         db.registrar_audit(owner, "paciente_criar_cpf_duplicado", f"nome={body.nome}", _client_ip(request))
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")
@@ -450,6 +451,7 @@ class PacienteUpdate(BaseModel):
     endereco: str | None = None
     conduta_tratamento: str | None = None
     telefone: str | None = None
+    email: str | None = None
     convenio: str | None = None
     cep: str | None = None
     logradouro: str | None = None
@@ -483,6 +485,7 @@ def atualizar_paciente(paciente_id: int, body: PacienteUpdate, request: Request)
             body.cpf, body.endereco, body.conduta_tratamento,
             body.telefone, body.convenio,
             body.cep, body.logradouro, body.numero, body.bairro, body.cidade, body.estado,
+            email=body.email,
         )
     except (sqlite3.IntegrityError, ValueError):
         raise HTTPException(status_code=409, detail="Paciente com este CPF já cadastrado na sua conta.")

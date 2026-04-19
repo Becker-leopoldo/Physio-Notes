@@ -4,6 +4,30 @@ Todas as mudanças relevantes por versão. Usado como corpo do commit/tag de rel
 
 ---
 
+## Beta-0.356 — 2026-04-19
+
+### Melhorias
+- **Normalização de telefone — sufixo match:** `992052669` no banco é reconhecido como sufixo de `11992052669` (Twilio) — cobre números cadastrados sem DDD
+- **Atualização automática de telefone:** quando o match é via sufixo (número incompleto), o banco é atualizado para o formato completo normalizado na confirmação do agendamento
+
+---
+
+## Beta-0.355 — 2026-04-19
+
+### Funcionalidades
+- **Bot WhatsApp — identificação de paciente:** novo passo `IDENTIFICANDO` coleta nome+sobrenome antes do menu; challenge-response sem expor dados (LGPD)
+- **Bot WhatsApp — convergência com cadastro:** lookup por telefone normalizado (suporta formato Twilio `whatsapp:+55...` vs máscaras BR); vincula agendamento ao `paciente_id` ao confirmar
+- **Bot WhatsApp — regras de vínculo:** telefone novo → cria paciente; telefone existente + nome bate → vincula; telefone existente + nome diferente → agendamento sem vínculo, banco intocado
+- **Campo email no cadastro:** fisio e secretaria podem cadastrar e editar e-mail do paciente (opcional)
+- **Normalização de telefone:** `_normalize_phone()` no backend — strip de `whatsapp:`, não-dígitos e DDI `55`
+
+### Melhorias
+- Fluxo do bot simplificado de 3 para 2 etapas (identificação + horário — email removido do bot)
+- `paciente.email` e índice único `(telefone, owner_email)` adicionados ao schema via migration
+- `agendamento.paciente_id` adicionado ao schema via migration
+
+---
+
 ## Beta-0.354 — 2026-04-15
 
 ### Correções

@@ -2,7 +2,9 @@ import datetime
 import json
 import logging
 import os
+import re
 from enum import Enum
+
 
 from fastapi import APIRouter, Request, Form, HTTPException, Header, Response
 from twilio.request_validator import RequestValidator
@@ -57,6 +59,7 @@ def _sugestoes_horario(data_str: str, hora_str: str) -> list[str]:
 
 class Passo(str, Enum):
     MENU = "MENU"
+    IDENTIFICANDO = "IDENTIFICANDO"
     AGUARDANDO_HORARIO = "AGUARDANDO_HORARIO"
     PEDINDO_DADOS = "PEDINDO_DADOS"
     CONFIRMANDO = "CONFIRMANDO"
@@ -111,6 +114,8 @@ CORRIGIR_DADOS_OPCOES = {
     "dados incorretos",
     "corrigir dados",
     "alterar dados",
+    "corrigir nome",
+    "alterar nome",
     "corrigir nome e email",
     "corrigir nome e e-mail",
     "nome e email",
@@ -153,7 +158,7 @@ def _retry(dados: dict, chave: str) -> tuple[dict, bool]:
 
 
 def _reset_retry_counters(dados: dict) -> dict:
-    for chave in ("retry_menu", "retry_horario", "retry_dados", "retry_confirmando"):
+    for chave in ("retry_menu", "retry_horario", "retry_dados", "retry_confirmando", "retry_identificacao"):
         dados.pop(chave, None)
     return dados
 
@@ -166,6 +171,13 @@ def _reset_flow_flags(dados: dict) -> dict:
 
 def _menu_principal() -> str:
     return "🏠 *Menu principal*\n\n" + MSG_MENU_OPCOES + DICA_NAV
+
+
+def _mensagem_identificacao() -> str:
+    return (
+        "Olá! 👋 Bem-vindo ao atendimento da nossa clínica.\n\n"
+        "Para começar, qual é o seu *nome completo*?"
+    )
 
 
 def _mensagem_horario(horario_atual: str | None = None) -> str:
@@ -187,25 +199,21 @@ def _mensagem_dados(horario: str | None) -> str:
     return (
         "📍 *Etapa 2/3 — Seus dados*\n\n"
         f"Já anotei este horário: *{horario_txt}*\n\n"
-        "Agora envie:\n"
-        "👤 *Nome completo*\n"
-        "📧 *E-mail*\n\n"
-        "Exemplo:\n"
-        "João Silva - joao@email.com"
+        "Agora envie seu *nome completo*:\n\n"
+        "Exemplo: *João Silva*"
         + DICA_NAV
     )
 
 
 def _mensagem_confirmacao(dados: dict) -> str:
     return (
-        "📍 *Etapa 3/3 — Confirmar agendamento*\n\n"
+        "📍 *Etapa 2/2 — Confirmar agendamento*\n\n"
         "Confira os dados antes de finalizar:\n\n"
         f"🗓️ *Horário:* {dados.get('horario_desejado', 'N/D')}\n"
-        f"👤 *Nome:* {dados.get('nome', 'Não informado')}\n"
-        f"📧 *E-mail:* {dados.get('email', 'Não informado')}\n\n"
+        f"👤 *Nome:* {dados.get('nome', 'Não informado')}\n\n"
         "Os dados estão corretos?\n\n"
         "1️⃣  Sim, confirmar agendamento\n"
-        "2️⃣  Não, corrigir nome e e-mail\n"
+        "2️⃣  Não, corrigir meu nome\n"
         "3️⃣  Corrigir horário"
         + DICA_NAV
     )
@@ -256,43 +264,32 @@ def build_response(msg: str):
 
 async def _handle_dados_input(telefone: str, texto: str, passo: str, dados: dict):
     is_corrigindo = passo == Passo.CORRIGINDO_DADOS.value
-    log_label = "corrigir" if is_corrigindo else "extrair"
-
     try:
         analise = await ai.extrair_nome_email_bot(texto)
     except Exception as e:
-        logger.error(f"Falha ao {log_label} nome/email via IA: {e}")
-        analise = {"valido": False, "nome_encontrado": None, "email_encontrado": None}
+        logger.error(f"Falha ao extrair nome via IA: {e}")
+        analise = {"valido": False, "nome_encontrado": None}
 
     nome = analise.get("nome_encontrado")
-    email = analise.get("email_encontrado")
+    nome_valido = nome and len(nome.strip().split()) >= 2
 
-    if not analise.get("valido") or not nome or not email:
+    if not nome_valido:
         dados, esgotado = _retry(dados, "retry_dados")
         if esgotado:
             blacklisted = db.increment_shield_hit(telefone, "retry_dados", BLACKLIST_HITS_LIMIT)
             db.end_whatsapp_session(telefone)
             return build_response(MSG_BLACKLISTED if blacklisted else MSG_LOOP_HUMANO)
-
         _save_session(telefone, passo, dados)
-        msg_base = (
-            "😕 Não consegui identificar corretamente seu nome e e-mail.\n\n"
-            "Por favor, envie assim:\n\n"
-            "👤 *Nome:* João Silva\n"
-            "📧 *E-mail:* joao@email.com\n\n"
-            "Ou tudo em uma linha:\n"
-            "João Silva - joao@email.com"
-            if not is_corrigindo
-            else "😕 Não consegui identificar corretamente o nome e o e-mail.\n\n"
-            "Por favor, envie novamente assim:\n\n"
-            "João Silva - joao@email.com"
+        return build_response(
+            "😕 Preciso do seu *nome e sobrenome* para continuar.\n\n"
+            "Por favor, envie seu nome completo.\n\n"
+            "Exemplo: *João Silva*"
+            + DICA_NAV
         )
-        return build_response(msg_base + DICA_NAV)
 
     dados = _reset_retry_counters(dados)
     dados = _reset_flow_flags(dados)
     dados["nome"] = nome
-    dados["email"] = email
     if not is_corrigindo:
         dados.pop("retornar_para_confirmacao_apos_horario", None)
     _save_session(telefone, Passo.CONFIRMANDO.value, dados)
@@ -393,7 +390,7 @@ async def twilio_webhook(
                     "Por favor, responda com uma opção válida do fluxo:\n"
                     "• número da opção\n"
                     "• data e horário\n"
-                    "• nome e e-mail\n\n"
+                    "• seu nome completo\n\n"
                     "💡 Você também pode digitar *menu* para recomeçar."
                 )
 
@@ -407,10 +404,60 @@ async def twilio_webhook(
             )
 
     if not session:
-        _save_session(telefone, Passo.MENU.value, {"nav_count": 0})
-        return build_response(
-            "Olá! 👋 Bem-vindo ao atendimento da nossa clínica.\n\n" + _menu_principal()
-        )
+        dados_init: dict = {"nav_count": 0}
+        if OWNER_EMAIL:
+            paciente = db.get_paciente_by_telefone(telefone, OWNER_EMAIL)
+            if paciente:
+                dados_init["paciente_id"] = paciente["id"]
+                dados_init["nome"] = paciente["nome"]
+        _save_session(telefone, Passo.IDENTIFICANDO.value, dados_init)
+        return build_response(_mensagem_identificacao())
+
+    if passo == Passo.IDENTIFICANDO.value:
+        try:
+            analise = await ai.extrair_nome_email_bot(texto)
+        except Exception as e:
+            logger.error(f"Falha ao extrair nome em IDENTIFICANDO: {e}")
+            analise = {"valido": False, "nome_encontrado": None, "email_encontrado": None}
+
+        nome_extraido = analise.get("nome_encontrado")
+        nome_valido = nome_extraido and len(nome_extraido.strip().split()) >= 2
+        if not nome_valido:
+            dados, esgotado = _retry(dados, "retry_identificacao")
+            if esgotado:
+                blacklisted = db.increment_shield_hit(telefone, "retry_identificacao", BLACKLIST_HITS_LIMIT)
+                db.end_whatsapp_session(telefone)
+                return build_response(MSG_BLACKLISTED if blacklisted else MSG_LOOP_HUMANO)
+            _save_session(telefone, Passo.IDENTIFICANDO.value, dados)
+            return build_response(
+                "😕 Preciso do seu *nome e sobrenome* para continuar.\n\n"
+                "Por favor, envie seu nome completo.\n\n"
+                "Exemplo: *João Silva*"
+            )
+
+        dados = _reset_retry_counters(dados)
+        primeiro_nome = nome_extraido.split()[0]
+
+        nome_db = dados.get("nome")
+        if nome_db:
+            # Telefone existente: verifica se o primeiro nome digitado bate com o cadastro
+            def _norm(s: str) -> str:
+                import unicodedata
+                s = unicodedata.normalize("NFD", s.lower())
+                return "".join(c for c in s if unicodedata.category(c) != "Mn")
+            primeiro_norm = _norm(nome_extraido.split()[0])
+            nome_db_norm  = _norm(nome_db)
+            if primeiro_norm not in nome_db_norm:
+                # Nome diferente: descarta vínculo, usa dados digitados, não altera o banco
+                dados.pop("paciente_id", None)
+                dados["sem_vinculo"] = True
+                dados["nome"] = nome_extraido
+        else:
+            # Telefone novo: armazena nome digitado
+            dados["nome"] = nome_extraido
+
+        _save_session(telefone, Passo.MENU.value, dados)
+        return build_response(f"Perfeito, {primeiro_nome}! 😊\n\n" + _menu_principal())
 
     if passo == Passo.MENU.value:
         if texto_norm in MENU_AGENDAR:
@@ -499,8 +546,9 @@ async def twilio_webhook(
             _save_session(telefone, Passo.CONFIRMANDO.value, dados)
             return build_response(_mensagem_confirmacao(dados))
 
-        _save_session(telefone, Passo.PEDINDO_DADOS.value, dados)
-        return build_response(_mensagem_dados(horario))
+        # Nome sempre coletado no IDENTIFICANDO — vai direto para confirmação
+        _save_session(telefone, Passo.CONFIRMANDO.value, dados)
+        return build_response(_mensagem_confirmacao(dados))
 
     if passo in {Passo.PEDINDO_DADOS.value, Passo.CORRIGINDO_DADOS.value}:
         return await _handle_dados_input(telefone, texto, passo, dados)
@@ -509,16 +557,34 @@ async def twilio_webhook(
         if texto_norm in CONFIRMAR_OPCOES:
             horario_desejado = dados.get("horario_desejado", "N/D")
             nome_db = dados.get("nome", "Não informado")
-            email_db = dados.get("email", "Não informado")
             data_ag = dados.get("data_agendamento")
             hora_ag = dados.get("hora_agendamento")
+
+            paciente_id = dados.get("paciente_id")
+            if OWNER_EMAIL and nome_db != "Não informado" and not dados.get("sem_vinculo"):
+                try:
+                    paciente_id = paciente_id or db.get_or_create_paciente_bot(
+                        nome=nome_db, email=None,
+                        telefone=telefone, owner_email=OWNER_EMAIL,
+                    )
+                    db.criar_agendamento(
+                        nome_cliente=nome_db,
+                        email_cliente="",
+                        telefone=telefone,
+                        data_horario=horario_desejado,
+                        owner_email=OWNER_EMAIL,
+                        data_agendamento=data_ag,
+                        hora_agendamento=hora_ag,
+                        paciente_id=paciente_id,
+                    )
+                except Exception as e:
+                    logger.error(f"Falha ao salvar agendamento no banco: {e}")
 
             db.end_whatsapp_session(telefone)
             return build_response(
                 "🎉 *Consulta agendada com sucesso!*\n\n"
                 f"🗓️ *Horário:* {horario_desejado}\n"
-                f"👤 *Nome:* {nome_db}\n"
-                f"📧 *E-mail:* {email_db}\n\n"
+                f"👤 *Nome:* {nome_db}\n\n"
                 "✅ Seu horário está reservado.\n"
                 "📋 Guarde esta conversa como comprovante.\n\n"
                 "Agradecemos a preferência! Até breve. 😊"
@@ -529,9 +595,8 @@ async def twilio_webhook(
             _save_session(telefone, Passo.CORRIGINDO_DADOS.value, dados)
             return build_response(
                 "✏️ Sem problemas.\n\n"
-                "Por favor, envie novamente seu *nome completo* e *e-mail*.\n\n"
-                "Exemplo:\n"
-                "João Silva - joao@email.com"
+                "Por favor, envie seu *nome completo* correto.\n\n"
+                "Exemplo: *João Silva*"
                 + DICA_NAV
             )
 

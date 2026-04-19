@@ -1,3 +1,4 @@
+import re
 import sqlite3
 import os
 import base64
@@ -8,6 +9,18 @@ from datetime import datetime, timezone
 from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger("physio_notes")
+
+
+def _normalize_phone(phone: str | None) -> str | None:
+    """Normaliza telefone para só dígitos sem código de país.
+    Aceita: 'whatsapp:+5511987654321', '(11) 98765-4321', '11987654321', etc.
+    Retorna '11987654321' ou None."""
+    if not phone:
+        return None
+    digits = re.sub(r'\D', '', phone)
+    if len(digits) == 13 and digits.startswith('55'):
+        digits = digits[2:]
+    return digits if digits else None
 
 # ---------- Constants ----------
 STATUS_ABERTA = "aberta"
@@ -221,6 +234,11 @@ def _migrate():
             if col not in cols_pac4:
                 conn.execute(f"ALTER TABLE paciente ADD COLUMN {col} TEXT")
 
+        # Email do paciente (contato via bot WhatsApp)
+        cols_pac5 = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
+        if "email" not in cols_pac5:
+            conn.execute("ALTER TABLE paciente ADD COLUMN email TEXT")
+
         # Soft delete em paciente deve vir antes do índice que referencia deletado_em
         cols_del = [r[1] for r in conn.execute(_SQL_PRAGMA_PACIENTE).fetchall()]
         if "deletado_em" not in cols_del:
@@ -231,6 +249,11 @@ def _migrate():
             CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_cpf_hash_owner
             ON paciente(cpf_hash, owner_email)
             WHERE cpf_hash IS NOT NULL AND deletado_em IS NULL
+        """)
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_paciente_telefone_owner
+            ON paciente(telefone, owner_email)
+            WHERE telefone IS NOT NULL AND deletado_em IS NULL
         """)
         # Inatividade do bot WhatsApp
         cols_wa = [r[1] for r in conn.execute("PRAGMA table_info(whatsapp_session)").fetchall()]
@@ -245,6 +268,8 @@ def _migrate():
             conn.execute("ALTER TABLE agendamento ADD COLUMN data_agendamento TEXT")
         if "hora_agendamento" not in cols_ag:
             conn.execute("ALTER TABLE agendamento ADD COLUMN hora_agendamento TEXT")
+        if "paciente_id" not in cols_ag:
+            conn.execute("ALTER TABLE agendamento ADD COLUMN paciente_id INTEGER REFERENCES paciente(id)")
 
         conn.commit()
 
@@ -470,7 +495,8 @@ def criar_paciente(
     nome: str, data_nascimento: str | None, observacoes: str | None,
     anamnese: str | None = None, cpf: str | None = None, endereco: str | None = None,
     owner_email: str | None = None, conduta_tratamento: str | None = None,
-    telefone: str | None = None, convenio: str | None = None, ultima_consulta: str | None = None,
+    telefone: str | None = None, email: str | None = None,
+    convenio: str | None = None, ultima_consulta: str | None = None,
     cep: str | None = None, logradouro: str | None = None, numero: str | None = None,
     bairro: str | None = None, cidade: str | None = None, estado: str | None = None,
 ) -> dict:
@@ -478,12 +504,12 @@ def criar_paciente(
         cur = conn.execute(
             """INSERT INTO paciente
                (nome, data_nascimento, observacoes, anamnese, cpf, cpf_hash, endereco,
-                owner_email, conduta_tratamento, telefone, convenio, ultima_consulta,
+                owner_email, conduta_tratamento, telefone, email, convenio, ultima_consulta,
                 cep, logradouro, numero, bairro, cidade, estado, criado_em)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (nome, data_nascimento, observacoes, anamnese, _encrypt_field(cpf), _cpf_hash(cpf),
-             _encrypt_field(endereco), owner_email, conduta_tratamento, telefone, convenio,
-             ultima_consulta, cep, logradouro, numero, bairro, cidade, estado, _now()),
+             _encrypt_field(endereco), owner_email, conduta_tratamento, telefone, email,
+             convenio, ultima_consulta, cep, logradouro, numero, bairro, cidade, estado, _now()),
         )
         conn.commit()
         return _decrypt_paciente(_row_to_dict(conn.execute(_SQL_GET_PACIENTE_BY_ID, (cur.lastrowid,)).fetchone()))
@@ -538,16 +564,17 @@ def atualizar_paciente(
     telefone: str | None = None, convenio: str | None = None,
     cep: str | None = None, logradouro: str | None = None, numero: str | None = None,
     bairro: str | None = None, cidade: str | None = None, estado: str | None = None,
+    email: str | None = None,
 ) -> dict:
     with get_conn() as conn:
         conn.execute(
             """UPDATE paciente SET
                nome=?, data_nascimento=?, anamnese=?, cpf=?, cpf_hash=?, endereco=?,
-               conduta_tratamento=?, telefone=?, convenio=?,
+               conduta_tratamento=?, telefone=?, email=?, convenio=?,
                cep=?, logradouro=?, numero=?, bairro=?, cidade=?, estado=?
                WHERE id=?""",
             (nome, data_nascimento, anamnese, _encrypt_field(cpf), _cpf_hash(cpf), _encrypt_field(endereco),
-             conduta_tratamento, telefone, convenio,
+             conduta_tratamento, telefone, email, convenio,
              cep, logradouro, numero, bairro, cidade, estado, paciente_id),
         )
         conn.commit()
@@ -2432,13 +2459,76 @@ def criar_agendamento(
     owner_email: str | None = None,
     data_agendamento: str | None = None,
     hora_agendamento: str | None = None,
+    paciente_id: int | None = None,
 ) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             """INSERT INTO agendamento
-               (nome_cliente, email_cliente, telefone, data_horario, owner_email, data_agendamento, hora_agendamento, criado_em)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (nome_cliente, email_cliente, telefone, data_horario, owner_email, data_agendamento, hora_agendamento, _now())
+               (nome_cliente, email_cliente, telefone, data_horario, owner_email,
+                data_agendamento, hora_agendamento, paciente_id, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (nome_cliente, email_cliente, telefone, data_horario, owner_email,
+             data_agendamento, hora_agendamento, paciente_id, _now())
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM agendamento WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def _phone_match(norm_twilio: str, stored: str | None) -> bool:
+    """True se o telefone armazenado é igual ou sufixo do normalizado Twilio.
+    Cobre: '992052669' (sem DDD) sendo sufixo de '11992052669'."""
+    if not stored:
+        return False
+    norm_stored = _normalize_phone(stored)
+    if not norm_stored:
+        return False
+    return norm_stored == norm_twilio or norm_twilio.endswith(norm_stored)
+
+
+def get_paciente_by_telefone(telefone: str, owner_email: str) -> dict | None:
+    """Busca por telefone com match exato ou sufixo (suporta sem DDD, máscaras BR, formato Twilio)."""
+    norm = _normalize_phone(telefone)
+    if not norm:
+        return None
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM paciente WHERE owner_email = ? AND telefone IS NOT NULL AND deletado_em IS NULL",
+            (owner_email,),
+        ).fetchall()
+    for row in rows:
+        if _phone_match(norm, row["telefone"]):
+            return _decrypt_paciente(_row_to_dict(row))
+    return None
+
+
+def get_or_create_paciente_bot(nome: str, email: str | None, telefone: str, owner_email: str) -> int:
+    """Busca paciente pelo telefone (sufixo match); se não encontrar, cria.
+    Atualiza o telefone no banco para o formato normalizado quando há match parcial."""
+    norm = _normalize_phone(telefone)
+    telefone_store = norm or telefone
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, email, telefone FROM paciente WHERE owner_email = ? AND telefone IS NOT NULL AND deletado_em IS NULL",
+            (owner_email,),
+        ).fetchall()
+    for row in rows:
+        if _phone_match(norm, row["telefone"]):
+            updates, params = [], []
+            norm_stored = _normalize_phone(row["telefone"])
+            if norm_stored != norm:  # banco tinha número incompleto — atualiza
+                updates.append("telefone = ?"); params.append(telefone_store)
+            if email and not row["email"]:
+                updates.append("email = ?"); params.append(email)
+            if updates:
+                params.append(row["id"])
+                with get_conn() as conn:
+                    conn.execute(f"UPDATE paciente SET {', '.join(updates)} WHERE id = ?", params)
+                    conn.commit()
+            return row["id"]
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO paciente (nome, email, telefone, owner_email, criado_em) VALUES (?, ?, ?, ?, ?)",
+            (nome, email, telefone_store, owner_email, _now()),
+        )
+        conn.commit()
+        return cur.lastrowid

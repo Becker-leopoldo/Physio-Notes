@@ -1126,6 +1126,10 @@
           <input class="form-input" type="text" id="novo-pac-convenio" placeholder="Ex: Particular">
         </div>
       </div>
+      <div class="form-group" style="margin-top:var(--space-4);">
+        <label class="form-label" for="novo-pac-email">E-mail</label>
+        <input class="form-input" type="email" id="novo-pac-email" placeholder="paciente@email.com">
+      </div>
       <div style="margin-top:var(--space-4);">
         <label class="form-label" style="margin-bottom:var(--space-2);display:block;">Endereço <span style="font-size:var(--text-xs);font-weight:400;color:var(--color-text-muted);">— CEP preenche automaticamente</span></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2);">
@@ -2573,7 +2577,7 @@ function confirmarExcluirPaciente(nomePaciente, onConfirm) {
 
 function novoPacOpen() {
   ['novo-pac-nome','novo-pac-nasc','novo-pac-obs',
-   'novo-pac-telefone','novo-pac-convenio',
+   'novo-pac-telefone','novo-pac-convenio','novo-pac-email',
    'novo-pac-cep','novo-pac-numero','novo-pac-logradouro',
    'novo-pac-bairro','novo-pac-cidade','novo-pac-estado'].forEach(id => {
     const el = document.getElementById(id);
@@ -2818,6 +2822,7 @@ async function _salvarNovoPaciente(force = false) {
         cpf:             document.getElementById('novo-pac-cpf').value.replaceAll(/\D/g,'')  || null,
         data_nascimento: document.getElementById('novo-pac-nasc').value                    || null,
         telefone:        document.getElementById('novo-pac-telefone').value.trim()         || null,
+        email:           document.getElementById('novo-pac-email').value.trim()            || null,
         convenio:        document.getElementById('novo-pac-convenio').value.trim()         || null,
         cep:             document.getElementById('novo-pac-cep').value.replaceAll(/\D/g,'')  || null,
         numero:          document.getElementById('novo-pac-numero').value.trim()           || null,
@@ -3316,7 +3321,7 @@ document.getElementById('novo-pacote-salvar').addEventListener('click', async ()
 })();
 
 /* ── Init ── */
-const APP_VERSION = 'Beta-0.354';
+const APP_VERSION = 'Beta-0.356';
 
 globalThis.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version-label').textContent = `v${APP_VERSION}`;
