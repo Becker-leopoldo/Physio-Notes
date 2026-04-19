@@ -25,6 +25,7 @@ import ai
 import google_auth
 import notifications
 import calendar_service
+import bot_twilio
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("physio_notes")
@@ -73,6 +74,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Physio Notes API", lifespan=lifespan)
+app.include_router(bot_twilio.router)
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -114,6 +116,7 @@ _ROTAS_PUBLICAS = {
     "/auth/login/begin", "/auth/login/complete", "/auth/status",
     "/push/vapid-public-key",
     "/healthz",
+    "/api/twilio/webhook",
 }
 _PREFIXOS_PUBLICOS = ("/login", "/admin", "/manifest", "/sw.", "/icon", "/favicon", "/.well-known", "/secretaria/", "/manual")
 

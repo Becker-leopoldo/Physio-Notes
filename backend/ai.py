@@ -984,3 +984,64 @@ async def extrair_valor_sessao(transcricao: str, owner_email: str | None = None,
         pass
     return None
 
+async def verificar_intencao_usuario_bot(texto: str, owner_email: str | None = None) -> dict:
+    prompt = f"""Você é um moderador de uma clínica de fisioterapia analisando uma mensagem recebida de um paciente no WhatsApp.
+
+Sua tarefa é identificar se a mensagem:
+1. Contém linguagem ofensiva, palavrões ou desrespeito.
+2. É um assunto totalmente fora do escopo (ex: pedir receita de bolo, comprar itens que não são médicos, piadas).
+OBS: Respostas normais, datas, nomes, dúvidas sobre a clínica ou uma simples saudação devem ser aprovadas!
+
+Retorne APENAS um JSON válido no formato abaixo:
+{{
+  "bloquear": true ou false,
+  "motivo": "se bloqueou, explique brevemente o porquê, senão null"
+}}
+
+Mensagem do usuário: "{texto}"
+"""
+    try:
+        message = await client.messages.create(
+            model=MODEL,
+            max_tokens=128,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        _registrar("bot_whatsapp_moderacao", message, owner_email)
+        raw_text = message.content[0].text.strip()
+        json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
+        if json_match:
+            raw_text = json_match.group(0)
+        return json.loads(raw_text)
+    except Exception:
+        # Em caso de falha da IA, permita continuar por precaução (fail-open)
+        return {"bloquear": False, "motivo": None}
+
+async def extrair_nome_email_bot(texto: str, owner_email: str | None = None) -> dict:
+    prompt = f"""Você é um sistema de extração de dados analisando mensagens de WhatsApp em uma clínica.
+
+Analise o texto e extraia o "Nome Completo" e o "E-mail" do paciente.
+Se o texto não contiver as informações solicitadas (ex: for uma frase aleatória como "vc me ama?", dúvidas gerais, etc), marque "valido": false.
+
+Retorne APENAS um JSON válido no formato abaixo:
+{{
+  "valido": true ou false,
+  "nome_encontrado": "nome extraído ou null se não achar",
+  "email_encontrado": "email extraído ou null se não achar"
+}}
+
+Texto do usuário: "{texto}"
+"""
+    try:
+        message = await client.messages.create(
+            model=MODEL,
+            max_tokens=128,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        _registrar("bot_whatsapp_extrair", message, owner_email)
+        raw_text = message.content[0].text.strip()
+        json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
+        if json_match:
+            raw_text = json_match.group(0)
+        return json.loads(raw_text)
+    except Exception:
+        return {"valido": True, "nome_encontrado": texto, "email_encontrado": None}

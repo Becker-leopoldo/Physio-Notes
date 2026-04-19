@@ -158,6 +158,23 @@ def init_db():
                 raw_json        TEXT,
                 criado_em       TEXT    NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS whatsapp_session (
+                telefone      TEXT PRIMARY KEY,
+                passo_atual   TEXT NOT NULL,
+                dados_json    TEXT,
+                atualizado_em TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS agendamento (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome_cliente    TEXT NOT NULL,
+                email_cliente   TEXT,
+                telefone        TEXT NOT NULL,
+                data_horario    TEXT NOT NULL,
+                status          TEXT NOT NULL DEFAULT 'pendente',
+                criado_em       TEXT NOT NULL
+            );
         """)
 
 
@@ -2247,3 +2264,46 @@ def registrar_lgpd_aceite(
             (owner_email, _now(), ip_address, user_agent, pais, cidade),
         )
         conn.commit()
+
+# ---------- Twilio Bot Session ----------
+
+def get_whatsapp_session(telefone: str) -> dict | None:
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM whatsapp_session WHERE telefone = ?", (telefone,)).fetchone()
+        return _row_to_dict(row)
+
+def update_whatsapp_session(telefone: str, passo_atual: str, dados_json: str | None = None) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO whatsapp_session (telefone, passo_atual, dados_json, atualizado_em) 
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(telefone) DO UPDATE SET passo_atual=excluded.passo_atual, dados_json=excluded.dados_json, atualizado_em=excluded.atualizado_em""",
+            (telefone, passo_atual, dados_json, _now())
+        )
+        conn.commit()
+
+def end_whatsapp_session(telefone: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM whatsapp_session WHERE telefone = ?", (telefone,))
+        conn.commit()
+
+# ---------- Bot Agendamentos ----------
+
+def get_agendamentos_por_data(data_str: str) -> list[dict]:
+    # data_str expect: 'YYYY-MM-DD'
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM agendamento WHERE data_horario LIKE ? AND status != 'cancelado'", 
+            (f"{data_str}%",)
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+def criar_agendamento(nome_cliente: str, email_cliente: str, telefone: str, data_horario: str) -> dict:
+    with get_conn() as conn:
+        cur = conn.execute(
+            """INSERT INTO agendamento (nome_cliente, email_cliente, telefone, data_horario, criado_em)
+               VALUES (?, ?, ?, ?, ?)""",
+            (nome_cliente, email_cliente, telefone, data_horario, _now())
+        )
+        conn.commit()
+        return _row_to_dict(conn.execute("SELECT * FROM agendamento WHERE id = ?", (cur.lastrowid,)).fetchone())
