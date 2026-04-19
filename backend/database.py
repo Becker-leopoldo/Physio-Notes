@@ -237,6 +237,15 @@ def _migrate():
         if "aviso_em" not in cols_wa:
             conn.execute("ALTER TABLE whatsapp_session ADD COLUMN aviso_em TEXT")
 
+        # Multi-tenant e dados estruturados no agendamento do bot
+        cols_ag = [r[1] for r in conn.execute("PRAGMA table_info(agendamento)").fetchall()]
+        if "owner_email" not in cols_ag:
+            conn.execute("ALTER TABLE agendamento ADD COLUMN owner_email TEXT")
+        if "data_agendamento" not in cols_ag:
+            conn.execute("ALTER TABLE agendamento ADD COLUMN data_agendamento TEXT")
+        if "hora_agendamento" not in cols_ag:
+            conn.execute("ALTER TABLE agendamento ADD COLUMN hora_agendamento TEXT")
+
         conn.commit()
 
         conn.execute("""
@@ -2386,12 +2395,50 @@ def get_agendamentos_por_data(data_str: str) -> list[dict]:
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
 
-def criar_agendamento(nome_cliente: str, email_cliente: str, telefone: str, data_horario: str) -> dict:
+def get_horarios_ocupados(owner_email: str, data: str) -> list[str]:
+    """Retorna lista de hora_inicio ocupadas para o owner em uma data."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT s.hora_inicio FROM sessao s
+               JOIN paciente p ON s.paciente_id = p.id
+               WHERE p.owner_email = ?
+               AND s.data = ?
+               AND s.status != 'cancelada'
+               AND s.deletado_em IS NULL""",
+            (owner_email, data)
+        ).fetchall()
+        return [r[0] for r in rows if r[0]]
+
+def verificar_conflito_agendamento(owner_email: str, data: str, hora: str) -> bool:
+    """Retorna True se já existe sessão ativa para o owner no mesmo data/hora."""
+    with get_conn() as conn:
+        row = conn.execute(
+            """SELECT s.id FROM sessao s
+               JOIN paciente p ON s.paciente_id = p.id
+               WHERE p.owner_email = ?
+               AND s.data = ?
+               AND s.hora_inicio = ?
+               AND s.status != 'cancelada'
+               AND s.deletado_em IS NULL""",
+            (owner_email, data, hora)
+        ).fetchone()
+        return row is not None
+
+def criar_agendamento(
+    nome_cliente: str,
+    email_cliente: str,
+    telefone: str,
+    data_horario: str,
+    owner_email: str | None = None,
+    data_agendamento: str | None = None,
+    hora_agendamento: str | None = None,
+) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            """INSERT INTO agendamento (nome_cliente, email_cliente, telefone, data_horario, criado_em)
-               VALUES (?, ?, ?, ?, ?)""",
-            (nome_cliente, email_cliente, telefone, data_horario, _now())
+            """INSERT INTO agendamento
+               (nome_cliente, email_cliente, telefone, data_horario, owner_email, data_agendamento, hora_agendamento, criado_em)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (nome_cliente, email_cliente, telefone, data_horario, owner_email, data_agendamento, hora_agendamento, _now())
         )
         conn.commit()
         return _row_to_dict(conn.execute("SELECT * FROM agendamento WHERE id = ?", (cur.lastrowid,)).fetchone())

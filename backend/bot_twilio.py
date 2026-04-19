@@ -14,6 +14,46 @@ import database as db
 router = APIRouter()
 logger = logging.getLogger("physio_notes.bot")
 
+OWNER_EMAIL = os.environ.get("TWILIO_OWNER_EMAIL", "")
+
+HORARIOS_CLINICA = ["08:00", "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
+
+DIAS_PT = {0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira", 3: "Quinta-feira",
+           4: "Sexta-feira", 5: "Sábado", 6: "Domingo"}
+
+
+def _sugestoes_horario(data_str: str, hora_str: str) -> list[str]:
+    """Retorna até 3 sugestões livres: slots no mesmo dia + mesmo horário nos próximos 2 dias."""
+    if not OWNER_EMAIL or not data_str:
+        return []
+
+    try:
+        data = datetime.date.fromisoformat(data_str)
+    except ValueError:
+        return []
+
+    ocupados_dia = db.get_horarios_ocupados(OWNER_EMAIL, data_str)
+    sugestoes = []
+
+    for h in HORARIOS_CLINICA:
+        if h != hora_str and h not in ocupados_dia:
+            dia_label = DIAS_PT.get(data.weekday(), "")
+            sugestoes.append(f"{dia_label}, {data.strftime('%d/%m')} às {h}")
+        if len(sugestoes) >= 2:
+            break
+
+    for delta in (1, 2):
+        prox = data + datetime.timedelta(days=delta)
+        prox_str = prox.isoformat()
+        ocupados_prox = db.get_horarios_ocupados(OWNER_EMAIL, prox_str)
+        if hora_str and hora_str not in ocupados_prox:
+            dia_label = DIAS_PT.get(prox.weekday(), "")
+            sugestoes.append(f"{dia_label}, {prox.strftime('%d/%m')} às {hora_str}")
+        if len(sugestoes) >= 3:
+            break
+
+    return sugestoes
+
 
 class Passo(str, Enum):
     MENU = "MENU"
@@ -430,9 +470,29 @@ async def twilio_webhook(
             )
 
         horario = analise_horario.get("horario_normalizado") or texto
+        data_ag = analise_horario.get("data")
+        hora_ag = analise_horario.get("hora")
+
+        if OWNER_EMAIL and data_ag and hora_ag:
+            if db.verificar_conflito_agendamento(OWNER_EMAIL, data_ag, hora_ag):
+                sugestoes = _sugestoes_horario(data_ag, hora_ag)
+                sugestoes_txt = ""
+                if sugestoes:
+                    linhas = "\n".join(f"• {s}" for s in sugestoes)
+                    sugestoes_txt = f"\n\nAlgumas sugestões disponíveis:\n{linhas}"
+                _save_session(telefone, Passo.AGUARDANDO_HORARIO.value, dados)
+                return build_response(
+                    f"⚠️ *Horário indisponível*\n\n"
+                    f"O horário *{horario}* já está reservado.{sugestoes_txt}\n\n"
+                    "Informe outro dia ou horário de sua preferência."
+                    + DICA_NAV
+                )
+
         dados = _reset_retry_counters(dados)
         dados = _reset_flow_flags(dados)
         dados["horario_desejado"] = horario
+        dados["data_agendamento"] = data_ag
+        dados["hora_agendamento"] = hora_ag
 
         if dados.get("retornar_para_confirmacao_apos_horario"):
             dados.pop("retornar_para_confirmacao_apos_horario", None)
@@ -450,25 +510,19 @@ async def twilio_webhook(
             horario_desejado = dados.get("horario_desejado", "N/D")
             nome_db = dados.get("nome", "Não informado")
             email_db = dados.get("email", "Não informado")
-            try:
-                db.criar_agendamento(nome_db, email_db, telefone, horario_desejado)
-                db.end_whatsapp_session(telefone)
-                return build_response(
-                    "🎉 *Consulta agendada com sucesso!*\n\n"
-                    f"🗓️ *Horário:* {horario_desejado}\n"
-                    f"👤 *Nome:* {nome_db}\n"
-                    f"📧 *E-mail:* {email_db}\n\n"
-                    "✅ Seu horário está reservado.\n"
-                    "📋 Guarde esta conversa como comprovante.\n\n"
-                    "Agradecemos a preferência! Até breve. 😊"
-                )
-            except Exception as e:
-                logger.error(f"Erro agendamento bot: {e}")
-                _save_session(telefone, Passo.CONFIRMANDO.value, dados)
-                return build_response(
-                    "⚠️ Ops! Algo deu errado ao finalizar o agendamento.\n\n"
-                    "Por favor, tente confirmar novamente ou entre em contato diretamente com a clínica."
-                )
+            data_ag = dados.get("data_agendamento")
+            hora_ag = dados.get("hora_agendamento")
+
+            db.end_whatsapp_session(telefone)
+            return build_response(
+                "🎉 *Consulta agendada com sucesso!*\n\n"
+                f"🗓️ *Horário:* {horario_desejado}\n"
+                f"👤 *Nome:* {nome_db}\n"
+                f"📧 *E-mail:* {email_db}\n\n"
+                "✅ Seu horário está reservado.\n"
+                "📋 Guarde esta conversa como comprovante.\n\n"
+                "Agradecemos a preferência! Até breve. 😊"
+            )
 
         if texto_norm in CORRIGIR_DADOS_OPCOES:
             dados = _reset_retry_counters(dados)

@@ -126,8 +126,8 @@ def notificar_pacote_quase_acabando(owner_email: str, paciente_nome: str, restan
 _scheduler = None
 
 
-INATIVIDADE_AVISO_MIN = 10
-INATIVIDADE_ENCERRAR_MIN = 5
+INATIVIDADE_AVISO_MIN = 2
+INATIVIDADE_ENCERRAR_MIN = 2
 
 MSG_AVISO_INATIVIDADE = (
     "😊 Ainda está por aí?\n\n"
@@ -146,17 +146,22 @@ def job_inatividade_bot():
         import database as db
         from bot_twilio import enviar_mensagem_proativa
 
-        for session in db.get_sessions_para_aviso(INATIVIDADE_AVISO_MIN):
+        para_aviso = db.get_sessions_para_aviso(INATIVIDADE_AVISO_MIN)
+        para_encerrar = db.get_sessions_para_encerrar(INATIVIDADE_ENCERRAR_MIN)
+        logger.info(f"[inatividade] para_aviso={len(para_aviso)} para_encerrar={len(para_encerrar)}")
+
+        for session in para_aviso:
             telefone = session["telefone"]
+            logger.info(f"[inatividade] enviando aviso para {telefone}")
             if enviar_mensagem_proativa(telefone, MSG_AVISO_INATIVIDADE):
                 db.marcar_aviso_inatividade(telefone)
-                logger.info(f"Aviso de inatividade enviado: {telefone}")
+                logger.info(f"[inatividade] aviso marcado: {telefone}")
 
-        for session in db.get_sessions_para_encerrar(INATIVIDADE_ENCERRAR_MIN):
+        for session in para_encerrar:
             telefone = session["telefone"]
+            logger.info(f"[inatividade] encerrando sessão: {telefone}")
             enviar_mensagem_proativa(telefone, MSG_ENCERRAMENTO_INATIVIDADE)
             db.end_whatsapp_session(telefone)
-            logger.info(f"Sessão encerrada por inatividade: {telefone}")
     except Exception as e:
         logger.error(f"Erro no job de inatividade do bot: {e}")
 
