@@ -394,6 +394,19 @@ def _migrate():
             CREATE INDEX IF NOT EXISTS idx_audit_log_criado_em ON audit_log(criado_em);
             CREATE INDEX IF NOT EXISTS idx_audit_log_owner_email ON audit_log(owner_email);
         """)
+
+        # Blacklist persistente do bot WhatsApp — sobrevive ao fim de sessão
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS whatsapp_blacklist (
+                telefone      TEXT PRIMARY KEY,
+                shield_hits   INTEGER NOT NULL DEFAULT 0,
+                blacklisted   INTEGER NOT NULL DEFAULT 0,
+                motivo        TEXT,
+                criado_em     TEXT NOT NULL,
+                atualizado_em TEXT NOT NULL
+            )
+        """)
+
         conn.commit()
 
     _migrar_criptografar_pii()
@@ -2286,6 +2299,42 @@ def end_whatsapp_session(telefone: str) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM whatsapp_session WHERE telefone = ?", (telefone,))
         conn.commit()
+
+# ---------- Twilio Bot Blacklist ----------
+
+def is_whatsapp_blacklisted(telefone: str) -> bool:
+    """Retorna True se o número está na blacklist definitiva."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT blacklisted FROM whatsapp_blacklist WHERE telefone = ?", (telefone,)
+        ).fetchone()
+        return bool(row and row[0])
+
+def increment_shield_hit(telefone: str, motivo: str, limite: int) -> bool:
+    """Registra um acionamento de escudo. Retorna True se o número acabou de ser bloqueado."""
+    now = _now()
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO whatsapp_blacklist (telefone, shield_hits, blacklisted, motivo, criado_em, atualizado_em)
+               VALUES (?, 1, 0, ?, ?, ?)
+               ON CONFLICT(telefone) DO UPDATE SET
+                   shield_hits   = shield_hits + 1,
+                   motivo        = excluded.motivo,
+                   atualizado_em = excluded.atualizado_em""",
+            (telefone, motivo, now, now),
+        )
+        conn.commit()
+        hits = conn.execute(
+            "SELECT shield_hits FROM whatsapp_blacklist WHERE telefone = ?", (telefone,)
+        ).fetchone()[0]
+        if hits >= limite:
+            conn.execute(
+                "UPDATE whatsapp_blacklist SET blacklisted = 1, atualizado_em = ? WHERE telefone = ?",
+                (now, telefone),
+            )
+            conn.commit()
+            return True
+        return False
 
 # ---------- Bot Agendamentos ----------
 

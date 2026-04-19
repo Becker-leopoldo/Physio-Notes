@@ -56,6 +56,7 @@ Permite gravar sessões, transcrever com IA e consolidar notas automaticamente.
 | `transcribe.py`    | Integração com Groq Whisper via SDK OpenAI (compatível). Recebe bytes de áudio e retorna transcrição em português. |
 | `requirements.txt` | Dependências: `fastapi`, `uvicorn[standard]`, `python-multipart`, `openai`, `google-genai`, `python-dotenv`, `aiofiles`, `pypdf`. |
 | `start.bat`        | Script Windows para desenvolvimento local. Instala dependências e inicia o servidor em `localhost:8000` com hot-reload. |
+| `bot_twilio.py`    | Bot WhatsApp via Twilio webhook (`POST /api/twilio/webhook`). Gerencia fluxo de agendamento por mensagem: MENU → AGUARDANDO_HORARIO → PEDINDO_DADOS → CONFIRMANDO. Inclui comandos globais de navegação (*sair*, *voltar*, *menu*) que funcionam em qualquer fase, bypass do filtro IA para palavras de navegação, escudo anti-troll com sistema de strikes e extração de nome/e-mail via IA no passo de dados. |
 
 ---
 

@@ -225,8 +225,8 @@ async def twilio_webhook(
         auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
         if auth_token:
             validator = RequestValidator(auth_token)
-            form_data_validacao = await request.form()
-            post_vars = dict(form_data_validacao)
+            form_data = await request.form()
+            post_vars = dict(form_data)
 
             header_proto = request.headers.get("x-forwarded-proto")
             if header_proto == "https":
@@ -236,27 +236,8 @@ async def twilio_webhook(
                 logger.warning(f"Tentativa de acesso não autorizada ao webhook de: {url}")
                 raise HTTPException(status_code=403, detail="Assinatura Twilio inválida. Acesso bloqueado.")
 
-    form_data = await request.form()
-
-    body_text = (form_data.get("Body") or "").strip()
-    button_text = (form_data.get("ButtonText") or "").strip()
-    button_payload = (form_data.get("ButtonPayload") or "").strip()
-
-    list_title = (
-        form_data.get("ListTitle")
-        or form_data.get("SelectedTitle")
-        or ""
-    ).strip()
-
-    list_id = (
-        form_data.get("ListId")
-        or form_data.get("SelectedId")
-        or ""
-    ).strip()
-
-    texto = button_text or list_title or body_text
+    texto = Body.strip()
     texto_norm = _texto_normalizado(texto)
-    id_opcao = button_payload or list_id
     telefone = From
 
     if db.is_whatsapp_blacklisted(telefone):
@@ -268,7 +249,7 @@ async def twilio_webhook(
     passo = session["passo_atual"] if session else None
     dados = _get_session_data(session)
 
-    if texto_norm in CMDS_SAIR or id_opcao == "sair":
+    if texto_norm in CMDS_SAIR:
         db.end_whatsapp_session(telefone)
         return build_response(
             "👋 Tudo bem! Foi um prazer atender você.\n\n"
@@ -346,16 +327,14 @@ async def twilio_webhook(
         )
 
     if passo == Passo.MENU.value:
-        escolha = id_opcao or texto_norm
-
-        if escolha in MENU_AGENDAR or escolha == "agendar":
+        if texto_norm in MENU_AGENDAR:
             dados = _reset_retry_counters(dados)
             dados = _reset_flow_flags(dados)
             dados.pop("retornar_para_confirmacao_apos_horario", None)
             _save_session(telefone, Passo.AGUARDANDO_HORARIO.value, dados)
             return build_response(_mensagem_horario())
 
-        if escolha in MENU_REAGENDAR or escolha == "reagendar":
+        if texto_norm in MENU_REAGENDAR or texto_norm in MENU_CANCELAR:
             db.end_whatsapp_session(telefone)
             return build_response(
                 "📋 Entendido!\n\n"
@@ -363,15 +342,7 @@ async def twilio_webhook(
                 "⏳ Agradecemos a paciência!"
             )
 
-        if escolha in MENU_CANCELAR or escolha == "cancelar":
-            db.end_whatsapp_session(telefone)
-            return build_response(
-                "📋 Entendido!\n\n"
-                "👤 Em breve um de nossos atendentes entrará em contato com você para realizar essa alteração.\n\n"
-                "⏳ Agradecemos a paciência!"
-            )
-
-        if escolha in MENU_SAIR or escolha == "sair":
+        if texto_norm in MENU_SAIR:
             db.end_whatsapp_session(telefone)
             return build_response(
                 "👋 Tudo bem! Foi um prazer atender você.\n\n"
