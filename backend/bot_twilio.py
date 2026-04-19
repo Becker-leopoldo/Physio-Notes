@@ -1,13 +1,14 @@
+import datetime
 import json
 import logging
 import os
-import re
 from enum import Enum
 
-from fastapi import APIRouter, Request, Form, HTTPException, Header
+from fastapi import APIRouter, Request, Form, HTTPException, Header, Response
 from twilio.request_validator import RequestValidator
 from twilio.twiml.messaging_response import MessagingResponse
 
+import ai
 import database as db
 
 router = APIRouter()
@@ -170,23 +171,6 @@ def _mensagem_confirmacao(dados: dict) -> str:
     )
 
 
-def _horario_parece_valido(texto: str) -> bool:
-    t = _texto_normalizado(texto)
-
-    padroes = [
-        r"\b\d{1,2}/\d{1,2}\b",
-        r"\b\d{1,2}/\d{1,2}/\d{2,4}\b",
-        r"\b\d{1,2}:\d{2}\b",
-        r"\b\d{1,2}h\b",
-        r"\b\d{1,2}h\d{0,2}\b",
-        r"\b(segunda|terça|terca|quarta|quinta|sexta|sábado|sabado|domingo)\b",
-        r"\b(amanhã|amanha|hoje)\b",
-        r"\b(manhã|manha|tarde|noite)\b",
-        r"\bàs\b",
-    ]
-
-    return any(re.search(p, t) for p in padroes)
-
 
 def _deve_moderar(texto: str, texto_norm: str, passo: str | None) -> bool:
     if len(texto.strip()) <= 2:
@@ -203,12 +187,76 @@ def _deve_moderar(texto: str, texto_norm: str, passo: str | None) -> bool:
     return True
 
 
-def build_response(msg: str):
-    from fastapi import Response
+def enviar_mensagem_proativa(telefone: str, msg: str) -> bool:
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    from_number = os.environ.get("TWILIO_FROM_NUMBER", "")
+    if not account_sid or not auth_token or not from_number:
+        logger.warning("Variáveis Twilio não configuradas — envio proativo desativado")
+        return False
+    try:
+        from twilio.rest import Client
+        client = Client(account_sid, auth_token)
+        client.messages.create(
+            from_=f"whatsapp:{from_number}",
+            to=telefone,
+            body=msg,
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Falha ao enviar mensagem proativa para {telefone}: {e}")
+        return False
 
+
+def build_response(msg: str):
     resp = MessagingResponse()
     resp.message(msg)
     return Response(content=str(resp), media_type="application/xml")
+
+
+async def _handle_dados_input(telefone: str, texto: str, passo: str, dados: dict):
+    is_corrigindo = passo == Passo.CORRIGINDO_DADOS.value
+    log_label = "corrigir" if is_corrigindo else "extrair"
+
+    try:
+        analise = await ai.extrair_nome_email_bot(texto)
+    except Exception as e:
+        logger.error(f"Falha ao {log_label} nome/email via IA: {e}")
+        analise = {"valido": False, "nome_encontrado": None, "email_encontrado": None}
+
+    nome = analise.get("nome_encontrado")
+    email = analise.get("email_encontrado")
+
+    if not analise.get("valido") or not nome or not email:
+        dados, esgotado = _retry(dados, "retry_dados")
+        if esgotado:
+            blacklisted = db.increment_shield_hit(telefone, "retry_dados", BLACKLIST_HITS_LIMIT)
+            db.end_whatsapp_session(telefone)
+            return build_response(MSG_BLACKLISTED if blacklisted else MSG_LOOP_HUMANO)
+
+        _save_session(telefone, passo, dados)
+        msg_base = (
+            "😕 Não consegui identificar corretamente seu nome e e-mail.\n\n"
+            "Por favor, envie assim:\n\n"
+            "👤 *Nome:* João Silva\n"
+            "📧 *E-mail:* joao@email.com\n\n"
+            "Ou tudo em uma linha:\n"
+            "João Silva - joao@email.com"
+            if not is_corrigindo
+            else "😕 Não consegui identificar corretamente o nome e o e-mail.\n\n"
+            "Por favor, envie novamente assim:\n\n"
+            "João Silva - joao@email.com"
+        )
+        return build_response(msg_base + DICA_NAV)
+
+    dados = _reset_retry_counters(dados)
+    dados = _reset_flow_flags(dados)
+    dados["nome"] = nome
+    dados["email"] = email
+    if not is_corrigindo:
+        dados.pop("retornar_para_confirmacao_apos_horario", None)
+    _save_session(telefone, Passo.CONFIRMANDO.value, dados)
+    return build_response(_mensagem_confirmacao(dados))
 
 
 @router.post("/api/twilio/webhook")
@@ -220,43 +268,24 @@ async def twilio_webhook(
 ):
     url = str(request.url)
 
-    is_localhost = "localhost" in url or "127.0.0.1" in url
-    if not is_localhost:
-        auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-        if auth_token:
-            validator = RequestValidator(auth_token)
-            form_data_validacao = await request.form()
-            post_vars = dict(form_data_validacao)
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    if not auth_token:
+        logger.warning("TWILIO_AUTH_TOKEN não configurado — validação de assinatura desativada")
+    else:
+        validator = RequestValidator(auth_token)
+        form_data = await request.form()
+        post_vars = dict(form_data)
 
-            header_proto = request.headers.get("x-forwarded-proto")
-            if header_proto == "https":
-                url = url.replace("http://", "https://")
+        header_proto = request.headers.get("x-forwarded-proto")
+        if header_proto == "https":
+            url = url.replace("http://", "https://")
 
-            if not validator.validate(url, post_vars, x_twilio_signature or ""):
-                logger.warning(f"Tentativa de acesso não autorizada ao webhook de: {url}")
-                raise HTTPException(status_code=403, detail="Assinatura Twilio inválida. Acesso bloqueado.")
+        if not validator.validate(url, post_vars, x_twilio_signature or ""):
+            logger.warning(f"Tentativa de acesso não autorizada ao webhook de: {url}")
+            raise HTTPException(status_code=403, detail="Assinatura Twilio inválida. Acesso bloqueado.")
 
-    form_data = await request.form()
-
-    body_text = (form_data.get("Body") or "").strip()
-    button_text = (form_data.get("ButtonText") or "").strip()
-    button_payload = (form_data.get("ButtonPayload") or "").strip()
-
-    list_title = (
-        form_data.get("ListTitle")
-        or form_data.get("SelectedTitle")
-        or ""
-    ).strip()
-
-    list_id = (
-        form_data.get("ListId")
-        or form_data.get("SelectedId")
-        or ""
-    ).strip()
-
-    texto = button_text or list_title or body_text
+    texto = Body.strip()
     texto_norm = _texto_normalizado(texto)
-    id_opcao = button_payload or list_id
     telefone = From
 
     if db.is_whatsapp_blacklisted(telefone):
@@ -268,7 +297,7 @@ async def twilio_webhook(
     passo = session["passo_atual"] if session else None
     dados = _get_session_data(session)
 
-    if texto_norm in CMDS_SAIR or id_opcao == "sair":
+    if texto_norm in CMDS_SAIR:
         db.end_whatsapp_session(telefone)
         return build_response(
             "👋 Tudo bem! Foi um prazer atender você.\n\n"
@@ -307,8 +336,6 @@ async def twilio_webhook(
         return build_response(_mensagem_confirmacao(dados))
 
     if _deve_moderar(texto, texto_norm, passo):
-        import ai
-
         try:
             moderacao = await ai.verificar_intencao_usuario_bot(texto)
         except Exception as e:
@@ -346,16 +373,14 @@ async def twilio_webhook(
         )
 
     if passo == Passo.MENU.value:
-        escolha = id_opcao or texto_norm
-
-        if escolha in MENU_AGENDAR or escolha == "agendar":
+        if texto_norm in MENU_AGENDAR:
             dados = _reset_retry_counters(dados)
             dados = _reset_flow_flags(dados)
             dados.pop("retornar_para_confirmacao_apos_horario", None)
             _save_session(telefone, Passo.AGUARDANDO_HORARIO.value, dados)
             return build_response(_mensagem_horario())
 
-        if escolha in MENU_REAGENDAR or escolha == "reagendar":
+        if texto_norm in MENU_REAGENDAR or texto_norm in MENU_CANCELAR:
             db.end_whatsapp_session(telefone)
             return build_response(
                 "📋 Entendido!\n\n"
@@ -363,15 +388,7 @@ async def twilio_webhook(
                 "⏳ Agradecemos a paciência!"
             )
 
-        if escolha in MENU_CANCELAR or escolha == "cancelar":
-            db.end_whatsapp_session(telefone)
-            return build_response(
-                "📋 Entendido!\n\n"
-                "👤 Em breve um de nossos atendentes entrará em contato com você para realizar essa alteração.\n\n"
-                "⏳ Agradecemos a paciência!"
-            )
-
-        if escolha in MENU_SAIR or escolha == "sair":
+        if texto_norm in MENU_SAIR:
             db.end_whatsapp_session(telefone)
             return build_response(
                 "👋 Tudo bem! Foi um prazer atender você.\n\n"
@@ -388,7 +405,14 @@ async def twilio_webhook(
         return build_response("😅 Não reconheci essa opção.\n\n" + _menu_principal())
 
     if passo == Passo.AGUARDANDO_HORARIO.value:
-        if not _horario_parece_valido(texto):
+        data_hoje = datetime.date.today().isoformat()
+        try:
+            analise_horario = await ai.extrair_horario_bot(texto, data_hoje)
+        except Exception as e:
+            logger.error(f"Falha ao extrair horário via IA: {e}")
+            analise_horario = {"valido": False, "horario_normalizado": None}
+
+        if not analise_horario.get("valido"):
             dados, esgotado = _retry(dados, "retry_horario")
             if esgotado:
                 blacklisted = db.increment_shield_hit(telefone, "retry_horario", BLACKLIST_HITS_LIMIT)
@@ -405,9 +429,10 @@ async def twilio_webhook(
                 + DICA_NAV
             )
 
+        horario = analise_horario.get("horario_normalizado") or texto
         dados = _reset_retry_counters(dados)
         dados = _reset_flow_flags(dados)
-        dados["horario_desejado"] = texto
+        dados["horario_desejado"] = horario
 
         if dados.get("retornar_para_confirmacao_apos_horario"):
             dados.pop("retornar_para_confirmacao_apos_horario", None)
@@ -415,88 +440,20 @@ async def twilio_webhook(
             return build_response(_mensagem_confirmacao(dados))
 
         _save_session(telefone, Passo.PEDINDO_DADOS.value, dados)
-        return build_response(_mensagem_dados(texto))
+        return build_response(_mensagem_dados(horario))
 
-    if passo == Passo.PEDINDO_DADOS.value:
-        import ai
-
-        try:
-            analise = await ai.extrair_nome_email_bot(texto)
-        except Exception as e:
-            logger.error(f"Falha ao extrair nome/email via IA: {e}")
-            analise = {"valido": False, "nome_encontrado": None, "email_encontrado": None}
-
-        nome = analise.get("nome_encontrado")
-        email = analise.get("email_encontrado")
-
-        if not analise.get("valido") or not nome or not email:
-            dados, esgotado = _retry(dados, "retry_dados")
-            if esgotado:
-                blacklisted = db.increment_shield_hit(telefone, "retry_dados", BLACKLIST_HITS_LIMIT)
-                db.end_whatsapp_session(telefone)
-                return build_response(MSG_BLACKLISTED if blacklisted else MSG_LOOP_HUMANO)
-
-            _save_session(telefone, Passo.PEDINDO_DADOS.value, dados)
-            return build_response(
-                "😕 Não consegui identificar corretamente seu nome e e-mail.\n\n"
-                "Por favor, envie assim:\n\n"
-                "👤 *Nome:* João Silva\n"
-                "📧 *E-mail:* joao@email.com\n\n"
-                "Ou tudo em uma linha:\n"
-                "João Silva - joao@email.com"
-                + DICA_NAV
-            )
-
-        dados = _reset_retry_counters(dados)
-        dados = _reset_flow_flags(dados)
-        dados["nome"] = nome
-        dados["email"] = email
-        dados.pop("retornar_para_confirmacao_apos_horario", None)
-        _save_session(telefone, Passo.CONFIRMANDO.value, dados)
-        return build_response(_mensagem_confirmacao(dados))
-
-    if passo == Passo.CORRIGINDO_DADOS.value:
-        import ai
-
-        try:
-            analise = await ai.extrair_nome_email_bot(texto)
-        except Exception as e:
-            logger.error(f"Falha ao corrigir nome/email via IA: {e}")
-            analise = {"valido": False, "nome_encontrado": None, "email_encontrado": None}
-
-        nome = analise.get("nome_encontrado")
-        email = analise.get("email_encontrado")
-
-        if not analise.get("valido") or not nome or not email:
-            dados, esgotado = _retry(dados, "retry_dados")
-            if esgotado:
-                blacklisted = db.increment_shield_hit(telefone, "retry_dados", BLACKLIST_HITS_LIMIT)
-                db.end_whatsapp_session(telefone)
-                return build_response(MSG_BLACKLISTED if blacklisted else MSG_LOOP_HUMANO)
-
-            _save_session(telefone, Passo.CORRIGINDO_DADOS.value, dados)
-            return build_response(
-                "😕 Não consegui identificar corretamente o nome e o e-mail.\n\n"
-                "Por favor, envie novamente assim:\n\n"
-                "João Silva - joao@email.com"
-                + DICA_NAV
-            )
-
-        dados = _reset_retry_counters(dados)
-        dados = _reset_flow_flags(dados)
-        dados["nome"] = nome
-        dados["email"] = email
-        _save_session(telefone, Passo.CONFIRMANDO.value, dados)
-        return build_response(_mensagem_confirmacao(dados))
+    if passo in {Passo.PEDINDO_DADOS.value, Passo.CORRIGINDO_DADOS.value}:
+        return await _handle_dados_input(telefone, texto, passo, dados)
 
     if passo == Passo.CONFIRMANDO.value:
         if texto_norm in CONFIRMAR_OPCOES:
+            horario_desejado = dados.get("horario_desejado", "N/D")
+            nome_db = dados.get("nome", "Não informado")
+            email_db = dados.get("email", "Não informado")
             try:
-                horario_desejado = dados.get("horario_desejado", "N/D")
-                nome_db = dados.get("nome", "Não informado")
-                email_db = dados.get("email", "Não informado")
                 db.criar_agendamento(nome_db, email_db, telefone, horario_desejado)
-                msg = (
+                db.end_whatsapp_session(telefone)
+                return build_response(
                     "🎉 *Consulta agendada com sucesso!*\n\n"
                     f"🗓️ *Horário:* {horario_desejado}\n"
                     f"👤 *Nome:* {nome_db}\n"
@@ -507,12 +464,11 @@ async def twilio_webhook(
                 )
             except Exception as e:
                 logger.error(f"Erro agendamento bot: {e}")
-                msg = (
+                _save_session(telefone, Passo.CONFIRMANDO.value, dados)
+                return build_response(
                     "⚠️ Ops! Algo deu errado ao finalizar o agendamento.\n\n"
-                    "Por favor, diga *Oi* para tentar novamente ou entre em contato diretamente com a clínica."
+                    "Por favor, tente confirmar novamente ou entre em contato diretamente com a clínica."
                 )
-            db.end_whatsapp_session(telefone)
-            return build_response(msg)
 
         if texto_norm in CORRIGIR_DADOS_OPCOES:
             dados = _reset_retry_counters(dados)

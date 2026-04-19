@@ -126,12 +126,48 @@ def notificar_pacote_quase_acabando(owner_email: str, paciente_nome: str, restan
 _scheduler = None
 
 
+INATIVIDADE_AVISO_MIN = 10
+INATIVIDADE_ENCERRAR_MIN = 5
+
+MSG_AVISO_INATIVIDADE = (
+    "😊 Ainda está por aí?\n\n"
+    "Sua conversa está guardada — é só responder para continuar de onde parou.\n\n"
+    "Caso não queira continuar, diga *0* para encerrar."
+)
+
+MSG_ENCERRAMENTO_INATIVIDADE = (
+    "⏰ Encerramos sua sessão por inatividade.\n\n"
+    "Quando quiser retomar o agendamento, é só nos chamar novamente! 😊"
+)
+
+
+def job_inatividade_bot():
+    try:
+        import database as db
+        from bot_twilio import enviar_mensagem_proativa
+
+        for session in db.get_sessions_para_aviso(INATIVIDADE_AVISO_MIN):
+            telefone = session["telefone"]
+            if enviar_mensagem_proativa(telefone, MSG_AVISO_INATIVIDADE):
+                db.marcar_aviso_inatividade(telefone)
+                logger.info(f"Aviso de inatividade enviado: {telefone}")
+
+        for session in db.get_sessions_para_encerrar(INATIVIDADE_ENCERRAR_MIN):
+            telefone = session["telefone"]
+            enviar_mensagem_proativa(telefone, MSG_ENCERRAMENTO_INATIVIDADE)
+            db.end_whatsapp_session(telefone)
+            logger.info(f"Sessão encerrada por inatividade: {telefone}")
+    except Exception as e:
+        logger.error(f"Erro no job de inatividade do bot: {e}")
+
+
 def start_scheduler():
     global _scheduler
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.triggers.cron import CronTrigger
         _scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
+        from apscheduler.triggers.interval import IntervalTrigger
         # Sessões abertas — todo dia às 20h
         _scheduler.add_job(job_sessoes_abertas,   CronTrigger(hour=20, minute=0))
         # Aniversariantes — todo dia às 8h
@@ -141,6 +177,8 @@ def start_scheduler():
         # Pacientes sem sessão + resumo — toda segunda-feira
         _scheduler.add_job(job_pacientes_sem_sessao, CronTrigger(day_of_week="mon", hour=9, minute=10))
         _scheduler.add_job(job_resumo_semanal,       CronTrigger(day_of_week="mon", hour=8, minute=0))
+        # Inatividade do bot WhatsApp — a cada 2 minutos
+        _scheduler.add_job(job_inatividade_bot, IntervalTrigger(minutes=2))
         _scheduler.start()
         logger.info("Scheduler de notificações iniciado.")
     except Exception as e:

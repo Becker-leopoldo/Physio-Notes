@@ -232,6 +232,11 @@ def _migrate():
             ON paciente(cpf_hash, owner_email)
             WHERE cpf_hash IS NOT NULL AND deletado_em IS NULL
         """)
+        # Inatividade do bot WhatsApp
+        cols_wa = [r[1] for r in conn.execute("PRAGMA table_info(whatsapp_session)").fetchall()]
+        if "aviso_em" not in cols_wa:
+            conn.execute("ALTER TABLE whatsapp_session ADD COLUMN aviso_em TEXT")
+
         conn.commit()
 
         conn.execute("""
@@ -2288,9 +2293,13 @@ def get_whatsapp_session(telefone: str) -> dict | None:
 def update_whatsapp_session(telefone: str, passo_atual: str, dados_json: str | None = None) -> None:
     with get_conn() as conn:
         conn.execute(
-            """INSERT INTO whatsapp_session (telefone, passo_atual, dados_json, atualizado_em) 
-               VALUES (?, ?, ?, ?)
-               ON CONFLICT(telefone) DO UPDATE SET passo_atual=excluded.passo_atual, dados_json=excluded.dados_json, atualizado_em=excluded.atualizado_em""",
+            """INSERT INTO whatsapp_session (telefone, passo_atual, dados_json, atualizado_em, aviso_em)
+               VALUES (?, ?, ?, ?, NULL)
+               ON CONFLICT(telefone) DO UPDATE SET
+                 passo_atual=excluded.passo_atual,
+                 dados_json=excluded.dados_json,
+                 atualizado_em=excluded.atualizado_em,
+                 aviso_em=NULL""",
             (telefone, passo_atual, dados_json, _now())
         )
         conn.commit()
@@ -2298,6 +2307,36 @@ def update_whatsapp_session(telefone: str, passo_atual: str, dados_json: str | N
 def end_whatsapp_session(telefone: str) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM whatsapp_session WHERE telefone = ?", (telefone,))
+        conn.commit()
+
+def get_sessions_para_aviso(minutos: int) -> list[dict]:
+    """Sessões inativas há X minutos que ainda não receberam aviso."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT * FROM whatsapp_session
+               WHERE aviso_em IS NULL
+               AND atualizado_em <= datetime('now', ?, 'localtime')""",
+            (f"-{minutos} minutes",)
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+def get_sessions_para_encerrar(minutos: int) -> list[dict]:
+    """Sessões que já receberam aviso e continuam inativas há X minutos."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT * FROM whatsapp_session
+               WHERE aviso_em IS NOT NULL
+               AND aviso_em <= datetime('now', ?, 'localtime')""",
+            (f"-{minutos} minutes",)
+        ).fetchall()
+        return [_row_to_dict(r) for r in rows]
+
+def marcar_aviso_inatividade(telefone: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE whatsapp_session SET aviso_em = ? WHERE telefone = ?",
+            (_now(), telefone)
+        )
         conn.commit()
 
 # ---------- Twilio Bot Blacklist ----------

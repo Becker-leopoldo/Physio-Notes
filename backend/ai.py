@@ -1016,6 +1016,46 @@ Mensagem do usuário: "{texto}"
         # Em caso de falha da IA, permita continuar por precaução (fail-open)
         return {"bloquear": False, "motivo": None}
 
+async def extrair_horario_bot(texto: str, data_hoje: str, owner_email: str | None = None) -> dict:
+    prompt = f"""Hoje é {data_hoje} (formato YYYY-MM-DD).
+
+O texto abaixo é a resposta de um paciente no WhatsApp informando o dia e horário que deseja consultar.
+
+Se o texto contiver uma referência a data ou horário (mesmo que impreciso como "tarde de segunda"), marque "valido": true e resolva para a data real mais próxima no futuro.
+
+Retorne APENAS um JSON válido:
+{{
+  "valido": true ou false,
+  "data": "YYYY-MM-DD ou null se não conseguiu resolver",
+  "hora": "HH:MM ou null se não informada",
+  "horario_normalizado": "string legível em português para mostrar ao usuário, ex: Segunda-feira, 28/04 às 14:00"
+}}
+
+Regras:
+- Resolva expressões relativas ("amanhã", "depois de amanhã", "semana que vem", "próxima sexta") para a data real usando a data de hoje
+- Dias da semana sem data explícita → próxima ocorrência desse dia no futuro
+- Se o usuário informou apenas o dia sem hora, deixe "hora" como null e omita o horário no "horario_normalizado"
+- Se o texto não contiver nenhuma referência a data ou horário (ex: "oi", "quero marcar", um nome), marque "valido": false e os demais campos como null
+- Responda APENAS o JSON
+
+Texto do usuário: "{texto}"
+"""
+    try:
+        message = await client.messages.create(
+            model=MODEL,
+            max_tokens=150,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        _registrar("bot_whatsapp_horario", message, owner_email)
+        raw_text = message.content[0].text.strip()
+        json_match = re.search(_REGEX_JSON_BLOCK, raw_text)
+        if json_match:
+            raw_text = json_match.group(0)
+        return json.loads(raw_text)
+    except Exception:
+        return {"valido": False, "horario_normalizado": None}
+
+
 async def extrair_nome_email_bot(texto: str, owner_email: str | None = None) -> dict:
     prompt = f"""Você é um sistema de extração de dados analisando mensagens de WhatsApp em uma clínica.
 
